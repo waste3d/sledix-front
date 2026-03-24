@@ -29,10 +29,13 @@ export default function RegisterPage() {
         method: "POST",
         body: JSON.stringify(form),
       });
+
+      const user = data.user;
+
       
       // Сохраняем access_token в localStorage (или в памяти/context)
       localStorage.setItem("access_token", data.access_token);
-      router.push("/test"); // Редирект в дашборд
+      router.push(`/dashboard/${user.tenant_slug}`); // Редирект в дашборд
     } catch (err: any) {
       setError(err.message);
     } finally {

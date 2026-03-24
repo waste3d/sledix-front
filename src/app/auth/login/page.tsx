@@ -28,8 +28,10 @@ export default function LoginPage() {
         method: "POST",
         body: JSON.stringify(form),
       });
+      const user = data.data.user;
+
       localStorage.setItem("access_token", data.access_token);
-      router.push("/test");
+      router.push(`/dashboard/${user.tenant_slug}`);
     } catch (err: any) {
       setError(err.message);
     } finally {
