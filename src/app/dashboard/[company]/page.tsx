@@ -14,7 +14,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const checkAccess = async () => {
-      const token = localStorage.getItem("token"); // или твой способ хранения
+      const token = localStorage.getItem("access_token"); // или твой способ хранения
       if (!token) {
         router.push("/login");
         return;
