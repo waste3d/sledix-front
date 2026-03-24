@@ -1,13 +1,13 @@
-const API_URL = "https://api.sledix.tech";
-
 export async function apiRequest(endpoint: string, options: RequestInit = {}) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+  
   const res = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
       ...options.headers,
     },
-    credentials: endpoint.includes("/auth") ? "include" : "same-origin",
+    credentials: "include", 
   });
 
   const payload = await res.json();
