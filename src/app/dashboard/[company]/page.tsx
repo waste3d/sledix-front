@@ -1,17 +1,20 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiRequest } from "../../../lib/api";
-import Link from "next/link";
 
-// --- UI Components (Skeletons & Elements) ---
+// --- Стили и Иконки из старого дизайна ---
 
-const Skeleton = ({ className }: { className: string }) => (
-  <div className={`animate-pulse bg-white/[0.03] rounded-2xl ${className}`} />
-);
+const Icons = {
+  dashboard:   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>,
+  competitors: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>,
+  signals:     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><path d="M1 8h2l2-5 3 10 2-7 2 4 1-2h2"/></svg>,
+  battlecards: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 6h6M5 9h4"/></svg>,
+  settings:    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.1 3.1l1.4 1.4M11.5 11.5l1.4 1.4M3.1 12.9l1.4-1.4M11.5 4.5l1.4-1.4"/></svg>,
+};
 
-function SledixLogo({ size = 24 }: { size?: number }) {
+function SledixLogo({ size = 22 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
       <path d="M76 32 C76 20 64 14 52 18 C40 22 36 32 42 40 C48 48 68 50 74 60 C80 70 74 84 60 88 C46 92 36 84 36 74" stroke="currentColor" strokeWidth="8" strokeLinecap="square" fill="none" />
@@ -19,167 +22,179 @@ function SledixLogo({ size = 24 }: { size?: number }) {
   );
 }
 
-// --- Main Page ---
+const Skeleton = ({ className }: { className: string }) => (
+  <div className={`animate-pulse bg-white/[0.03] rounded-xl ${className}`} />
+);
 
-export default function DashboardPage() {
+// --- Вспомогательные компоненты ---
+
+function NavItem({ icon, label, active, onClick, badge }: any) {
+  return (
+    <button onClick={onClick} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 text-left ${active ? "bg-white/[0.08] text-white" : "text-white/35 hover:text-white/70 hover:bg-white/[0.04]"}`}>
+      <span className="w-4 h-4 shrink-0">{icon}</span>
+      <span className="font-light tracking-tight flex-1">{label}</span>
+      {badge && <span className="text-[9px] bg-amber-500/20 text-amber-400 font-mono px-1.5 py-0.5 rounded">{badge}</span>}
+    </button>
+  );
+}
+
+// --- Основная страница ---
+
+export default function Dashboard() {
   const params = useParams();
   const router = useRouter();
   const companySlug = params.company as string;
 
+  const [page, setPage] = useState("dashboard");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<any>(null);
+  const [tenantData, setTenantData] = useState<any>(null);
 
   useEffect(() => {
-    const checkAccess = async () => {
+    const fetchData = async () => {
       const token = localStorage.getItem("access_token");
-      if (!token) {
-        router.push("/auth/login");
-        return;
-      }
+      if (!token) { router.push("/auth/login"); return; }
 
       try {
         const res = await apiRequest(`/api/dashboard/${companySlug}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setData(res);
-        // Небольшая задержка для плавности перехода, если бэкенд слишком быстрый
-        setTimeout(() => setIsLoading(false), 400);
+        setTenantData(res);
+        setTimeout(() => setIsLoading(false), 500); // Плавный переход
       } catch (err: any) {
-        console.error(err);
         setError(err.message);
         setIsLoading(false);
       }
     };
-
-    if (companySlug) checkAccess();
+    if (companySlug) fetchData();
   }, [companySlug, router]);
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-[#080809] text-white flex items-center justify-center font-sans">
-        <div className="text-center border border-red-500/20 bg-red-500/5 p-8 rounded-3xl backdrop-blur-xl">
-          <h2 className="text-red-400 font-mono text-sm uppercase tracking-widest mb-2">Access Denied</h2>
-          <p className="text-white/60 text-sm mb-6">{error}</p>
-          <button onClick={() => router.push('/auth/login')} className="px-6 py-2 bg-white text-black rounded-xl text-xs font-bold uppercase font-mono">Back to Login</button>
-        </div>
-      </div>
-    );
-  }
+  if (error) return (
+    <div className="h-screen bg-[#060608] flex items-center justify-center text-red-400 font-mono text-xs">
+      {error} — <button onClick={() => window.location.reload()} className="ml-2 underline">Retry</button>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-[#080809] text-white font-sans selection:bg-white/10">
-      {/* --- Навигация --- */}
-      <nav className="border-b border-white/[0.05] bg-[#080809]/50 backdrop-blur-2xl sticky top-0 z-50">
-        <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2.5 hover:opacity-70 transition-opacity">
-              <SledixLogo size={28} />
-              <span className="font-display font-bold tracking-tight text-lg">Sledix</span>
-            </Link>
-            <div className="h-4 w-px bg-white/10 hidden md:block" />
-            <div className="hidden md:flex items-center gap-6 text-[10px] uppercase tracking-[0.2em] font-mono text-white/30">
-              <span className="text-white underline underline-offset-8">Dashboard</span>
-              <span className="hover:text-white cursor-pointer transition-colors">Competitors</span>
-              <span className="hover:text-white cursor-pointer transition-colors">Signals</span>
+    <div className="flex h-screen bg-[#060608] text-white overflow-hidden font-sans antialiased">
+      
+      {/* Sidebar */}
+      <aside className="w-56 shrink-0 flex flex-col border-r border-white/[0.06]">
+        <div className="h-14 flex items-center gap-2.5 px-4 border-b border-white/[0.06]">
+          <SledixLogo />
+          <span className="font-display font-bold text-sm tracking-tight">Sledix</span>
+        </div>
+        
+        <div className="px-3 pt-4 pb-2">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+            <div className="w-5 h-5 rounded-md bg-white/10 flex items-center justify-center text-[9px] font-bold uppercase">
+              {companySlug ? companySlug[0] : "?"}
             </div>
-          </div>
-          <div className="flex items-center gap-4">
-             <div className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/5 text-[10px] font-mono text-white/40 uppercase tracking-wider">
-               {companySlug}.sledix.tech
-             </div>
-             <button 
-               onClick={() => { localStorage.clear(); router.push('/auth/login'); }}
-               className="text-[10px] font-mono uppercase text-white/20 hover:text-red-400 transition-colors"
-             >
-               Logout
-             </button>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-medium text-white truncate">{companySlug}</p>
+              <p className="text-[9px] text-white/25 font-mono uppercase">Growth plan</p>
+            </div>
           </div>
         </div>
-      </nav>
 
-      <main className="max-w-[1400px] mx-auto px-6 py-10">
-        {/* --- Заголовок --- */}
-        <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <nav className="flex-1 px-3 py-2 space-y-0.5">
+          <NavItem icon={Icons.dashboard}   label="Dashboard"    active={page==="dashboard"}   onClick={() => setPage("dashboard")}/>
+          <NavItem icon={Icons.competitors} label="Competitors"  active={page==="competitors"} onClick={() => setPage("competitors")}/>
+          <NavItem icon={Icons.signals}     label="Signals"      active={page==="signals"}     onClick={() => setPage("signals")} badge={0}/>
+          <NavItem icon={Icons.battlecards} label="Battle cards" active={page==="battlecards"} onClick={() => setPage("battlecards")}/>
+        </nav>
+
+        <div className="px-3 pb-4 border-t border-white/[0.06] pt-3 space-y-0.5">
+          <NavItem icon={Icons.settings} label="Settings" active={page==="settings"} onClick={() => setPage("settings")}/>
+          <button 
+            onClick={() => { localStorage.clear(); router.push('/auth/login'); }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-[10px] font-mono uppercase text-white/20 hover:text-red-400 transition-colors"
+          >
+            Logout
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="h-14 shrink-0 flex items-center justify-between px-6 border-b border-white/[0.06]">
           <div>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="h-px w-6 bg-white/20" />
-              <span className="text-[10px] tracking-[0.3em] uppercase text-white/30 font-mono">Intelligence Center</span>
-            </div>
-            <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight">
-              {isLoading ? <Skeleton className="h-12 w-64" /> : `${companySlug}`}
-            </h1>
+            <h1 className="font-display text-lg font-bold tracking-tight capitalize">{page}</h1>
+            <p className="text-[10px] text-white/25 font-mono">{companySlug}.sledix.tech</p>
           </div>
-          <div className="flex gap-3">
-            <button className="px-5 py-3 bg-white/[0.03] border border-white/10 rounded-xl text-[10px] font-mono uppercase tracking-widest hover:bg-white/[0.06] transition-all">
-              Settings
-            </button>
-            <button className="px-5 py-3 bg-white text-black rounded-xl text-[10px] font-mono uppercase font-bold tracking-widest hover:bg-white/90 transition-all">
-              + Add Competitor
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5 text-[10px] font-mono text-white/25">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"/>Live
+            </div>
+            <button className="text-[11px] tracking-[0.15em] uppercase bg-white text-[#060608] px-4 py-2 rounded-lg font-bold hover:bg-white/90 transition-colors font-mono">
+              + Add competitor
             </button>
           </div>
         </header>
 
-        {/* --- Статистика --- */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-6 relative overflow-hidden group hover:border-white/10 transition-colors">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-white/20 mb-4">
-                {i === 1 && "Competitors Tracked"}
-                {i === 2 && "Active Signals"}
-                {i === 3 && "AI Insights"}
-                {i === 4 && "System Status"}
-              </p>
-              {isLoading ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <div className="text-2xl font-display font-bold">
-                  {i === 4 ? "Optimal" : "0"}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* --- Центральный пустой блок --- */}
-        <section className="relative group">
-          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent rounded-[32px] pointer-events-none" />
-          <div className="border-2 border-dashed border-white/5 rounded-[32px] p-20 flex flex-col items-center justify-center text-center transition-all group-hover:border-white/10">
-            {isLoading ? (
-              <div className="space-y-4 flex flex-col items-center">
-                <Skeleton className="w-16 h-16 rounded-full" />
-                <Skeleton className="w-48 h-6" />
-                <Skeleton className="w-32 h-4" />
+        <div className="flex-1 overflow-auto p-6">
+          {isLoading ? (
+            /* --- Seamless Loading (Skeletons) --- */
+            <div className="space-y-6">
+              <div className="grid grid-cols-4 gap-4">
+                {[1,2,3,4].map(i => <Skeleton key={i} className="h-24 w-full" />)}
               </div>
-            ) : (
-              <>
-                <div className="w-20 h-20 bg-white/[0.03] rounded-full flex items-center justify-center mb-6 border border-white/5 group-hover:scale-110 transition-transform duration-500">
-                  <span className="text-3xl">📊</span>
-                </div>
-                <h2 className="font-display text-2xl font-bold mb-3 tracking-tight">Your workspace is ready.</h2>
-                <p className="text-white/30 text-sm font-light max-w-xs mx-auto leading-relaxed mb-8 italic">
-                  Start by adding your first competitor to see real-time signals and AI analysis.
-                </p>
-                <button className="px-8 py-4 bg-white/[0.04] border border-white/10 rounded-2xl text-[11px] font-mono uppercase font-bold tracking-[0.2em] hover:bg-white text-white hover:text-black transition-all">
-                   Deploy First Monitor
-                </button>
-              </>
-            )}
-          </div>
-        </section>
-      </main>
+              <div className="grid grid-cols-3 gap-4">
+                <Skeleton className="col-span-2 h-64 w-full" />
+                <Skeleton className="h-64 w-full" />
+              </div>
+              <Skeleton className="h-48 w-full" />
+            </div>
+          ) : (
+            /* --- Real Empty Content --- */
+            <div className="space-y-6 animate-in fade-in duration-700">
+              
+              {/* Stats Row */}
+              <div className="grid grid-cols-4 gap-4">
+                {[
+                  { label: "Competitors", value: "0" },
+                  { label: "Signals / Week", value: "0" },
+                  { label: "High Priority", value: "0" },
+                  { label: "AI Analyzed", value: "100%" },
+                ].map((s, i) => (
+                  <div key={i} className="border border-white/[0.07] rounded-2xl p-5 bg-white/[0.02]">
+                    <p className="text-[9px] font-mono tracking-[0.2em] uppercase text-white/25 mb-3">{s.label}</p>
+                    <p className="font-display text-3xl font-bold tracking-tight">{s.value}</p>
+                  </div>
+                ))}
+              </div>
 
-      {/* --- Анимация появления --- */}
-      <style jsx global>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        main {
-          animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-      `}</style>
+              {/* Main Section: Empty State */}
+              <div className="border-2 border-dashed border-white/5 rounded-[32px] p-20 flex flex-col items-center justify-center text-center">
+                <div className="w-16 h-16 bg-white/[0.03] rounded-full flex items-center justify-center mb-6 border border-white/5">
+                  <span className="text-2xl">⚡️</span>
+                </div>
+                <h2 className="font-display text-xl font-bold mb-2">Welcome to {companySlug}</h2>
+                <p className="text-white/30 text-xs font-light max-w-xs mx-auto mb-8 font-mono">
+                  Your workspace is clean. Add a competitor to start receiving signals.
+                </p>
+                <button className="px-6 py-3 border border-white/10 rounded-xl text-[10px] font-mono uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all">
+                  Add first competitor
+                </button>
+              </div>
+
+              {/* Bottom Row: Placeholders */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="border border-white/[0.07] rounded-2xl bg-white/[0.02] p-5">
+                   <p className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/30 mb-4">Activity Timeline</p>
+                   <div className="h-32 flex items-center justify-center text-white/10 text-[10px] font-mono uppercase tracking-widest">No data available</div>
+                </div>
+                <div className="border border-white/[0.07] rounded-2xl bg-white/[0.02] p-5">
+                   <p className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/30 mb-4">Signal distribution</p>
+                   <div className="h-32 flex items-center justify-center text-white/10 text-[10px] font-mono uppercase tracking-widest">No data available</div>
+                </div>
+              </div>
+
+            </div>
+          )}
+        </div>
+      </div>
+
     </div>
   );
 }
