@@ -24,18 +24,24 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const data = await apiRequest("/api/auth/login", {
+      const response = await apiRequest("/api/auth/login", {
         method: "POST",
         body: JSON.stringify(form),
       });
-      const user = data.user;
 
-      localStorage.setItem("access_token", data.access_token);
+      // ВАЖНО: берем данные из response.data
+      const payload = response.data; 
+      const user = payload.user;
+      const token = payload.access_token;
+
+      if (!user || !token) {
+        throw new Error("Invalid server response structure");
+      }
+
+      localStorage.setItem("access_token", token);
       router.push(`/dashboard/${user.tenant_slug}`);
     } catch (err: any) {
       setError(err.message);
-    } finally {
-      setLoading(false);
     }
   };
 

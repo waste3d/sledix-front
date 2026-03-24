@@ -25,24 +25,26 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      const data = await apiRequest("/api/auth/register", {
+      const response = await apiRequest("/api/auth/register", {
         method: "POST",
         body: JSON.stringify(form),
       });
 
-      const user = data.user;
+      // ВАЖНО: берем данные из response.data
+      const payload = response.data; 
+      const user = payload.user;
+      const token = payload.access_token;
 
-      
-      // Сохраняем access_token в localStorage (или в памяти/context)
-      localStorage.setItem("access_token", data.access_token);
-      router.push(`/dashboard/${user.tenant_slug}`); // Редирект в дашборд
+      if (!user || !token) {
+        throw new Error("Invalid server response structure");
+      }
+
+      localStorage.setItem("access_token", token);
+      router.push(`/dashboard/${user.tenant_slug}`);
     } catch (err: any) {
       setError(err.message);
-    } finally {
-      setLoading(false);
     }
   };
-
   return (
     <main className="min-h-screen bg-[#080809] text-white flex flex-col items-center justify-center p-6 font-sans">
       {/* Логотип */}
