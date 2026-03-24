@@ -1,5 +1,5 @@
 export async function apiRequest(endpoint: string, options: RequestInit = {}) {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+  const API_URL = "https://api.sledix.tech";
   
   const res = await fetch(`${API_URL}${endpoint}`, {
     ...options,
