@@ -30,21 +30,23 @@ export default function RegisterPage() {
         body: JSON.stringify(form),
       });
 
-      // ВАЖНО: берем данные из response.data
-      const payload = response.data; 
-      const user = payload.user;
-      const token = payload.access_token;
+      const payload = response.data || response;
 
-      if (!user || !token) {
-        throw new Error("Invalid server response structure");
+      if (!payload || !payload.user) {
+        console.error("Payload error:", response);
+        throw new Error("Неверный формат ответа от сервера");
       }
 
-      localStorage.setItem("access_token", token);
-      router.push(`/dashboard/${user.tenant_slug}`);
+      localStorage.setItem("access_token", payload.access_token);
+      router.push(`/dashboard/${payload.user.tenant_slug}`);
     } catch (err: any) {
+      console.error("Register error:", err);
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
+
   return (
     <main className="min-h-screen bg-[#080809] text-white flex flex-col items-center justify-center p-6 font-sans">
       {/* Логотип */}
