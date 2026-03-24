@@ -16,12 +16,12 @@ export default function DashboardPage() {
     const checkAccess = async () => {
       const token = localStorage.getItem("access_token"); // или твой способ хранения
       if (!token) {
-        router.push("/login");
+        router.push("/auth/login");
         return;
       }
 
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/dashboard/${companySlug}`, {
+        const response = await fetch(`https://api.sledix.tech/api/dashboard/${companySlug}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
