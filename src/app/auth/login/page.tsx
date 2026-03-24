@@ -28,7 +28,7 @@ export default function LoginPage() {
         method: "POST",
         body: JSON.stringify(form),
       });
-      const user = data.data.user;
+      const user = data.user;
 
       localStorage.setItem("access_token", data.access_token);
       router.push(`/dashboard/${user.tenant_slug}`);
