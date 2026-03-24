@@ -25,22 +25,19 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      const response = await apiRequest("/api/auth/register", {
+      const data = await apiRequest("/api/auth/register", {
         method: "POST",
         body: JSON.stringify(form),
       });
 
-      const payload = response.data || response;
-
-      if (!payload || !payload.user) {
-        console.error("Payload error:", response);
-        throw new Error("Неверный формат ответа от сервера");
+      // Твой apiRequest вернул payload.data, поэтому data — это { user, access_token }
+      if (!data || !data.user) {
+        throw new Error("Данные пользователя не найдены в ответе");
       }
 
-      localStorage.setItem("access_token", payload.access_token);
-      router.push(`/dashboard/${payload.user.tenant_slug}`);
+      localStorage.setItem("access_token", data.access_token);
+      router.push(`/dashboard/${data.user.tenant_slug}`);
     } catch (err: any) {
-      console.error("Register error:", err);
       setError(err.message);
     } finally {
       setLoading(false);

@@ -1,6 +1,7 @@
 // app/dashboard/[company]/page.tsx
 "use client";
 
+import { apiRequest } from "@/lib/api";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -14,29 +15,29 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const checkAccess = async () => {
-      const token = localStorage.getItem("access_token"); // или твой способ хранения
+      const token = localStorage.getItem("access_token");
+      
       if (!token) {
         router.push("/auth/login");
         return;
       }
 
       try {
-        const response = await fetch(`https://api.sledix.tech/api/dashboard/${companySlug}`, {
+        // Используем твой хелпер apiRequest
+        // Он сам подставит https://api.sledix.tech и вытащит поле .data
+        const data = await apiRequest(`/api/dashboard/${companySlug}`, {
+          method: "GET",
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
 
-        if (response.status === 403) {
-          setError("У вас нет доступа к этой компании.");
-          // Можно редиректнуть на "свой" дашборд через 2 секунды
-        } else if (!response.ok) {
-          throw new Error("Ошибка загрузки");
-        } else {
-          setIsLoading(false);
-        }
-      } catch (err) {
-        setError("Произошла ошибка при проверке доступа");
+        console.log("Доступ разрешен для:", data.company);
+        setIsLoading(false);
+      } catch (err: any) {
+        // Если apiRequest выкинет ошибку (например 403), мы попадем сюда
+        console.error("Dashboard error:", err);
+        setError(err.message === "Forbidden" ? "У вас нет доступа к этой компании." : err.message);
       }
     };
 
