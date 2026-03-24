@@ -1,7 +1,6 @@
-// app/dashboard/[company]/page.tsx
 "use client";
 
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "../../../lib/api"; 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -23,8 +22,6 @@ export default function DashboardPage() {
       }
 
       try {
-        // Используем твой хелпер apiRequest
-        // Он сам подставит https://api.sledix.tech и вытащит поле .data
         const data = await apiRequest(`/api/dashboard/${companySlug}`, {
           method: "GET",
           headers: {
@@ -32,12 +29,11 @@ export default function DashboardPage() {
           }
         });
 
-        console.log("Доступ разрешен для:", data.company);
+        console.log("Доступ подтвержден для компании:", data.company);
         setIsLoading(false);
       } catch (err: any) {
-        // Если apiRequest выкинет ошибку (например 403), мы попадем сюда
         console.error("Dashboard error:", err);
-        setError(err.message === "Forbidden" ? "У вас нет доступа к этой компании." : err.message);
+        setError(err.message);
       }
     };
 
