@@ -216,6 +216,30 @@ function DashboardView({ company }: any) {
 
 // --- Под-страница: Settings ---
 function SettingsView({ user, company }: any) {
+  const [email, setEmail] = useState(user?.email || "");
+  const [password, setPassword] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setMessage("");
+    try {
+      const token = localStorage.getItem("access_token");
+      await apiRequest("/api/auth/me", {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ email, password })
+      });
+      setMessage("Success: Settings updated.");
+      setPassword(""); // чистим поле пароля после смены
+    } catch (err: any) {
+      setMessage(`Error: ${err.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="border border-white/[0.07] rounded-2xl bg-white/[0.02] overflow-hidden">
@@ -225,33 +249,48 @@ function SettingsView({ user, company }: any) {
         <div className="p-6 space-y-5">
           <div>
             <p className="text-[10px] font-mono text-white/25 uppercase tracking-widest mb-2">Email Address</p>
-            <div className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white/50 font-mono">
-              {user?.email}
-            </div>
+            <input 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-white/20 transition-all font-mono"
+            />
           </div>
           <div>
-            <p className="text-[10px] font-mono text-white/25 uppercase tracking-widest mb-2">Workspace Slug</p>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white/50 font-mono italic">
-                {company}
-              </div>
-              <span className="text-white/10 font-mono text-xs">.sledix.tech</span>
-            </div>
+            <p className="text-[10px] font-mono text-white/25 uppercase tracking-widest mb-2">New Password (optional)</p>
+            <input 
+              type="password"
+              placeholder="Leave blank to keep current"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-white/20 transition-all font-mono"
+            />
           </div>
+          
+          {message && (
+            <p className={`text-[10px] font-mono uppercase ${message.startsWith('Error') ? 'text-red-400' : 'text-emerald-400'}`}>
+              {message}
+            </p>
+          )}
+
+          <button 
+            onClick={handleSave}
+            disabled={isSaving}
+            className="w-full bg-white text-black py-4 rounded-xl font-mono text-[10px] font-bold uppercase tracking-widest hover:bg-white/90 disabled:opacity-50 transition-all"
+          >
+            {isSaving ? "Saving..." : "Save Changes"}
+          </button>
         </div>
       </div>
 
-      <div className="border border-white/[0.07] rounded-2xl bg-white/[0.02] overflow-hidden">
-        <div className="px-5 py-4 border-b border-white/[0.06]">
-          <p className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/30">Plan & Usage</p>
-        </div>
+      {/* Удаление аккаунта — для полноты картины */}
+      <div className="border border-red-500/10 rounded-2xl bg-red-500/5 overflow-hidden">
         <div className="p-6 flex items-center justify-between">
           <div>
-            <p className="text-sm text-white/80 font-medium capitalize">{user?.plan || "Free"} Plan</p>
-            <p className="text-[11px] text-white/25 font-light mt-1">Unlimited signals, 3 competitors included.</p>
+            <p className="text-sm text-red-400/80 font-medium">Delete Workspace</p>
+            <p className="text-[10px] text-red-400/40 font-light mt-1 uppercase tracking-wider">Permanently remove all data.</p>
           </div>
-          <button className="px-5 py-2.5 border border-white/10 rounded-xl text-[10px] font-mono uppercase tracking-widest hover:bg-white hover:text-black transition-all">
-            Upgrade Plan
+          <button className="px-4 py-2 border border-red-500/20 rounded-lg text-[9px] font-mono text-red-400 uppercase hover:bg-red-500/10 transition-all">
+            Delete
           </button>
         </div>
       </div>
