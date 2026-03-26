@@ -22,7 +22,7 @@ function SledixLogo({ size = 22 }: { size?: number }) {
   );
 }
 
-// --- Вспомогательные компоненты ---
+// --- Вспомогательные компоненты UI ---
 function NavItem({ icon, label, active, onClick, badge }: any) {
   return (
     <button onClick={onClick} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 text-left ${active ? "bg-white/[0.08] text-white" : "text-white/35 hover:text-white/70 hover:bg-white/[0.04]"}`}>
@@ -37,56 +37,88 @@ function Skeleton({ className }: { className: string }) {
   return <div className={`animate-pulse bg-white/[0.03] rounded-2xl ${className}`} />;
 }
 
-// --- ОСНОВНОЙ КОМПОНЕНТ ---
+// --- ОСНОВНОЙ КОМПОНЕНТ СТРАНИЦЫ ---
 export default function DashboardPage() {
   const params = useParams();
   const router = useRouter();
   const companySlug = params.company as string;
 
-  // 1. Мгновенная проверка авторизации (до рендера)
+  // 1. Мгновенная блокировка неавторизованных (до рендера)
   if (typeof window !== "undefined" && !localStorage.getItem("access_token")) {
     window.location.href = "/auth/login";
     return null;
   }
 
+  // --- Состояние ---
   const [page, setPage] = useState("dashboard");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
-  const [tenantData, setTenantData] = useState<any>(null);
+  const [competitors, setCompetitors] = useState<any[]>([]);
+  
+  // Состояние модалки
+  const [showModal, setShowModal] = useState(false);
+  const [newCompName, setNewCompName] = useState("");
+  const [newCompUrl, setNewCompUrl] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
 
-  // 2. Загрузка данных
+  // --- Загрузка данных (Профиль + Конкуренты) ---
+  const fetchData = async () => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+
+    try {
+      const [userRes, compRes] = await Promise.all([
+        apiRequest(`/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } }),
+        apiRequest(`/api/competitors`, { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+      setUser(userRes);
+      setCompetitors(compRes || []);
+      setIsLoading(false);
+    } catch (err: any) {
+      console.error("Fetch error:", err);
+      setError(err.message);
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      const token = localStorage.getItem("access_token");
-      try {
-        const [dashRes, userRes] = await Promise.all([
-          apiRequest(`/api/dashboard/${companySlug}`, { headers: { Authorization: `Bearer ${token}` } }),
-          apiRequest(`/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
-        ]);
-        setTenantData(dashRes);
-        setUser(userRes);
-        setTimeout(() => setIsLoading(false), 400);
-      } catch (err: any) {
-        console.error(err);
-        setError(err.message);
-        setIsLoading(false);
-      }
-    };
     if (companySlug) fetchData();
   }, [companySlug]);
 
+  // --- Действия ---
   const handleLogout = async () => {
     localStorage.removeItem("access_token");
     try { await apiRequest("/api/auth/logout", { method: "POST" }); } catch {}
     window.location.href = "/auth/login";
   };
 
+  const handleAddCompetitor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAdding(true);
+    const token = localStorage.getItem("access_token");
+    try {
+      await apiRequest("/api/competitors", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: newCompName, website_url: newCompUrl })
+      });
+      setNewCompName("");
+      setNewCompUrl("");
+      setShowModal(false);
+      fetchData(); // Обновляем список
+    } catch (err: any) {
+      alert("Error adding competitor: " + err.message);
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
   if (error) return (
-    <div className="h-screen bg-[#060608] flex flex-col items-center justify-center text-white p-6 text-center">
+    <div className="h-screen bg-[#060608] flex flex-col items-center justify-center text-white p-6 text-center font-sans">
       <div className="border border-red-500/20 bg-red-500/5 p-8 rounded-3xl backdrop-blur-xl max-w-sm">
-        <p className="text-red-400 font-mono text-xs uppercase tracking-widest mb-4">Error: {error}</p>
-        <button onClick={() => window.location.reload()} className="w-full bg-white text-black py-3 rounded-xl font-mono text-xs font-bold uppercase tracking-widest">Retry</button>
+        <p className="text-red-400 font-mono text-xs uppercase tracking-widest mb-4">Critical Error: {error}</p>
+        <button onClick={() => window.location.reload()} className="w-full bg-white text-black py-3 rounded-xl font-mono text-xs font-bold uppercase tracking-widest">Retry Connection</button>
       </div>
     </div>
   );
@@ -113,9 +145,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-2 space-y-0.5">
+        <nav className="flex-1 px-3 py-4 space-y-0.5">
           <NavItem icon={Icons.dashboard}   label="Dashboard"    active={page==="dashboard"}   onClick={() => setPage("dashboard")}/>
-          <NavItem icon={Icons.competitors} label="Competitors"  active={page==="competitors"} onClick={() => setPage("competitors")}/>
+          <NavItem icon={Icons.competitors} label="Competitors"  active={page==="competitors"} onClick={() => setPage("competitors")} badge={competitors.length}/>
           <NavItem icon={Icons.signals}     label="Signals"      active={page==="signals"}     onClick={() => setPage("signals")} badge={0}/>
           <NavItem icon={Icons.battlecards} label="Battle cards" active={page==="battlecards"} onClick={() => setPage("battlecards")}/>
         </nav>
@@ -145,7 +177,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-1.5 text-[10px] font-mono text-white/25">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"/>Live
             </div>
-            <button className="text-[11px] tracking-[0.15em] uppercase bg-white text-[#060608] px-4 py-2 rounded-lg font-bold hover:bg-white/90 transition-colors font-mono">
+            <button onClick={() => setShowModal(true)} className="text-[11px] tracking-[0.15em] uppercase bg-white text-[#060608] px-4 py-2 rounded-lg font-bold hover:bg-white/90 transition-colors font-mono">
               + Add competitor
             </button>
           </div>
@@ -164,10 +196,12 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="animate-in fade-in duration-500 h-full">
-              {page === "dashboard" && <DashboardView company={companySlug} />}
+              {page === "dashboard" && <DashboardView count={competitors.length} onAdd={() => setShowModal(true)} />}
+              {page === "competitors" && <CompetitorsView competitors={competitors} />}
               {page === "settings" && <SettingsView user={user} company={companySlug} />}
-              {/* Остальные вкладки */}
-              {page !== "dashboard" && page !== "settings" && (
+              
+              {/* Placeholders for Signals & Battlecards */}
+              {(page === "signals" || page === "battlecards") && (
                 <div className="h-full flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-[32px]">
                    <p className="text-white/20 font-mono text-[10px] uppercase tracking-[0.3em]">Module {page} is being deployed</p>
                 </div>
@@ -176,17 +210,45 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* --- MODAL: Add Competitor --- */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+          <div className="bg-[#0f1012] border border-white/10 rounded-[32px] p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="font-display text-xl font-bold mb-2">Add Competitor</h3>
+            <p className="text-white/30 text-xs mb-6 font-mono uppercase tracking-widest">Autonomous monitoring start</p>
+            
+            <form onSubmit={handleAddCompetitor} className="space-y-4">
+              <div>
+                <p className="text-[10px] font-mono text-white/20 uppercase tracking-[0.2em] mb-2">Company Name</p>
+                <input required value={newCompName} onChange={e => setNewCompName(e.target.value)} placeholder="e.g. Crayon" className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-white/30 transition-all font-mono"/>
+              </div>
+              <div>
+                <p className="text-[10px] font-mono text-white/20 uppercase tracking-[0.2em] mb-2">Website URL</p>
+                <input required value={newCompUrl} onChange={e => setNewCompUrl(e.target.value)} placeholder="e.g. https://crayon.co" className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-white/30 transition-all font-mono"/>
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 border border-white/10 py-3 rounded-xl text-[10px] font-mono font-bold uppercase text-white/40 hover:text-white transition-all">Cancel</button>
+                <button type="submit" disabled={isAdding} className="flex-1 bg-white text-black py-3 rounded-xl text-[10px] font-mono font-bold uppercase hover:bg-white/90 disabled:opacity-50 transition-all">
+                  {isAdding ? "Deploying..." : "Add Monitor"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// --- Под-страница: Dashboard ---
-function DashboardView({ company }: any) {
+// --- SUB-VIEW: Dashboard ---
+function DashboardView({ count, onAdd }: any) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Competitors", value: "0" },
+          { label: "Competitors", value: count },
           { label: "Active Signals", value: "0" },
           { label: "AI Insights", value: "0" },
           { label: "System Status", value: "Optimal" },
@@ -200,21 +262,52 @@ function DashboardView({ company }: any) {
 
       <div className="border-2 border-dashed border-white/5 rounded-[32px] p-20 flex flex-col items-center justify-center text-center">
         <div className="w-16 h-16 bg-white/[0.03] rounded-full flex items-center justify-center mb-6 border border-white/5">
-          <span className="text-2xl animate-bounce">⚡️</span>
+          <span className="text-2xl">⚡️</span>
         </div>
-        <h2 className="font-display text-xl font-bold mb-2 text-white/80 tracking-tight">Your workspace is ready.</h2>
+        <h2 className="font-display text-xl font-bold mb-2 text-white/80 tracking-tight">Your workspace is active.</h2>
         <p className="text-white/20 text-xs font-mono max-w-xs mb-8 leading-relaxed">
-          Sledix is autonomous. Add your first competitor to start monitoring signals and building intelligence.
+          {count > 0 ? "Monitoring is in progress. Intelligence will appear as signals are detected." : "Start by adding your first competitor to enable real-time tracking."}
         </p>
-        <button className="px-8 py-4 bg-white text-black rounded-2xl text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-white/90 transition-all">
-          Deploy Monitor
+        <button onClick={onAdd} className="px-8 py-4 bg-white text-black rounded-2xl text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-white/90 transition-all">
+          {count > 0 ? "Add Another" : "Add First Competitor"}
         </button>
       </div>
     </div>
   );
 }
 
-// --- Под-страница: Settings ---
+// --- SUB-VIEW: Competitors List ---
+function CompetitorsView({ competitors }: any) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      {competitors.length === 0 ? (
+        <div className="col-span-full border-2 border-dashed border-white/5 rounded-[32px] p-20 text-center text-white/20 font-mono text-[10px] uppercase tracking-[0.3em]">
+           No monitors deployed yet.
+        </div>
+      ) : (
+        competitors.map((c: any) => (
+          <div key={c.id} className="border border-white/[0.07] rounded-2xl p-5 bg-white/[0.02] hover:border-white/15 transition-all group">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-lg font-bold text-white/20 group-hover:text-white/40 transition-colors">
+                {c.name[0]}
+              </div>
+              <div>
+                <h4 className="font-display font-bold text-sm">{c.name}</h4>
+                <p className="text-[10px] text-white/30 font-mono truncate max-w-[150px]">{c.website_url}</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between pt-4 border-t border-white/5">
+              <span className="text-[9px] font-mono uppercase text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">Active</span>
+              <button className="text-[9px] font-mono uppercase text-white/20 hover:text-white transition-colors">Explore Intelligence →</button>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+// --- SUB-VIEW: Settings ---
 function SettingsView({ user, company }: any) {
   const [email, setEmail] = useState(user?.email || "");
   const [password, setPassword] = useState("");
@@ -232,7 +325,7 @@ function SettingsView({ user, company }: any) {
         body: JSON.stringify({ email, password })
       });
       setMessage("Success: Settings updated.");
-      setPassword(""); // чистим поле пароля после смены
+      setPassword("");
     } catch (err: any) {
       setMessage(`Error: ${err.message}`);
     } finally {
@@ -241,7 +334,7 @@ function SettingsView({ user, company }: any) {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div className="border border-white/[0.07] rounded-2xl bg-white/[0.02] overflow-hidden">
         <div className="px-5 py-4 border-b border-white/[0.06]">
           <p className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/30">Profile Settings</p>
@@ -249,49 +342,31 @@ function SettingsView({ user, company }: any) {
         <div className="p-6 space-y-5">
           <div>
             <p className="text-[10px] font-mono text-white/25 uppercase tracking-widest mb-2">Email Address</p>
-            <input 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-white/20 transition-all font-mono"
-            />
+            <input value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-white/20 transition-all font-mono"/>
           </div>
           <div>
             <p className="text-[10px] font-mono text-white/25 uppercase tracking-widest mb-2">New Password (optional)</p>
-            <input 
-              type="password"
-              placeholder="Leave blank to keep current"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-white/20 transition-all font-mono"
-            />
+            <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-white/20 transition-all font-mono"/>
           </div>
           
-          {message && (
-            <p className={`text-[10px] font-mono uppercase ${message.startsWith('Error') ? 'text-red-400' : 'text-emerald-400'}`}>
-              {message}
-            </p>
-          )}
+          {message && <p className={`text-[10px] font-mono uppercase ${message.startsWith('Error') ? 'text-red-400' : 'text-emerald-400'}`}>{message}</p>}
 
-          <button 
-            onClick={handleSave}
-            disabled={isSaving}
-            className="w-full bg-white text-black py-4 rounded-xl font-mono text-[10px] font-bold uppercase tracking-widest hover:bg-white/90 disabled:opacity-50 transition-all"
-          >
+          <button onClick={handleSave} disabled={isSaving} className="w-full bg-white text-black py-4 rounded-xl font-mono text-[10px] font-bold uppercase tracking-widest hover:bg-white/90 disabled:opacity-50 transition-all">
             {isSaving ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </div>
 
-      {/* Удаление аккаунта — для полноты картины */}
-      <div className="border border-red-500/10 rounded-2xl bg-red-500/5 overflow-hidden">
+      <div className="border border-white/[0.07] rounded-2xl bg-white/[0.02] overflow-hidden">
+        <div className="px-5 py-4 border-b border-white/[0.06]">
+          <p className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/30">Subscription & Plan</p>
+        </div>
         <div className="p-6 flex items-center justify-between">
           <div>
-            <p className="text-sm text-red-400/80 font-medium">Delete Workspace</p>
-            <p className="text-[10px] text-red-400/40 font-light mt-1 uppercase tracking-wider">Permanently remove all data.</p>
+            <p className="text-sm text-white/80 font-medium capitalize">{user?.plan || "Free"} Plan</p>
+            <p className="text-[11px] text-white/25 font-light mt-1">Growth ready. Track up to 3 competitors simultaneously.</p>
           </div>
-          <button className="px-4 py-2 border border-red-500/20 rounded-lg text-[9px] font-mono text-red-400 uppercase hover:bg-red-500/10 transition-all">
-            Delete
-          </button>
+          <button className="px-5 py-2.5 border border-white/10 rounded-xl text-[10px] font-mono uppercase tracking-widest hover:bg-white hover:text-black transition-all">Upgrade</button>
         </div>
       </div>
     </div>
