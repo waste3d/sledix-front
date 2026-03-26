@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiRequest } from "../../../lib/api";
 import Link from "next/link";
@@ -54,37 +54,38 @@ export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [competitors, setCompetitors] = useState<any[]>([]);
   
-  // Состояние модалки и поиска
+  // Состояние модалки
   const [showModal, setShowModal] = useState(false);
   const [newCompName, setNewCompName] = useState("");
   const [newCompUrl, setNewCompUrl] = useState("");
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
   
-  const [companySuggestions, setCompanySuggestions] = useState<any[]>([]);
+  const [businessSuggestions, setBusinessSuggestions] = useState<any[]>([]);
   const [citySuggestions, setCitySuggestions] = useState<any[]>([]);
   const [isAdding, setIsAdding] = useState(false);
 
-  // --- ЛОГИКА ПОИСКА КОМПАНИЙ ---
-  const searchCompany = async (query: string) => {
+  // --- ПОИСК КОМПАНИЙ / БИЗНЕСОВ (OSM) ---
+  const searchBusiness = async (query: string) => {
     setNewCompName(query);
-    if (query.length < 2) { setCompanySuggestions([]); return; }
+    if (query.length < 2) { setBusinessSuggestions([]); return; }
     try {
-      const res = await fetch(`https://autocomplete.clearbit.com/v1/companies/suggest?query=${query}`);
+      // Ищем объекты (POI) с учетом кириллицы
+      const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&lang=ru`);
       const data = await res.json();
-      setCompanySuggestions(data);
-    } catch (e) { console.error("Company search error", e); }
+      setBusinessSuggestions(data.features || []);
+    } catch (e) { console.error(e); }
   };
 
-  // --- ЛОГИКА ПОИСКА ГОРОДОВ ---
+  // --- ПОИСК ЛОКАЦИЙ ---
   const searchLocation = async (query: string) => {
     setCity(query);
     if (query.length < 2) { setCitySuggestions([]); return; }
     try {
-      const res = await fetch(`https://photon.komoot.io/api/?q=${query}&type=city`);
+      const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&lang=ru&type=city`);
       const data = await res.json();
       setCitySuggestions(data.features || []);
-    } catch (e) { console.error("Location search error", e); }
+    } catch (e) { console.error(e); }
   };
 
   const fetchData = async () => {
@@ -152,7 +153,7 @@ export default function DashboardPage() {
             <div className="w-5 h-5 rounded-md bg-white/10 flex items-center justify-center text-[9px] font-bold uppercase">{companySlug[0]}</div>
             <div className="flex-1 min-w-0">
               <p className="text-[11px] font-medium text-white truncate">{companySlug}</p>
-              <p className="text-[9px] text-white/25 font-mono uppercase">{user?.plan || "..."} plan</p>
+              <p className="text-[9px] text-white/25 font-mono uppercase">{user?.plan || "..."}</p>
             </div>
           </div>
         </div>
@@ -187,50 +188,54 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* --- МОДАЛКА С УМНЫМ ПОИСКОМ --- */}
+      {/* --- МОДАЛКА С УЛУЧШЕННЫМ ПОИСКОМ --- */}
       {showModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="bg-[#0f1012] border border-white/10 rounded-[32px] p-8 w-full max-w-md shadow-2xl relative overflow-visible">
-            <h3 className="font-display text-xl font-bold mb-1">Deploy Intelligence</h3>
-            <p className="text-white/30 text-[10px] mb-6 font-mono uppercase tracking-[0.2em]">Add competitor for monitoring</p>
+          <div className="bg-[#0f1012] border border-white/10 rounded-[32px] p-8 w-full max-w-md shadow-2xl relative">
+            <h3 className="font-display text-xl font-bold mb-1 text-white">Deploy Intelligence</h3>
+            <p className="text-white/20 text-[10px] mb-6 font-mono uppercase tracking-[0.2em]">Start autonomous monitoring</p>
             
             <form onSubmit={handleAddCompetitor} className="space-y-5">
               
-              {/* Поиск компании */}
+              {/* Поиск Компании / Бизнеса */}
               <div className="relative">
-                <p className="text-[10px] font-mono text-white/20 uppercase tracking-widest mb-2">Company Name</p>
-                <input required value={newCompName} onChange={e => searchCompany(e.target.value)} placeholder="e.g. Stripe" className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-white/30 transition-all font-mono"/>
+                <p className="text-[10px] font-mono text-white/20 uppercase tracking-widest mb-2">Company / Business Name</p>
+                <input required value={newCompName} onChange={e => searchBusiness(e.target.value)} placeholder="БУКЕТ-СБ, Apple, и т.д." className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-white/30 transition-all font-mono"/>
                 
-                {companySuggestions.length > 0 && (
+                {businessSuggestions.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-[#16171a] border border-white/10 rounded-xl overflow-hidden z-[70] shadow-2xl">
-                    {companySuggestions.map((s, i) => (
-                      <button key={i} type="button" onClick={() => { setNewCompName(s.name); setNewCompUrl(s.domain); setCompanySuggestions([]); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 border-b border-white/5 last:border-0 text-left">
-                        <img src={s.logo} className="w-6 h-6 rounded" alt="" />
-                        <div>
-                          <p className="text-xs text-white font-medium">{s.name}</p>
-                          <p className="text-[10px] text-white/30 font-mono">{s.domain}</p>
-                        </div>
+                    {businessSuggestions.slice(0, 5).map((s, i) => (
+                      <button key={i} type="button" onClick={() => { 
+                          setNewCompName(s.properties.name || s.properties.city); 
+                          setBusinessSuggestions([]); 
+                        }} className="w-full flex flex-col gap-0.5 px-4 py-3 hover:bg-white/5 border-b border-white/5 last:border-0 text-left">
+                        <span className="text-xs text-white font-medium">{s.properties.name}</span>
+                        <span className="text-[9px] text-white/20 font-mono uppercase">{s.properties.country} {s.properties.city ? `· ${s.properties.city}` : ''}</span>
                       </button>
                     ))}
                   </div>
                 )}
               </div>
 
-              {/* URL (подставляется сам) */}
+              {/* Website URL */}
               <div>
                 <p className="text-[10px] font-mono text-white/20 uppercase tracking-widest mb-2">Website URL</p>
-                <input required value={newCompUrl} onChange={e => setNewCompUrl(e.target.value)} placeholder="https://..." className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white/40 outline-none focus:border-white/30 transition-all font-mono"/>
+                <input required value={newCompUrl} onChange={e => setNewCompUrl(e.target.value)} placeholder="https://company.com" className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-white/30 transition-all font-mono"/>
               </div>
 
               {/* Поиск города */}
               <div className="relative">
-                <p className="text-[10px] font-mono text-white/20 uppercase tracking-widest mb-2">Primary GEO (City)</p>
-                <input required value={city} onChange={e => searchLocation(e.target.value)} placeholder="e.g. New York, Berlin..." className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-white/30 transition-all font-mono"/>
+                <p className="text-[10px] font-mono text-white/20 uppercase tracking-widest mb-2">Target Location</p>
+                <input required value={city} onChange={e => searchLocation(e.target.value)} placeholder="Сосновый Бор, Moscow..." className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-white/30 transition-all font-mono"/>
                 
                 {citySuggestions.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-[#16171a] border border-white/10 rounded-xl overflow-hidden z-[60] shadow-2xl">
-                    {citySuggestions.map((feat: any, i: number) => (
-                      <button key={i} type="button" onClick={() => { setCity(feat.properties.name); setCountry(feat.properties.country); setCitySuggestions([]); }} className="w-full text-left px-4 py-3 hover:bg-white/5 text-xs border-b border-white/5 last:border-0">
+                    {citySuggestions.slice(0, 5).map((feat: any, i: number) => (
+                      <button key={i} type="button" onClick={() => { 
+                          setCity(feat.properties.name); 
+                          setCountry(feat.properties.country); 
+                          setCitySuggestions([]); 
+                        }} className="w-full text-left px-4 py-3 hover:bg-white/5 text-xs border-b border-white/5 last:border-0">
                         <span className="text-white">{feat.properties.name}</span>
                         <span className="text-white/20 ml-2">{feat.properties.country}</span>
                       </button>
@@ -264,9 +269,9 @@ function DashboardView({ count, onAdd }: any) {
         ))}
       </div>
       <div className="border-2 border-dashed border-white/5 rounded-[32px] p-20 flex flex-col items-center justify-center text-center">
-        <h2 className="font-display text-xl font-bold mb-2 text-white/80">Autonomous Mode Active</h2>
-        <p className="text-white/20 text-xs font-mono max-w-xs mb-8">Add competitors to start real-time monitoring and data extraction.</p>
-        <button onClick={onAdd} className="px-8 py-4 bg-white text-black rounded-2xl text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-white/90 transition-all">Deploy First Monitor</button>
+        <h2 className="font-display text-xl font-bold mb-2 text-white/80 tracking-tight">Autonomous Mode Active</h2>
+        <p className="text-white/20 text-xs font-mono max-w-xs mb-8 leading-relaxed">Monitoring is pending. Add more competitors to increase intelligence density.</p>
+        <button onClick={onAdd} className="px-8 py-4 bg-white text-black rounded-2xl text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-white/90 transition-all">Deploy Monitor</button>
       </div>
     </div>
   );
@@ -282,15 +287,15 @@ function CompetitorsView({ competitors }: any) {
         competitors.map((c: any) => (
           <div key={c.id} className="border border-white/[0.07] rounded-2xl p-5 bg-white/[0.02] hover:border-white/15 transition-all group">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-lg font-bold text-white/20">{c.name[0]}</div>
+              <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-lg font-bold text-white/20 uppercase">{c.name[0]}</div>
               <div>
                 <h4 className="font-display font-bold text-sm">{c.name}</h4>
                 <p className="text-[10px] text-white/30 font-mono truncate max-w-[150px]">{c.website_url}</p>
               </div>
             </div>
             <div className="flex items-center gap-2 mb-4">
-                 <span className="text-[8px] bg-white/5 text-white/40 px-2 py-0.5 rounded uppercase font-mono tracking-wider">{c.city || 'Global'}</span>
-                 <span className="text-[8px] bg-white/5 text-white/40 px-2 py-0.5 rounded uppercase font-mono tracking-wider">{c.country || ''}</span>
+                 <span className="text-[8px] bg-white/5 text-white/40 px-2 py-0.5 rounded uppercase font-mono">{c.city || 'Global'}</span>
+                 <span className="text-[8px] bg-white/5 text-white/40 px-2 py-0.5 rounded uppercase font-mono">{c.country || ''}</span>
             </div>
             <div className="flex items-center justify-between pt-4 border-t border-white/5">
               <span className="text-[9px] font-mono uppercase text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">Tracking</span>
