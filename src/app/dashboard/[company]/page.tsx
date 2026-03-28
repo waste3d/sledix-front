@@ -74,16 +74,6 @@ export default function DashboardPage() {
   const [partySuggestions, setPartySuggestions] = useState<any[]>([]);
   const [citySuggestions, setCitySuggestions] = useState<any[]>([]);
 
-  // Генерация сигналов на основе конкурентов
-  const generateSignals = (comps: any[]) => {
-    if (comps.length === 0) return [];
-    return comps.flatMap((c, index) => {
-      return [
-        { ...SIGNAL_TEMPLATES[index % SIGNAL_TEMPLATES.length], company: c.name, time: "2m ago", id: Math.random() },
-        { ...SIGNAL_TEMPLATES[(index + 1) % SIGNAL_TEMPLATES.length], company: c.name, time: "1h ago", id: Math.random() }
-      ];
-    }).sort(() => Math.random() - 0.5);
-  };
 
   const searchParty = async (query: string) => {
     setNewCompName(query);
@@ -116,13 +106,14 @@ export default function DashboardPage() {
   const fetchData = async () => {
     const token = localStorage.getItem("access_token");
     try {
-      const [uRes, cRes] = await Promise.all([
+      const [uRes, cRes, sRes] = await Promise.all([
         apiRequest(`/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } }),
-        apiRequest(`/api/competitors`, { headers: { Authorization: `Bearer ${token}` } })
+        apiRequest(`/api/competitors`, { headers: { Authorization: `Bearer ${token}` } }),
+        apiRequest(`/api/signals`, { headers: { Authorization: `Bearer ${token}` } }) // Новый запрос
       ]);
       setUser(uRes);
       setCompetitors(cRes || []);
-      setFakeSignals(generateSignals(cRes || []));
+      setFakeSignals(sRes || []); // Теперь это реальные сигналы из базы
       setIsLoading(false);
     } catch (err) { setIsLoading(false); }
   };
