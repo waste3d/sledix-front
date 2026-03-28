@@ -368,50 +368,60 @@ function CompetitorsView({ competitors, signals, onDelete, onSelect }: any) {
   );
 }
 
-function CompetitorDetailsView({ comp, signals, onDelete, onBack }: any) {
-  return (
-    <div className="animate-in slide-in-from-bottom-2 duration-700 space-y-8 max-w-[1100px]">
-      <div className="flex justify-between items-center">
-        <button onClick={onBack} className="text-[10px] font-mono text-white/30 hover:text-white flex items-center gap-3 uppercase tracking-[0.2em] transition-all">
-          <span className="text-lg">←</span> Back to center
-        </button>
-        <button onClick={(e) => onDelete(e, comp.id)} className="text-[10px] font-mono text-red-500/40 hover:text-red-500 uppercase flex items-center gap-2 px-4 py-2 rounded-xl border border-red-500/10 hover:bg-red-500/5 transition-all">
-          {Icons.trash} Purge Monitor
-        </button>
-      </div>
-      
-      <div className="grid grid-cols-3 gap-8">
-        <div className="col-span-1 border border-white/[0.07] rounded-[32px] p-8 bg-white/[0.01]">
-           <div className="w-20 h-20 bg-white/5 rounded-[24px] flex items-center justify-center text-4xl font-bold text-white/10 uppercase font-mono mb-8">{comp.name[0]}</div>
-           <h2 className="font-display text-3xl font-bold mb-2">{comp.name}</h2>
-           <p className="text-sm text-white/30 font-mono mb-10 border-b border-white/5 pb-6">{comp.website_url}</p>
-           
-           <div className="space-y-6 pt-2">
-              <div><p className="text-[10px] font-mono text-white/20 uppercase mb-1.5 tracking-widest">Tax Identity / INN</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-3 rounded-xl border border-white/5">{comp.inn || 'NOT IDENTIFIED'}</p></div>
-              <div><p className="text-[10px] font-mono text-white/20 uppercase mb-1.5 tracking-widest">Geographical Node</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-3 rounded-xl border border-white/5">{comp.city || 'GLOBAL'}</p></div>
-              <div className="pt-4"><div className="text-center p-4 border border-emerald-400/20 bg-emerald-400/5 rounded-2xl"><p className="text-[10px] text-emerald-400 font-mono font-bold uppercase tracking-widest">Actively Streaming</p></div></div>
-           </div>
-        </div>
+function CompetitorDetailsView({ comp, signals, onBack }: any) {
+  const [socialUrl, setSocialUrl] = useState("");
+  const [platform, setPlatform] = useState("telegram");
+  const [interval, setInterval] = useState(60);
+  const [isLinking, setIsLinking] = useState(false);
 
-        <div className="col-span-2 border border-white/[0.07] rounded-[32px] bg-[#08080a] overflow-hidden flex flex-col h-[600px]">
-           <div className="px-8 py-6 border-b border-white/[0.06] flex justify-between items-center bg-white/[0.01]">
-              <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">Target Activity Log</p>
-              <span className="text-[10px] font-mono text-white/20 uppercase">{signals.length} Entries</span>
-           </div>
-           <div className="divide-y divide-white/[0.04] overflow-auto custom-scrollbar">
-              {signals.map((s: any) => (
-                <div key={s.id} className="p-8 hover:bg-white/[0.01] transition-all">
-                   <div className="flex justify-between items-center mb-3">
-                      <SignalBadge label={s.tag} />
-                      <span className="text-[10px] font-mono text-white/10 uppercase">{getRelativeTime(s.created_at)}</span>
+  const handleLink = async () => {
+    setIsLinking(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      await apiRequest(`/api/competitors/${comp.id}/socials`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ platform, url: socialUrl, interval })
+      });
+      alert("Source connected. Tracking will start shortly.");
+      setSocialUrl("");
+    } catch (e) { alert("Failed to connect"); }
+    setIsLinking(false);
+  };
+
+  return (
+    <div className="animate-in fade-in duration-500 space-y-6">
+       {/* ... существующий код шапки и досье ... */}
+
+       <div className="grid grid-cols-3 gap-8">
+          <div className="border border-white/[0.06] rounded-[32px] p-8 bg-white/[0.01] h-fit">
+             <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-6">Connect Intelligence</p>
+             <div className="space-y-4">
+                <select value={platform} onChange={e => setPlatform(e.target.value)} className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none">
+                   <option value="telegram">Telegram Channel</option>
+                   <option value="vk">VK Community</option>
+                </select>
+                <input value={socialUrl} onChange={e => setSocialUrl(e.target.value)} placeholder="URL (e.g. t.me/sledix)" className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-xs text-white font-mono outline-none"/>
+                <div className="pt-2">
+                   <p className="text-[9px] font-mono text-white/20 uppercase mb-2 ml-1">Scan Interval</p>
+                   <div className="flex gap-2">
+                      {[30, 60, 360].map(v => (
+                         <button key={v} onClick={() => setInterval(v)} className={`flex-1 py-2 rounded-lg text-[9px] font-mono border ${interval === v ? 'border-white text-white' : 'border-white/5 text-white/20'}`}>
+                            {v < 60 ? `${v}m` : `${v/60}h`}
+                         </button>
+                      ))}
                    </div>
-                   <p className="text-xs text-white/60 leading-relaxed font-light">{s.msg}</p>
                 </div>
-              ))}
-              {signals.length === 0 && <div className="p-32 text-center text-white/10 font-mono uppercase text-xs tracking-tighter">Initializing data ingestion protocol...</div>}
-           </div>
-        </div>
-      </div>
+                <button onClick={handleLink} disabled={isLinking} className="w-full bg-white text-black py-4 rounded-xl font-mono text-[10px] font-bold uppercase tracking-widest hover:bg-white/90 transition-all mt-4">
+                   Deploy Observer
+                </button>
+             </div>
+          </div>
+
+          <div className="col-span-2 border border-white/[0.06] rounded-[32px] bg-[#08080a] overflow-hidden flex flex-col h-[500px]">
+             {/* Сюда вставляем твою ленту сигналов signals.map(...) */}
+          </div>
+       </div>
     </div>
   );
 }
@@ -469,7 +479,7 @@ function SettingsView({ user }: any) {
            <p className="text-[10px] font-mono text-white/20 uppercase tracking-widest ml-1">Security Token</p>
            {showPass ? (
               <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
-                 <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="New Cipher Password" className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm text-white font-mono outline-none focus:border-white/30"/>
+                 <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="New Password" className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm text-white font-mono outline-none focus:border-white/30"/>
                  <button onClick={() => setShowPass(false)} className="text-[10px] font-mono text-white/20 hover:text-white uppercase tracking-widest transition-colors ml-1">Abort change</button>
               </div>
            ) : (
