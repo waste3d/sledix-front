@@ -15,6 +15,17 @@ const Icons = {
   trash: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M2 4h12M5 4V2.5c0-.3.2-.5.5-.5h5c.3 0 .5.2.5.5V4M6 7v5M10 7v5M3 4l1 10c0 .6.4 1 1 1h6c.6 0 1-.4 1-1l1-10"/></svg>
 };
 
+function SledixLogo({ size = 28 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
+      <path
+        d="M76 32 C76 20 64 14 52 18 C40 22 36 32 42 40 C48 48 68 50 74 60 C80 70 74 84 60 88 C46 92 36 84 36 74"
+        stroke="currentColor" strokeWidth="8" strokeLinecap="square" fill="none"
+      />
+    </svg>
+  );
+}
+
 export default function DashboardPage() {
   const params = useParams();
   const router = useRouter();
@@ -104,7 +115,7 @@ export default function DashboardPage() {
       
       <aside className="w-56 shrink-0 flex flex-col border-r border-white/[0.06]">
         <div className="h-14 flex items-center gap-2.5 px-4 border-b border-white/[0.06]">
-           <img src="/logo.svg" alt="Sledix" className="w-6 h-6" /><span className="font-display font-bold text-sm tracking-tight">Sledix</span>
+           <SledixLogo /> <span className="font-display font-bold text-sm tracking-tight">Sledix</span>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-0.5">
           <button onClick={() => setPage("dashboard")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="dashboard"?"bg-white/[0.08] text-white":"text-white/35 hover:text-white/70"}`}>{Icons.dashboard} Dashboard</button>
