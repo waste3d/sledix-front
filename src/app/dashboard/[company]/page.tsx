@@ -364,28 +364,48 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack }: any) {
   const [platform, setPlatform] = useState("telegram");
   const [socials, setSocials] = useState<any[]>([]);
   const [isLinking, setIsLinking] = useState(false);
+  const [msg, setMsg] = useState({ text: "", type: "" }); // Сообщения об успехе/ошибке
 
   const fetchSocials = async () => {
     try {
       const token = localStorage.getItem("access_token");
       const data = await apiRequest(`/api/competitors/${comp.id}/socials`, { headers: { Authorization: `Bearer ${token}` } });
       setSocials(data || []);
-    } catch (e) {}
+    } catch (e) { console.error("Failed to load socials", e); }
   };
 
   useEffect(() => { fetchSocials(); }, [comp.id]);
 
   const handleLink = async () => {
-    if (!socialUrl) return;
+    if (!socialUrl) {
+        setMsg({ text: "Please enter a URL", type: "error" });
+        return;
+    }
+    
     setIsLinking(true);
+    setMsg({ text: "", type: "" });
+
     try {
       const token = localStorage.getItem("access_token");
-      await apiRequest(`/api/competitors/${comp.id}/socials`, {
-        method: "POST", headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ platform, url: socialUrl, interval: 60 })
+      const res = await apiRequest(`/api/competitors/${comp.id}/socials`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ 
+            platform: platform, 
+            url: socialUrl.trim(), 
+            interval: 60 // 1 hour by default
+        })
       });
-      setSocialUrl(""); fetchSocials();
-    } catch (e) {} finally { setIsLinking(false); }
+
+      setMsg({ text: "Successfully linked!", type: "success" });
+      setSocialUrl("");
+      fetchSocials(); // Сразу обновляем список
+    } catch (e: any) {
+      console.error("Link error:", e);
+      setMsg({ text: e.message || "Failed to link source", type: "error" });
+    } finally {
+      setIsLinking(false);
+    }
   };
 
   return (
@@ -396,41 +416,71 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack }: any) {
       </div>
       
       <div className="grid grid-cols-3 gap-8">
+        {/* Левая панель: Инфо + Добавление ресурсов */}
         <div className="col-span-1 space-y-6">
            <div className="border border-white/[0.07] rounded-[32px] p-8 bg-white/[0.01]">
               <div className="w-16 h-16 bg-white/5 rounded-[20px] flex items-center justify-center text-3xl font-bold text-white/10 uppercase font-mono mb-6">{comp.name[0]}</div>
               <h2 className="font-display text-2xl font-bold mb-1">{comp.name}</h2>
               <p className="text-sm text-white/30 font-mono mb-8">{comp.website_url}</p>
               <div className="space-y-4 pt-4 border-t border-white/5">
-                 <div><p className="text-[9px] font-mono text-white/20 uppercase mb-1">INN / Tax ID</p><p className="text-sm font-mono text-white/60">{comp.inn || 'Not provided'}</p></div>
-                 <div><p className="text-[9px] font-mono text-white/20 uppercase mb-1">Region</p><p className="text-sm font-mono text-white/60">{comp.city || 'Global'}</p></div>
+                 <div><p className="text-[9px] font-mono text-white/20 uppercase mb-1">INN</p><p className="text-sm font-mono text-white/60">{comp.inn || 'NOT FOUND'}</p></div>
+                 <div><p className="text-[9px] font-mono text-white/20 uppercase mb-1">Region</p><p className="text-sm font-mono text-white/60">{comp.city || 'GLOBAL'}</p></div>
               </div>
            </div>
 
+           {/* Секция привязки соцсетей */}
            <div className="border border-white/[0.06] rounded-[32px] p-8 bg-white/[0.01]">
-              <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-6">Linked Sources</p>
-              <div className="space-y-4 mb-8">
+              <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-6">Link Observer</p>
+              
+              {/* Список уже привязанных */}
+              <div className="space-y-3 mb-8">
                  {socials.map((s: any) => (
-                    <div key={s.id} className="p-4 border border-white/5 rounded-2xl bg-white/[0.02]">
-                       <p className="text-[10px] text-white/60 uppercase font-mono mb-1">{s.platform}</p>
-                       <p className="text-[10px] text-white/20 truncate">{s.url}</p>
+                    <div key={s.id} className="p-4 border border-white/5 rounded-2xl bg-white/[0.02] flex justify-between items-center">
+                       <div>
+                          <p className="text-[10px] text-white/60 uppercase font-mono">{s.platform}</p>
+                          <p className="text-[9px] text-white/20 truncate max-w-[140px]">{s.url}</p>
+                       </div>
+                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 animate-pulse"/>
                     </div>
                  ))}
-                 {socials.length === 0 && <p className="text-[10px] text-white/10 uppercase text-center font-mono">No observers linked</p>}
               </div>
-              <div className="space-y-3">
-                 <select value={platform} onChange={e => setPlatform(e.target.value)} className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none">
-                    <option value="telegram">Telegram</option>
-                    <option value="vk">VK.com</option>
-                 </select>
-                 <input value={socialUrl} onChange={e => setSocialUrl(e.target.value)} placeholder="URL..." className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none font-mono"/>
-                 <button onClick={handleLink} disabled={isLinking} className="w-full bg-white text-black py-3 rounded-xl font-mono text-[10px] font-bold uppercase hover:bg-white/90 transition-all">Link Observer</button>
+
+              {/* Форма добавления */}
+              <div className="space-y-4">
+                 <div>
+                    <p className="text-[9px] font-mono text-white/20 uppercase mb-2 ml-1">Platform</p>
+                    <select value={platform} onChange={e => setPlatform(e.target.value)} className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none">
+                        <option value="telegram">Telegram</option>
+                        <option value="vk">VK.com</option>
+                    </select>
+                 </div>
+                 <div>
+                    <p className="text-[9px] font-mono text-white/20 uppercase mb-2 ml-1">Profile/Channel URL</p>
+                    <input 
+                      value={socialUrl} 
+                      onChange={e => setSocialUrl(e.target.value)} 
+                      placeholder={platform === 'telegram' ? 't.me/username' : 'vk.com/group'} 
+                      className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none font-mono focus:border-white/30 transition-all"
+                    />
+                    <p className="text-[8px] text-white/10 mt-2 ml-1 font-mono uppercase italic">Use public links only</p>
+                 </div>
+
+                 {msg.text && (
+                    <p className={`text-[9px] font-mono uppercase ${msg.type === 'error' ? 'text-red-400' : 'text-emerald-400'}`}>
+                        {msg.text}
+                    </p>
+                 )}
+
+                 <button onClick={handleLink} disabled={isLinking} className="w-full bg-white text-black py-4 rounded-2xl font-mono text-[10px] font-bold uppercase hover:bg-white/90 disabled:opacity-50 transition-all shadow-xl">
+                    {isLinking ? "Deploying..." : "Link Observer"}
+                 </button>
               </div>
            </div>
         </div>
 
-        <div className="col-span-2 border border-white/[0.07] rounded-[32px] bg-[#08080a] overflow-hidden flex flex-col h-[700px]">
-           <div className="px-8 py-6 border-b border-white/[0.06] bg-white/[0.01] flex justify-between items-center"><p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">Target History</p></div>
+        {/* Правая панель: Лента событий */}
+        <div className="col-span-2 border border-white/[0.07] rounded-[32px] bg-[#08080a] overflow-hidden flex flex-col h-[750px]">
+           <div className="px-8 py-6 border-b border-white/[0.06] bg-white/[0.01] flex justify-between items-center"><p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">Intelligence Log</p></div>
            <div className="divide-y divide-white/[0.04] overflow-auto custom-scrollbar">
               {signals.map((s: any) => (
                 <div key={s.id} className="p-8 hover:bg-white/[0.01] transition-all">
@@ -438,6 +488,11 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack }: any) {
                    <p className="text-xs text-white/60 leading-relaxed font-light">{s.msg}</p>
                 </div>
               ))}
+              {signals.length === 0 && (
+                <div className="p-40 text-center flex flex-col items-center gap-4">
+                    <p className="text-white/10 font-mono uppercase text-[10px] tracking-widest animate-pulse">Initializing data streams...</p>
+                </div>
+              )}
            </div>
         </div>
       </div>
