@@ -1,68 +1,34 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiRequest } from "../../../lib/api";
 
 const DADATA_KEY = "4affb62ba89180ef3405454f9a047fa680d957ed";
 
-// --- Константы для сигналов ---
-const TAG_COLORS: Record<string, string> = {
-  PRICING: "#f59e0b", HIRING: "#60a5fa", REVIEWS: "#f87171",
-  LEGAL: "#e879f9", PRODUCT: "#34d399", TECH: "#a78bfa"
-};
-
-const SIGNAL_TEMPLATES = [
-  { msg: "Pricing page updated — possible price increase detected.", tag: "PRICING", priority: "high" },
-  { msg: "New job posting: Senior Specialist found on HeadHunter.", tag: "HIRING", priority: "medium" },
-  { msg: "ToS update: Changes in data processing section 4.1.", tag: "LEGAL", priority: "low" },
-  { msg: "Homepage headline changed: focus shift to B2B segment.", tag: "PRODUCT", priority: "medium" },
-  { msg: "3 new negative reviews detected on Yandex Maps.", tag: "REVIEWS", priority: "high" },
-  { msg: "SSL Certificate renewed. Infrastructure scan complete.", tag: "TECH", priority: "low" },
-];
-
 // --- Иконки ---
 const Icons = {
-  dashboard:   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>,
-  competitors: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>,
-  signals:     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><path d="M1 8h2l2-5 3 10 2-7 2 4 1-2h2"/></svg>,
-  settings:    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.1 3.1l1.4 1.4M11.5 11.5l1.4 1.4M3.1 12.9l1.4-1.4M11.5 4.5l1.4-1.4"/></svg>,
+  dashboard:   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>,
+  competitors: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>,
+  signals:     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M1 8h2l2-5 3 10 2-7 2 4 1-2h2"/></svg>,
+  settings:    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.1 3.1l1.4 1.4M11.5 11.5l1.4 1.4M3.1 12.9l1.4-1.4M11.5 4.5l1.4-1.4"/></svg>,
+  trash: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M2 4h12M5 4V2.5c0-.3.2-.5.5-.5h5c.3 0 .5.2.5.5V4M6 7v5M10 7v5M3 4l1 10c0 .6.4 1 1 1h6c.6 0 1-.4 1-1l1-10"/></svg>
 };
-
-function SledixLogo({ size = 22 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
-      <path d="M76 32 C76 20 64 14 52 18 C40 22 36 32 42 40 C48 48 68 50 74 60 C80 70 74 84 60 88 C46 92 36 84 36 74" stroke="currentColor" strokeWidth="8" strokeLinecap="square" fill="none" />
-    </svg>
-  );
-}
-
-// --- Вспомогательные компоненты ---
-function NavItem({ icon, label, active, onClick, badge }: any) {
-  return (
-    <button onClick={onClick} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 text-left ${active ? "bg-white/[0.08] text-white" : "text-white/35 hover:text-white/70 hover:bg-white/[0.04]"}`}>
-      <span className="w-4 h-4 shrink-0">{icon}</span>
-      <span className="font-light tracking-tight flex-1">{label}</span>
-      {badge > 0 && <span className="text-[9px] bg-amber-500/20 text-amber-400 font-mono px-1.5 py-0.5 rounded">{badge}</span>}
-    </button>
-  );
-}
 
 export default function DashboardPage() {
   const params = useParams();
   const router = useRouter();
   const companySlug = params.company as string;
 
-  if (typeof window !== "undefined" && !localStorage.getItem("access_token")) {
-    window.location.href = "/auth/login";
-    return null;
-  }
+  // Рефы для закрытия плашек по клику вне
+  const companyRef = useRef<HTMLDivElement>(null);
+  const cityRef = useRef<HTMLDivElement>(null);
 
   const [page, setPage] = useState("dashboard");
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [competitors, setCompetitors] = useState<any[]>([]);
-  const [fakeSignals, setFakeSignals] = useState<any[]>([]);
+  const [signals, setSignals] = useState<any[]>([]);
   
   const [showModal, setShowModal] = useState(false);
   const [newCompName, setNewCompName] = useState("");
@@ -74,46 +40,29 @@ export default function DashboardPage() {
   const [partySuggestions, setPartySuggestions] = useState<any[]>([]);
   const [citySuggestions, setCitySuggestions] = useState<any[]>([]);
 
-
-  const searchParty = async (query: string) => {
-    setNewCompName(query);
-    if (query.length < 3) { setPartySuggestions([]); return; }
-    try {
-      const res = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/party", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json", "Authorization": `Token ${DADATA_KEY}` },
-        body: JSON.stringify({ query })
-      });
-      const data = await res.json();
-      setPartySuggestions(data.suggestions || []);
-    } catch (e) { console.error(e); }
-  };
-
-  const searchCity = async (query: string) => {
-    setCity(query);
-    if (query.length < 2) { setCitySuggestions([]); return; }
-    try {
-      const res = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json", "Authorization": `Token ${DADATA_KEY}` },
-        body: JSON.stringify({ query, from_bound: { value: "city" }, to_bound: { value: "city" } })
-      });
-      const data = await res.json();
-      setCitySuggestions(data.suggestions || []);
-    } catch (e) { console.error(e); }
-  };
+  // Закрытие подсказок при клике вне
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (companyRef.current && !companyRef.current.contains(event.target as Node)) setPartySuggestions([]);
+      if (cityRef.current && !cityRef.current.contains(event.target as Node)) setCitySuggestions([]);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const fetchData = async () => {
     const token = localStorage.getItem("access_token");
     try {
-      const [uRes, cRes, sRes] = await Promise.all([
+      const [uRes, cRes, sRes] = await Promise.allSettled([
         apiRequest(`/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } }),
         apiRequest(`/api/competitors`, { headers: { Authorization: `Bearer ${token}` } }),
-        apiRequest(`/api/signals`, { headers: { Authorization: `Bearer ${token}` } }) // Новый запрос
+        apiRequest(`/api/signals`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
-      setUser(uRes);
-      setCompetitors(cRes || []);
-      setFakeSignals(sRes || []); // Теперь это реальные сигналы из базы
+      
+      if (uRes.status === 'fulfilled') setUser(uRes.value);
+      if (cRes.status === 'fulfilled') setCompetitors(cRes.value || []);
+      if (sRes.status === 'fulfilled') setSignals(sRes.value || []);
+      
       setIsLoading(false);
     } catch (err) { setIsLoading(false); }
   };
@@ -136,85 +85,110 @@ export default function DashboardPage() {
     } catch (err: any) { alert(err.message); } finally { setIsAdding(false); }
   };
 
-  if (isLoading) return <div className="h-screen bg-[#060608] flex items-center justify-center text-white/10 font-mono text-[10px] uppercase tracking-[0.4em]">Initialising Sledix Core...</div>;
+  const handleDeleteCompetitor = async (id: string) => {
+    if (!confirm("Are you sure you want to remove this monitor?")) return;
+    try {
+      const token = localStorage.getItem("access_token");
+      await apiRequest(`/api/competitors/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchData();
+    } catch (err: any) { alert(err.message); }
+  };
+
+  if (isLoading) return <div className="h-screen bg-[#060608] flex items-center justify-center text-white/10 font-mono text-[10px] uppercase tracking-[0.4em]">Synchronizing...</div>;
 
   return (
     <div className="flex h-screen bg-[#060608] text-white overflow-hidden font-sans antialiased">
       
-      {/* Sidebar */}
       <aside className="w-56 shrink-0 flex flex-col border-r border-white/[0.06]">
         <div className="h-14 flex items-center gap-2.5 px-4 border-b border-white/[0.06]">
-          <SledixLogo /><span className="font-display font-bold text-sm tracking-tight">Sledix</span>
-        </div>
-        <div className="px-3 pt-4 pb-2">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-            <div className="w-5 h-5 rounded-md bg-white/10 flex items-center justify-center text-[9px] font-bold uppercase">{companySlug[0]}</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-medium text-white truncate">{companySlug}</p>
-              <p className="text-[9px] text-white/25 font-mono uppercase">{user?.plan || "Growth"}</p>
-            </div>
-          </div>
+           <img src="/logo.svg" alt="Sledix" className="w-6 h-6" /><span className="font-display font-bold text-sm tracking-tight">Sledix</span>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-0.5">
-          <NavItem icon={Icons.dashboard}   label="Dashboard"    active={page==="dashboard"}   onClick={() => setPage("dashboard")}/>
-          <NavItem icon={Icons.competitors} label="Competitors"  active={page==="competitors"} onClick={() => setPage("competitors")} badge={competitors.length}/>
-          <NavItem icon={Icons.signals}     label="Signals"      active={page==="signals"}     onClick={() => setPage("signals")} badge={fakeSignals.length}/>
+          <button onClick={() => setPage("dashboard")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="dashboard"?"bg-white/[0.08] text-white":"text-white/35 hover:text-white/70"}`}>{Icons.dashboard} Dashboard</button>
+          <button onClick={() => setPage("competitors")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="competitors"?"bg-white/[0.08] text-white":"text-white/35 hover:text-white/70"}`}>{Icons.competitors} Monitors <span className="ml-auto text-[9px] bg-white/5 px-1.5 rounded">{competitors.length}</span></button>
+          <button onClick={() => setPage("signals")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="signals"?"bg-white/[0.08] text-white":"text-white/35 hover:text-white/70"}`}>{Icons.signals} Signals</button>
+          <button onClick={() => setPage("settings")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="settings"?"bg-white/[0.08] text-white":"text-white/35 hover:text-white/70"}`}>{Icons.settings} Settings</button>
         </nav>
-        <div className="px-3 pb-4 border-t border-white/[0.06] pt-3 space-y-0.5">
-          <NavItem icon={Icons.settings} label="Settings" active={page==="settings"} onClick={() => setPage("settings")}/>
-          <div className="flex items-center gap-2.5 px-3 py-3 mt-2 bg-white/[0.02] rounded-xl border border-white/[0.04]">
-            <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white/50">{user?.email ? user.email[0].toUpperCase() : "?"}</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] text-white/60 truncate">{user?.email}</p>
-              <button onClick={() => {localStorage.clear(); window.location.href="/auth/login"}} className="text-[9px] font-mono uppercase text-white/20 hover:text-red-400 transition-colors">Sign Out</button>
-            </div>
-          </div>
+        <div className="p-4 border-t border-white/[0.06]">
+            <p className="text-[10px] text-white/40 truncate mb-1">{user?.email}</p>
+            <button onClick={() => {localStorage.clear(); window.location.href="/auth/login"}} className="text-[9px] font-mono text-red-400/40 hover:text-red-400 uppercase">Sign Out</button>
         </div>
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="h-14 shrink-0 flex items-center justify-between px-6 border-b border-white/[0.06]">
           <h1 className="font-display text-lg font-bold tracking-tight capitalize">{page}</h1>
-          <button onClick={() => setShowModal(true)} className="text-[11px] tracking-[0.15em] uppercase bg-white text-[#060608] px-4 py-2 rounded-lg font-bold hover:bg-white/90 transition-colors font-mono">+ Add competitor</button>
+          <button onClick={() => setShowModal(true)} className="text-[11px] tracking-[0.15em] uppercase bg-white text-[#060608] px-4 py-2 rounded-lg font-bold hover:bg-white/90 font-mono transition-all">+ Add Monitor</button>
         </header>
 
         <div className="flex-1 overflow-auto p-6">
-          {page === "dashboard" && <DashboardView competitors={competitors} signals={fakeSignals} onNav={setPage} />}
-          {page === "competitors" && <CompetitorsView competitors={competitors} />}
-          {page === "signals" && <SignalsView signals={fakeSignals} />}
+          {page === "dashboard" && <DashboardView count={competitors.length} signals={signals} />}
+          {page === "competitors" && <CompetitorsView competitors={competitors} onDelete={handleDeleteCompetitor} />}
+          {page === "signals" && <SignalsView signals={signals} />}
           {page === "settings" && <SettingsView user={user} />}
         </div>
       </div>
 
-      {/* --- MODAL --- */}
+      {/* --- MODAL: ADD MONITOR --- */}
       {showModal && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-50 flex items-center justify-center p-6">
           <div className="bg-[#0f1012] border border-white/10 rounded-[32px] p-8 w-full max-w-md shadow-2xl relative">
-            <h3 className="font-display text-xl font-bold mb-1 text-white">Deploy Monitor</h3>
-            <p className="text-white/20 text-[10px] mb-6 font-mono uppercase tracking-[0.2em]">Identification Layer</p>
+            <h3 className="font-display text-xl font-bold mb-1 text-white">New Monitor</h3>
+            <p className="text-white/20 text-[10px] mb-6 font-mono uppercase tracking-[0.2em]">Target Identification</p>
+            
             <form onSubmit={handleAddCompetitor} className="space-y-5">
-              <div className="relative">
-                <p className="text-[10px] font-mono text-white/20 uppercase mb-2">Business Name</p>
-                <input required value={newCompName} onChange={e => searchParty(e.target.value)} placeholder="БУКЕТ-СБ..." className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-white/30 transition-all font-mono"/>
+              
+              <div className="relative" ref={companyRef}>
+                <p className="text-[10px] font-mono text-white/20 uppercase mb-2">Company Name / ИП</p>
+                <input required value={newCompName} onChange={e => {
+                  setNewCompName(e.target.value);
+                  const q = e.target.value;
+                  if (q.length >= 3) {
+                    fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/party", {
+                      method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Token ${DADATA_KEY}` },
+                      body: JSON.stringify({ query: q })
+                    }).then(r => r.json()).then(d => setPartySuggestions(d.suggestions || []));
+                  } else setPartySuggestions([]);
+                }} placeholder="Start typing..." className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-white/30 transition-all font-mono"/>
+                
                 {partySuggestions.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-[#16171a] border border-white/10 rounded-xl overflow-hidden z-[70] shadow-2xl">
                     {partySuggestions.map((s, i) => (
                       <button key={i} type="button" onClick={() => { 
                           setNewCompName(s.value); 
-                          if(s.data.address?.data?.city) setCity(s.data.address.data.city);
+                          setInn(s.data.inn || "");
+                          if (s.data.address?.data?.city) setCity(s.data.address.data.city);
                           setPartySuggestions([]); 
-                        }} className="w-full px-4 py-3 hover:bg-white/5 border-b border-white/5 last:border-0 text-left text-xs text-white/70">{s.value}</button>
+                        }} className="w-full flex flex-col gap-0.5 px-4 py-3 hover:bg-white/5 border-b border-white/5 last:border-0 text-left">
+                        <span className="text-xs text-white font-medium">{s.value}</span>
+                        <span className="text-[9px] text-white/20 font-mono uppercase">{s.data.address.value}</span>
+                      </button>
                     ))}
                   </div>
                 )}
               </div>
+
               <div>
-                <p className="text-[10px] font-mono text-white/20 uppercase mb-2">Website</p>
+                <p className="text-[10px] font-mono text-white/20 uppercase mb-2">Website URL</p>
                 <input required value={newCompUrl} onChange={e => setNewCompUrl(e.target.value)} placeholder="www.buket-sb.ru" className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-white/30 font-mono"/>
               </div>
-              <div className="relative">
-                <p className="text-[10px] font-mono text-white/20 uppercase mb-2">Location</p>
-                <input required value={city} onChange={e => searchCity(e.target.value)} placeholder="Сосновый Бор" className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-white/30 font-mono"/>
+
+              <div className="relative" ref={cityRef}>
+                <p className="text-[10px] font-mono text-white/20 uppercase mb-2">Location (City)</p>
+                <input required value={city} onChange={e => {
+                   setCity(e.target.value);
+                   const q = e.target.value;
+                   if (q.length >= 2) {
+                    fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", {
+                      method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Token ${DADATA_KEY}` },
+                      body: JSON.stringify({ query: q, from_bound: { value: "city" }, to_bound: { value: "city" } })
+                    }).then(r => r.json()).then(d => setCitySuggestions(d.suggestions || []));
+                   } else setCitySuggestions([]);
+                }} placeholder="Сосновый Бор" className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-white/30 font-mono"/>
+                
                 {citySuggestions.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-[#16171a] border border-white/10 rounded-xl overflow-hidden z-[60] shadow-2xl">
                     {citySuggestions.map((s, i) => (
@@ -223,6 +197,7 @@ export default function DashboardPage() {
                   </div>
                 )}
               </div>
+              
               <div className="flex gap-3 pt-4">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 border border-white/10 py-3 rounded-xl text-[10px] font-mono font-bold uppercase text-white/40 hover:text-white transition-all">Cancel</button>
                 <button type="submit" disabled={isAdding} className="flex-1 bg-white text-black py-3 rounded-xl text-[10px] font-mono font-bold uppercase hover:bg-white/90 disabled:opacity-50 transition-all">{isAdding ? "Saving..." : "Start"}</button>
@@ -235,107 +210,74 @@ export default function DashboardPage() {
   );
 }
 
-// --- SUB-VIEWS ---
+// --- ПОД-СТРАНИЦЫ ---
 
-function DashboardView({ competitors, signals, onNav }: any) {
+function DashboardView({ count, signals }: any) {
   return (
-    <div className="space-y-6 animate-in fade-in duration-700">
+    <div className="space-y-6">
       <div className="grid grid-cols-4 gap-4">
-        {[{ label: "Monitors", value: competitors.length }, { label: "Signals / week", value: signals.length }, { label: "Score", value: "84" }, { label: "Status", value: "Online" }].map((s, i) => (
-          <div key={i} className="border border-white/[0.07] rounded-2xl p-5 bg-white/[0.02]">
+        {[{ label: "Monitors", value: count }, { label: "Total Signals", value: signals.length }, { label: "Status", value: "Optimal" }, { label: "System", value: "Online" }].map((s, i) => (
+          <div key={i} className="border border-white/[0.07] rounded-2xl p-5 bg-white/[0.02] transition-all hover:border-white/10">
             <p className="text-[9px] font-mono tracking-[0.2em] uppercase text-white/25 mb-3">{s.label}</p>
             <p className="font-display text-3xl font-bold tracking-tight">{s.value}</p>
           </div>
         ))}
       </div>
-
+      
       <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2 border border-white/[0.07] rounded-2xl bg-white/[0.02] overflow-hidden">
-          <div className="px-5 py-4 border-b border-white/[0.06] flex justify-between items-center">
-             <p className="text-[10px] font-mono uppercase tracking-widest text-white/30">Active Targets</p>
-             <button onClick={() => onNav('competitors')} className="text-[9px] font-mono text-white/20 hover:text-white">View All →</button>
+          <div className="col-span-2 border border-white/[0.07] rounded-[32px] p-20 text-center bg-white/[0.01]">
+            <p className="text-white/20 text-xs font-mono uppercase tracking-widest">Waiting for high-frequency signals...</p>
           </div>
-          <div className="divide-y divide-white/[0.04]">
-            {competitors.slice(0, 5).map((c: any) => (
-              <div key={c.id} className="flex items-center gap-4 px-5 py-4 hover:bg-white/[0.01] transition-colors">
-                <div className="w-8 h-8 rounded-lg bg-white/[0.05] flex items-center justify-center text-xs font-bold text-white/20 uppercase font-mono">{c.name[0]}</div>
-                <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{c.name}</p>
-                    <p className="text-[10px] text-white/20 font-mono truncate">{c.website_url}</p>
-                </div>
-                <span className="text-[8px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded uppercase font-mono">Tracking</span>
-              </div>
-            ))}
+          <div className="border border-white/[0.07] rounded-2xl bg-white/[0.02] p-5">
+             <p className="text-[10px] font-mono uppercase tracking-widest text-white/30 mb-6">Recent Feed</p>
+             {signals.slice(0, 3).map((sig: any) => (
+               <div key={sig.id} className="border-l border-white/10 pl-4 py-1 mb-4">
+                  <p className="text-[11px] text-white/50">{sig.msg}</p>
+                  <p className="text-[9px] font-mono text-white/20 uppercase mt-1">{sig.company}</p>
+               </div>
+             ))}
           </div>
-        </div>
-
-        <div className="border border-white/[0.07] rounded-2xl bg-white/[0.02] overflow-hidden flex flex-col">
-           <div className="px-5 py-4 border-b border-white/[0.06]">
-              <p className="text-[10px] font-mono uppercase tracking-widest text-white/30">Intelligence Feed</p>
-           </div>
-           <div className="p-5 space-y-5 overflow-auto max-h-[400px]">
-              {signals.slice(0, 5).map((s: any) => (
-                <div key={s.id} className="border-l border-white/10 pl-4 py-1">
-                   <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[8px] font-bold px-1 rounded" style={{ color: TAG_COLORS[s.tag], border: `1px solid ${TAG_COLORS[s.tag]}40` }}>{s.tag}</span>
-                      <span className="text-[9px] text-white/20 font-mono">{s.time}</span>
-                   </div>
-                   <p className="text-[11px] text-white/60 leading-relaxed"><span className="text-white/80 font-bold">{s.company}:</span> {s.msg}</p>
-                </div>
-              ))}
-              {signals.length === 0 && <p className="text-center text-white/10 text-[10px] font-mono uppercase py-10">Waiting for data...</p>}
-           </div>
-        </div>
       </div>
+    </div>
+  );
+}
+
+function CompetitorsView({ competitors, onDelete }: any) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      {competitors.map((c: any) => (
+        <div key={c.id} className="border border-white/[0.07] rounded-2xl p-5 bg-white/[0.02] hover:border-white/15 transition-all group">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-lg font-bold text-white/20 uppercase font-mono">{c.name[0]}</div>
+            <div className="min-w-0 flex-1">
+              <h4 className="font-display font-bold text-sm truncate">{c.name}</h4>
+              <p className="text-[10px] text-white/30 font-mono truncate">{c.website_url}</p>
+            </div>
+            <button onClick={() => onDelete(c.id)} className="opacity-0 group-hover:opacity-100 p-2 text-white/20 hover:text-red-400 transition-all">{Icons.trash}</button>
+          </div>
+          <p className="text-[9px] font-mono uppercase text-white/20 mb-4">{c.city || 'Global'}</p>
+          <div className="flex items-center justify-between pt-4 border-t border-white/5">
+            <span className="text-[9px] font-mono uppercase text-emerald-400/60 bg-emerald-400/5 px-2 py-0.5 rounded">Tracking</span>
+            <button className="text-[9px] font-mono uppercase text-white/20 hover:text-white transition-colors">Details →</button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
 
 function SignalsView({ signals }: any) {
   return (
-    <div className="max-w-[1000px] mx-auto space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      <div className="border border-white/[0.07] rounded-2xl bg-white/[0.02] overflow-hidden">
-        <div className="divide-y divide-white/[0.04]">
-          {signals.map((s: any) => (
-            <div key={s.id} className="flex items-center gap-6 px-6 py-5 hover:bg-white/[0.01] transition-colors">
-              <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: s.priority === 'high' ? '#f87171' : '#4ade80' }} />
-              <div className="w-24 shrink-0">
-                 <p className="text-[10px] font-bold text-white/60 truncate uppercase font-mono">{s.company}</p>
-              </div>
-              <p className="flex-1 text-xs text-white/40 font-light leading-relaxed">{s.msg}</p>
-              <span className="text-[9px] font-mono px-2 py-1 rounded border border-white/5 text-white/20 uppercase tracking-widest" style={{ color: TAG_COLORS[s.tag] }}>{s.tag}</span>
-              <span className="text-[10px] font-mono text-white/20 w-16 text-right shrink-0">{s.time}</span>
-            </div>
-          ))}
-          {signals.length === 0 && <div className="p-20 text-center text-white/10 font-mono uppercase text-xs">No active signals. Please add targets first.</div>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function CompetitorsView({ competitors }: any) {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      {competitors.length === 0 ? (
-        <div className="col-span-full border-2 border-dashed border-white/5 rounded-[32px] p-20 text-center text-white/20 font-mono text-[10px] uppercase tracking-[0.3em]">No targets deployed.</div>
-      ) : (
-        competitors.map((c: any) => (
-          <div key={c.id} className="border border-white/[0.07] rounded-2xl p-5 bg-white/[0.02] hover:border-white/15 transition-all group">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-lg font-bold text-white/20 uppercase font-mono">{c.name[0]}</div>
-              <div className="min-w-0">
-                <h4 className="font-display font-bold text-sm truncate">{c.name}</h4>
-                <p className="text-[10px] text-white/30 font-mono truncate">{c.website_url}</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between pt-4 border-t border-white/5">
-              <span className="text-[9px] font-mono uppercase text-emerald-400/60 bg-emerald-400/5 px-2 py-0.5 rounded">Active</span>
-              <button className="text-[9px] font-mono uppercase text-white/20 hover:text-white transition-colors">Explore →</button>
-            </div>
+    <div className="border border-white/[0.07] rounded-2xl bg-white/[0.02] overflow-hidden">
+        {signals.map((s: any) => (
+          <div key={s.id} className="flex items-center gap-6 px-6 py-5 border-b border-white/[0.04] hover:bg-white/[0.01]">
+            <div className="w-24 shrink-0"><p className="text-[10px] font-bold text-white/60 uppercase font-mono">{s.company}</p></div>
+            <p className="flex-1 text-xs text-white/40 font-light leading-relaxed">{s.msg}</p>
+            <span className="text-[9px] font-mono px-2 py-1 rounded border border-white/5 text-white/20 uppercase tracking-widest">{s.tag}</span>
+            <span className="text-[10px] font-mono text-white/20 w-20 text-right">Just now</span>
           </div>
-        ))
-      )}
+        ))}
+        {signals.length === 0 && <div className="p-20 text-center text-white/10 font-mono uppercase text-[10px]">No active signals.</div>}
     </div>
   );
 }
@@ -356,26 +298,13 @@ function SettingsView({ user }: any) {
     } catch (err: any) { setMessage(`Error: ${err.message}`); } finally { setIsSaving(false); }
   };
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-500">
-      <div className="border border-white/[0.07] rounded-2xl bg-white/[0.02] p-6 space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div className="border border-white/[0.07] rounded-2xl bg-white/[0.02] p-6 space-y-5">
         <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-4">Account Control</p>
-        <div>
-           <p className="text-[10px] font-mono text-white/20 uppercase mb-2">Email Address</p>
-           <input value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white font-mono outline-none focus:border-white/20"/>
-        </div>
-        <div>
-           <p className="text-[10px] font-mono text-white/20 uppercase mb-2">Security</p>
-           {showPass ? (
-              <div className="space-y-4">
-                 <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter new password" className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white font-mono outline-none focus:border-white/20"/>
-                 <button onClick={() => setShowPass(false)} className="text-[10px] font-mono text-white/20 hover:text-white uppercase">Cancel</button>
-              </div>
-           ) : (
-              <button onClick={() => setShowPass(true)} className="text-[10px] font-mono text-white/40 border border-white/10 px-4 py-2 rounded-lg hover:bg-white/5 transition-all uppercase">Change Password</button>
-           )}
-        </div>
-        {message && <p className={`text-[10px] font-mono uppercase ${message.includes('Error') ? 'text-red-400' : 'text-emerald-400'}`}>{message}</p>}
-        <button onClick={handleSave} disabled={isSaving} className="w-full bg-white text-black py-4 rounded-xl font-mono text-[10px] font-bold uppercase tracking-widest hover:bg-white/90 disabled:opacity-50 transition-all">{isSaving ? "Saving..." : "Save Changes"}</button>
+        <div><p className="text-[10px] font-mono text-white/20 uppercase mb-2">Email</p><input value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white font-mono outline-none focus:border-white/20"/></div>
+        <div>{showPass ? (<div className="space-y-3"><input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="New Password" className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white font-mono outline-none"/><button onClick={() => setShowPass(false)} className="text-[9px] uppercase text-white/20">Cancel</button></div>) : (<button onClick={() => setShowPass(true)} className="text-[10px] uppercase text-white/40 border border-white/10 px-4 py-2 rounded-lg">Change Password</button>)}</div>
+        {message && <p className="text-[10px] font-mono uppercase text-emerald-400">{message}</p>}
+        <button onClick={handleSave} disabled={isSaving} className="w-full bg-white text-black py-4 rounded-xl font-mono text-[10px] font-bold uppercase tracking-widest">{isSaving ? "Saving..." : "Save Changes"}</button>
       </div>
     </div>
   );
