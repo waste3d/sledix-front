@@ -6,27 +6,35 @@ import { apiRequest } from "../../../lib/api";
 
 const DADATA_KEY = "4affb62ba89180ef3405454f9a047fa680d957ed";
 
+// --- Цветовая схема тегов ---
+const TAG_COLORS: Record<string, string> = {
+  PRICING: "#f59e0b", // Янтарный (Деньги)
+  HIRING: "#3b82f6",  // Синий (Рост)
+  REVIEWS: "#ef4444", // Красный (Риски)
+  LEGAL: "#a855f7",   // Фиолетовый (Законы)
+  PRODUCT: "#10b981", // Зеленый (Обновления)
+  TECH: "#6366f1",    // Индиго (Инфраструктура)
+  MARKETING: "#ec4899" // Розовый
+};
+
 // --- Хелперы ---
 
-// Красивое время (2m ago, 1h ago)
 const formatRelativeTime = (dateStr: string) => {
   const now = new Date();
   const date = new Date(dateStr);
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
   if (diffInSeconds < 60) return "just now";
   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
   return `${Math.floor(diffInSeconds / 86400)}d ago`;
 };
 
-// Расчет рейтинга угрозы/силы конкурента
 const calculateScore = (comp: any, signals: any[]) => {
-  let score = 60; // Базовый уровень
-  if (comp.inn) score += 15; // Юрлицо подтверждено
+  let score = 60;
+  if (comp.inn) score += 15;
   const compSignals = signals.filter(s => s.company === comp.name).length;
-  score += compSignals * 5; // Чем больше активности, тем выше score
-  return Math.min(score, 98); // Кап на 98
+  score += compSignals * 5;
+  return Math.min(score, 98);
 };
 
 const Icons = {
@@ -46,6 +54,19 @@ function SledixLogo({ size = 22 }: { size?: number }) {
   );
 }
 
+// Компонент тега
+function SignalTag({ label }: { label: string }) {
+  const color = TAG_COLORS[label] || "#71717a";
+  return (
+    <span 
+      className="text-[9px] font-mono px-2 py-0.5 rounded border uppercase tracking-widest"
+      style={{ color: color, borderColor: `${color}44`, backgroundColor: `${color}11` }}
+    >
+      {label}
+    </span>
+  );
+}
+
 // --- ОСНОВНОЙ КОМПОНЕНТ ---
 export default function DashboardPage() {
   const params = useParams();
@@ -56,7 +77,7 @@ export default function DashboardPage() {
   const cityRef = useRef<HTMLDivElement>(null);
 
   const [page, setPage] = useState("dashboard");
-  const [selectedComp, setSelectedComp] = useState<any>(null); // Для деталей
+  const [selectedComp, setSelectedComp] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [competitors, setCompetitors] = useState<any[]>([]);
@@ -157,10 +178,10 @@ export default function DashboardPage() {
         <div className="px-3 pb-4 border-t border-white/[0.06] pt-3 space-y-0.5">
           <button onClick={() => { setPage("settings"); setSelectedComp(null); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="settings"?"bg-white/[0.08] text-white":"text-white/35 hover:text-white/70"}`}>{Icons.settings} Settings</button>
           <div className="flex items-center gap-2.5 px-3 py-3 mt-2">
-            <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white/40">{user?.email[0].toUpperCase()}</div>
+            <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white/40">{user?.email ? user.email[0].toUpperCase() : "?"}</div>
             <div className="flex-1 min-w-0">
               <p className="text-[11px] text-white/60 truncate">{user?.email}</p>
-              <button onClick={() => {localStorage.clear(); window.location.href="/auth/login"}} className="text-[9px] font-mono text-red-400/40 hover:text-red-400 uppercase transition-colors">Sign Out</button>
+              <button onClick={() => {localStorage.clear(); window.location.href="/auth/login"}} className="text-[9px] font-mono text-red-400/40 hover:text-red-400 uppercase">Sign Out</button>
             </div>
           </div>
         </div>
@@ -174,7 +195,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center gap-3">
              <div className="flex items-center gap-1.5 text-[10px] font-mono text-white/25"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"/>Live</div>
-             <button onClick={() => setShowModal(true)} className="text-[11px] tracking-[0.15em] uppercase bg-white text-[#060608] px-4 py-2 rounded-lg font-bold hover:bg-white/90 font-mono transition-all">+ Add Monitor</button>
+             <button onClick={() => setShowModal(true)} className="text-[11px] tracking-[0.15em] uppercase bg-white text-[#060608] px-4 py-2 rounded-lg font-bold hover:bg-white/90 transition-all font-mono">+ Add Monitor</button>
           </div>
         </header>
 
@@ -192,7 +213,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* --- MODAL (DaData Search) --- */}
+      {/* --- MODAL --- */}
       {showModal && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-50 flex items-center justify-center p-6">
           <div className="bg-[#0f1012] border border-white/10 rounded-[32px] p-8 w-full max-w-md shadow-2xl relative">
@@ -210,7 +231,7 @@ export default function DashboardPage() {
                       body: JSON.stringify({ query: q })
                     }).then(r => r.json()).then(d => setPartySuggestions(d.suggestions || []));
                    } else setPartySuggestions([]);
-                }} placeholder="Start typing name or ИП..." className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-white/30 transition-all font-mono"/>
+                }} placeholder="Type name or ИП..." className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-white/30 transition-all font-mono"/>
                 {partySuggestions.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-[#16171a] border border-white/10 rounded-xl overflow-hidden z-[70] shadow-2xl">
                     {partySuggestions.map((s, i) => (
@@ -285,16 +306,17 @@ function DashboardView({ count, signals, totalScore }: any) {
           <div className="col-span-2 border border-white/[0.07] rounded-[32px] p-20 text-center bg-white/[0.01]">
             <p className="text-white/20 text-xs font-mono uppercase tracking-widest">Autonomous system monitoring active...</p>
           </div>
-          <div className="border border-white/[0.07] rounded-2xl bg-white/[0.02] p-5 flex flex-col">
+          <div className="border border-white/[0.07] rounded-2xl bg-white/[0.02] p-5 flex flex-col h-[400px]">
              <p className="text-[10px] font-mono uppercase tracking-widest text-white/30 mb-6">Recent Feed</p>
-             <div className="space-y-4 flex-1 overflow-auto">
-               {signals.slice(0, 5).map((sig: any) => (
-                 <div key={sig.id} className="border-l border-white/10 pl-4 py-1">
-                    <p className="text-[11px] text-white/50 leading-snug">{sig.msg}</p>
-                    <div className="flex justify-between items-center mt-2">
-                       <p className="text-[9px] font-mono text-white/20 uppercase">{sig.company}</p>
+             <div className="space-y-4 flex-1 overflow-auto pr-2 custom-scrollbar">
+               {signals.slice(0, 8).map((sig: any) => (
+                 <div key={sig.id} className="border-l-2 border-white/5 pl-4 py-1">
+                    <div className="flex justify-between items-center mb-1">
+                       <SignalTag label={sig.tag} />
                        <p className="text-[8px] font-mono text-white/10 uppercase">{formatRelativeTime(sig.created_at)}</p>
                     </div>
+                    <p className="text-[11px] text-white/50 leading-snug">{sig.msg}</p>
+                    <p className="text-[9px] font-mono text-white/20 uppercase mt-1.5 font-bold">{sig.company}</p>
                  </div>
                ))}
                {signals.length === 0 && <p className="text-white/10 text-[10px] uppercase font-mono mt-10 text-center">Waiting for data</p>}
@@ -325,7 +347,7 @@ function CompetitorsView({ competitors, signals, onDelete, onSelect }: any) {
           <div className="flex items-center justify-between pt-4 border-t border-white/5">
             <span className="text-[9px] font-mono uppercase text-emerald-400/60 bg-emerald-400/5 px-2 py-0.5 rounded">Active</span>
             <div className="flex items-center gap-2">
-               <button onClick={(e) => onDelete(e, c.id)} className="p-2 text-white/10 hover:text-red-400 transition-all">
+               <button onClick={(e) => onDelete(e, c.id)} className="p-2 text-white/20 hover:text-red-400 transition-all">
                  {Icons.trash}
                </button>
                <div className="text-[9px] font-mono uppercase text-white/20 group-hover:text-white transition-colors flex items-center gap-1">Details {Icons.chevron}</div>
@@ -357,12 +379,15 @@ function CompetitorDetailsView({ comp, signals, onBack }: any) {
         </div>
 
         <div className="col-span-2 border border-white/[0.07] rounded-2xl bg-white/[0.02] overflow-hidden">
-           <div className="px-5 py-4 border-b border-white/[0.06]"><p className="text-[10px] font-mono uppercase tracking-widest text-white/30">Target History & Signals</p></div>
-           <div className="divide-y divide-white/[0.04]">
+           <div className="px-5 py-4 border-b border-white/[0.06] flex justify-between items-center">
+              <p className="text-[10px] font-mono uppercase tracking-widest text-white/30">Target History & Signals</p>
+              <span className="text-[9px] font-mono text-white/20 uppercase">{signals.length} Signals</span>
+           </div>
+           <div className="divide-y divide-white/[0.04] max-h-[500px] overflow-auto custom-scrollbar">
               {signals.map((s: any) => (
                 <div key={s.id} className="p-5 hover:bg-white/[0.01]">
                    <div className="flex justify-between mb-2">
-                      <span className="text-[9px] font-mono px-2 py-0.5 rounded border border-white/5 text-white/20 uppercase">{s.tag}</span>
+                      <SignalTag label={s.tag} />
                       <span className="text-[10px] font-mono text-white/20">{formatRelativeTime(s.created_at)}</span>
                    </div>
                    <p className="text-xs text-white/50 leading-relaxed">{s.msg}</p>
@@ -388,7 +413,7 @@ function SignalsView({ signals }: any) {
             <div key={s.id} className="flex items-center gap-6 px-6 py-5 hover:bg-white/[0.01] transition-all">
               <div className="w-24 shrink-0"><p className="text-[10px] font-bold text-white/60 uppercase font-mono truncate">{s.company}</p></div>
               <p className="flex-1 text-xs text-white/40 font-light leading-relaxed">{s.msg}</p>
-              <span className="text-[9px] font-mono px-2 py-1 rounded border border-white/5 text-white/20 uppercase tracking-widest">{s.tag}</span>
+              <SignalTag label={s.tag} />
               <span className="text-[10px] font-mono text-white/20 w-24 text-right shrink-0">{formatRelativeTime(s.created_at)}</span>
             </div>
           ))}
@@ -414,7 +439,7 @@ function SettingsView({ user }: any) {
     } catch (err: any) { setMessage(`Error: ${err.message}`); } finally { setIsSaving(false); }
   };
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-500">
       <div className="border border-white/[0.07] rounded-2xl bg-white/[0.02] p-6 space-y-6">
         <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-4">Account Control</p>
         <div>
