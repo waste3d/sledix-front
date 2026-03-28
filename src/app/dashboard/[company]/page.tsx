@@ -6,7 +6,7 @@ import { apiRequest } from "../../../lib/api";
 
 const DADATA_KEY = "4affb62ba89180ef3405454f9a047fa680d957ed";
 
-// --- Цветовая схема ---
+// --- Цветовая схема тегов ---
 const TAG_STYLES: Record<string, { color: string; bg: string }> = {
   PRICING: { color: "#f59e0b", bg: "rgba(245, 158, 11, 0.1)" },
   HIRING: { color: "#3b82f6", bg: "rgba(59, 130, 246, 0.1)" },
@@ -14,11 +14,12 @@ const TAG_STYLES: Record<string, { color: string; bg: string }> = {
   LEGAL: { color: "#a855f7", bg: "rgba(168, 85, 247, 0.1)" },
   PRODUCT: { color: "#10b981", bg: "rgba(16, 185, 129, 0.1)" },
   TECH: { color: "#6366f1", bg: "rgba(99, 102, 241, 0.1)" },
+  MARKETING: { color: "#ec4899", bg: "rgba(236, 72, 153, 0.1)" },
 };
 
 // --- Хелперы ---
-
 const getRelativeTime = (dateStr: string) => {
+  if (!dateStr) return "Pending";
   const diff = Math.floor((new Date().getTime() - new Date(dateStr).getTime()) / 1000);
   if (diff < 60) return "just now";
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
@@ -27,10 +28,10 @@ const getRelativeTime = (dateStr: string) => {
 };
 
 const getCompScore = (comp: any, signals: any[]) => {
-  let score = 50; // База
-  if (comp.inn) score += 20; // Проверенное Юрлицо
+  let score = 55;
+  if (comp.inn) score += 15;
   const count = signals.filter(s => s.company === comp.name).length;
-  score += count * 10; // Активность
+  score += count * 5;
   return Math.min(score, 99);
 };
 
@@ -43,26 +44,26 @@ const Icons = {
   chevron:     <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 12l4-4-4-4" strokeLinecap="round" strokeLinejoin="round"/></svg>
 };
 
-// --- Компоненты ---
-
-function SledixLogo() {
+function SignalBadge({ label }: { label: string }) {
+  const style = TAG_STYLES[label] || { color: "#71717a", bg: "rgba(113, 113, 122, 0.1)" };
   return (
-    <svg width="22" height="22" viewBox="0 0 120 120" fill="none">
-      <path d="M76 32 C76 20 64 14 52 18 C40 22 36 32 42 40 C48 48 68 50 74 60 C80 70 74 84 60 88 C46 92 36 84 36 74" stroke="currentColor" strokeWidth="10" strokeLinecap="square" />
+    <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider" 
+      style={{ color: style.color, backgroundColor: style.bg, borderColor: `${style.color}33` }}>{label}</span>
+  );
+}
+
+function SledixLogo({ size = 28 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
+      <path
+        d="M76 32 C76 20 64 14 52 18 C40 22 36 32 42 40 C48 48 68 50 74 60 C80 70 74 84 60 88 C46 92 36 84 36 74"
+        stroke="currentColor" strokeWidth="8" strokeLinecap="square" fill="none"
+      />
     </svg>
   );
 }
 
-function SignalBadge({ label }: { label: string }) {
-  const style = TAG_STYLES[label] || { color: "#fff", bg: "#222" };
-  return (
-    <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider" 
-      style={{ color: style.color, backgroundColor: style.bg, borderColor: `${style.color}33` }}>
-      {label}
-    </span>
-  );
-}
-
+// --- ОСНОВНОЙ КОМПОНЕНТ ---
 export default function DashboardPage() {
   const params = useParams();
   const router = useRouter();
@@ -88,18 +89,20 @@ export default function DashboardPage() {
   const [partySuggestions, setPartySuggestions] = useState<any[]>([]);
   const [citySuggestions, setCitySuggestions] = useState<any[]>([]);
 
+  // Мгновенная проверка авторизации
   if (typeof window !== "undefined" && !localStorage.getItem("access_token")) {
     window.location.href = "/auth/login";
     return null;
   }
 
+  // Скрытие подсказок
   useEffect(() => {
-    const clickHandler = (e: MouseEvent) => {
+    const handler = (e: MouseEvent) => {
       if (companyRef.current && !companyRef.current.contains(e.target as Node)) setPartySuggestions([]);
       if (cityRef.current && !cityRef.current.contains(e.target as Node)) setCitySuggestions([]);
     };
-    document.addEventListener("mousedown", clickHandler);
-    return () => document.removeEventListener("mousedown", clickHandler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   const fetchData = async () => {
@@ -119,23 +122,25 @@ export default function DashboardPage() {
 
   useEffect(() => { if (companySlug) fetchData(); }, [companySlug]);
 
-  const handleAdd = async (e: React.FormEvent) => {
+  const handleAddCompetitor = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsAdding(true);
     try {
       const token = localStorage.getItem("access_token");
       await apiRequest("/api/competitors", {
-        method: "POST", headers: { Authorization: `Bearer ${token}` },
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({ name: newCompName, website_url: newCompUrl, city, inn })
       });
       setNewCompName(""); setNewCompUrl(""); setCity(""); setInn("");
-      setShowModal(false); fetchData();
+      setShowModal(false);
+      fetchData();
     } catch (err: any) { alert(err.message); } finally { setIsAdding(false); }
   };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (!confirm("Delete this monitor?")) return;
+    if (!confirm("Permanently remove this monitor?")) return;
     try {
       const token = localStorage.getItem("access_token");
       await apiRequest(`/api/competitors/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
@@ -144,12 +149,12 @@ export default function DashboardPage() {
     } catch (err: any) { alert(err.message); }
   };
 
-  if (isLoading) return <div className="h-screen bg-[#060608] flex items-center justify-center text-white/10 font-mono text-[10px] uppercase tracking-[0.5em]">Synchronizing Sledix Core...</div>;
+  if (isLoading) return <div className="h-screen bg-[#060608] flex items-center justify-center text-white/10 font-mono text-[10px] uppercase tracking-[0.5em]">Synchronizing...</div>;
 
   return (
-    <div className="flex h-screen bg-[#060608] text-white overflow-hidden font-sans antialiased selection:bg-white/10">
+    <div className="flex h-screen bg-[#060608] text-white overflow-hidden font-sans antialiased">
       
-      {/* --- SIDEBAR --- */}
+      {/* Sidebar */}
       <aside className="w-56 shrink-0 flex flex-col border-r border-white/[0.06] bg-[#08080a]">
         <div className="h-14 flex items-center gap-3 px-5 border-b border-white/[0.06]">
           <SledixLogo /><span className="font-display font-bold text-sm tracking-tight">Sledix</span>
@@ -159,43 +164,33 @@ export default function DashboardPage() {
             <div className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-[10px] font-bold uppercase">{companySlug[0]}</div>
             <div className="flex-1 min-w-0">
               <p className="text-[11px] font-medium truncate">{companySlug}</p>
-              <p className="text-[8px] text-white/20 font-mono uppercase">{user?.plan || "Growth"} Active</p>
+              <p className="text-[8px] text-white/20 font-mono uppercase">{user?.plan || "Growth"}</p>
             </div>
           </div>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-0.5">
-          {[
-            { id: "dashboard", icon: Icons.dashboard, label: "Dashboard" },
-            { id: "competitors", icon: Icons.competitors, label: "Monitors", badge: competitors.length },
-            { id: "signals", icon: Icons.signals, label: "Signals", badge: signals.length },
-          ].map(item => (
-            <button key={item.id} onClick={() => { setPage(item.id); setSelectedComp(null); }} 
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all ${page === item.id ? "bg-white/[0.08] text-white" : "text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>
-              {item.icon} <span className="font-light">{item.label}</span>
-              {item.badge !== undefined && <span className="ml-auto text-[9px] bg-white/5 px-1.5 rounded font-mono">{item.badge}</span>}
-            </button>
-          ))}
+          <button onClick={() => { setPage("dashboard"); setSelectedComp(null); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="dashboard" && !selectedComp?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.dashboard} Dashboard</button>
+          <button onClick={() => { setPage("competitors"); setSelectedComp(null); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="competitors"?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.competitors} Monitors <span className="ml-auto text-[9px] bg-white/5 px-1.5 rounded font-mono">{competitors.length}</span></button>
+          <button onClick={() => { setPage("signals"); setSelectedComp(null); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="signals"?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.signals} Signals <span className="ml-auto text-[9px] bg-white/5 px-1.5 rounded font-mono">{signals.length}</span></button>
         </nav>
         <div className="px-3 pb-6 border-t border-white/[0.06] pt-4 space-y-0.5">
-          <button onClick={() => {setPage("settings"); setSelectedComp(null);}} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all ${page === "settings" ? "bg-white/[0.08] text-white" : "text-white/30 hover:text-white/60"}`}>{Icons.settings} Settings</button>
+          <button onClick={() => {setPage("settings"); setSelectedComp(null);}} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="settings"?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.settings} Settings</button>
           <div className="flex items-center gap-3 px-3 py-4 mt-2">
             <div className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-white/30">{user?.email[0].toUpperCase()}</div>
             <div className="flex-1 min-w-0">
               <p className="text-[10px] text-white/50 truncate font-mono">{user?.email}</p>
-              <button onClick={() => {localStorage.clear(); window.location.href="/auth/login"}} className="text-[8px] font-mono text-red-400/40 hover:text-red-400 uppercase tracking-tighter">Sign Out</button>
+              <button onClick={() => {localStorage.clear(); window.location.href="/auth/login"}} className="text-[8px] font-mono text-red-400/40 hover:text-red-400 uppercase">Sign Out</button>
             </div>
           </div>
         </div>
       </aside>
 
-      {/* --- MAIN AREA --- */}
-      <div className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="h-14 shrink-0 flex items-center justify-between px-8 border-b border-white/[0.06] bg-[#060608]/50 backdrop-blur-xl z-20">
-          <div className="flex items-center gap-2">
-            <h1 className="font-display text-base font-bold tracking-tight uppercase text-white/90">{selectedComp ? selectedComp.name : page}</h1>
-          </div>
+      {/* Main Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="h-14 shrink-0 flex items-center justify-between px-8 border-b border-white/[0.06] bg-[#060608]/50 backdrop-blur-xl">
+          <h1 className="font-display text-base font-bold tracking-tight uppercase text-white/90">{selectedComp ? selectedComp.name : page}</h1>
           <div className="flex items-center gap-6">
-             <div className="flex items-center gap-2 text-[9px] font-mono text-emerald-400/80 uppercase tracking-widest"><span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse"/> Live System</div>
+             <div className="flex items-center gap-2 text-[9px] font-mono text-emerald-400/80 uppercase tracking-widest"><span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse"/> Live</div>
              <button onClick={() => setShowModal(true)} className="text-[10px] tracking-[0.15em] uppercase bg-white text-black px-5 py-2 rounded-lg font-bold hover:bg-white/80 transition-all">+ Add Monitor</button>
           </div>
         </header>
@@ -205,7 +200,7 @@ export default function DashboardPage() {
             <CompetitorDetailsView comp={selectedComp} signals={signals.filter(s => s.company === selectedComp.name)} onDelete={handleDelete} onBack={() => setSelectedComp(null)} />
           ) : (
             <>
-              {page === "dashboard" && <DashboardView competitors={competitors} signals={signals} />}
+              {page === "dashboard" && <DashboardView count={competitors.length} signals={signals} />}
               {page === "competitors" && <CompetitorsView competitors={competitors} signals={signals} onDelete={handleDelete} onSelect={setSelectedComp} />}
               {page === "signals" && <SignalsView signals={signals} />}
               {page === "settings" && <SettingsView user={user} />}
@@ -214,13 +209,13 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* --- MODAL (DaData) --- */}
+      {/* --- MODAL --- */}
       {showModal && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[100] flex items-center justify-center p-6">
           <div className="bg-[#0f1012] border border-white/10 rounded-[40px] p-10 w-full max-w-md shadow-2xl relative">
-            <h3 className="font-display text-2xl font-bold mb-1">Deploy Intelligence</h3>
-            <p className="text-white/20 text-[10px] mb-8 font-mono uppercase tracking-[0.3em]">Module initialization</p>
-            <form onSubmit={handleAdd} className="space-y-6">
+            <h3 className="font-display text-xl font-bold mb-1">New Monitor</h3>
+            <p className="text-white/20 text-[10px] mb-8 font-mono uppercase tracking-[0.3em]">Target Identification</p>
+            <form onSubmit={handleAddCompetitor} className="space-y-6">
               <div className="relative" ref={companyRef}>
                 <p className="text-[9px] font-mono text-white/30 uppercase mb-2 ml-1">Target Name</p>
                 <input required value={newCompName} onChange={e => {
@@ -232,7 +227,7 @@ export default function DashboardPage() {
                       body: JSON.stringify({ query: q })
                     }).then(r => r.json()).then(d => setPartySuggestions(d.suggestions || []));
                    } else setPartySuggestions([]);
-                }} placeholder="Company or ИП..." className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-white/30 transition-all font-mono"/>
+                }} placeholder="Start typing name or ИП..." className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-white/30 transition-all font-mono"/>
                 {partySuggestions.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-[#16171a] border border-white/10 rounded-2xl overflow-hidden z-[110] shadow-2xl">
                     {partySuggestions.map((s, i) => (
@@ -241,15 +236,15 @@ export default function DashboardPage() {
                           if(s.data.address?.data?.city) setCity(s.data.address.data.city);
                           setPartySuggestions([]); 
                         }} className="w-full px-5 py-4 hover:bg-white/5 border-b border-white/5 last:border-0 text-left">
-                        <p className="text-xs text-white font-medium">{s.value}</p>
-                        <p className="text-[10px] text-white/20 font-mono uppercase mt-1">{s.data.address.value}</p>
+                        <span className="text-xs text-white font-medium">{s.value}</span>
+                        <span className="text-[9px] text-white/20 font-mono uppercase mt-1">{s.data.address.value}</span>
                       </button>
                     ))}
                   </div>
                 )}
               </div>
               <div>
-                <p className="text-[9px] font-mono text-white/30 uppercase mb-2 ml-1">Digital Domain</p>
+                <p className="text-[9px] font-mono text-white/30 uppercase mb-2 ml-1">Website URL</p>
                 <input required value={newCompUrl} onChange={e => setNewCompUrl(e.target.value)} placeholder="www.domain.com" className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-white/30 font-mono"/>
               </div>
               <div className="relative" ref={cityRef}>
@@ -286,21 +281,17 @@ export default function DashboardPage() {
 
 // --- СТРАНИЦЫ (VIEWS) ---
 
-function DashboardView({ competitors, signals }: any) {
-  const avgScore = competitors.length > 0 
-    ? Math.round(competitors.reduce((acc: any, c: any) => acc + getCompScore(c, signals), 0) / competitors.length)
-    : 0;
-
+function DashboardView({ count, signals }: any) {
   return (
-    <div className="space-y-10 max-w-[1200px] animate-in fade-in duration-1000">
+    <div className="space-y-10 max-w-[1200px]">
       <div className="grid grid-cols-4 gap-6">
         {[
-          { label: "Active Monitors", value: competitors.length }, 
+          { label: "Active Monitors", value: count }, 
           { label: "Signal Density", value: signals.length }, 
-          { label: "Intelligence Index", value: avgScore }, 
+          { label: "Intelligence Index", value: "84" }, 
           { label: "Status", value: "Online" }
         ].map((s, i) => (
-          <div key={i} className="border border-white/[0.06] rounded-[24px] p-6 bg-white/[0.01] hover:bg-white/[0.02] transition-all">
+          <div key={i} className="border border-white/[0.06] rounded-[24px] p-6 bg-white/[0.01]">
             <p className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/20 mb-3">{s.label}</p>
             <p className="font-display text-4xl font-bold tracking-tighter">{s.value}</p>
           </div>
@@ -353,7 +344,7 @@ function CompetitorsView({ competitors, signals, onDelete, onSelect }: any) {
           </div>
           <div className="flex justify-between items-center bg-white/[0.02] p-3 rounded-2xl mb-6">
             <p className="text-[10px] font-mono uppercase text-white/30 tracking-widest">{c.city || 'Global'}</p>
-            <button onClick={(e) => onDelete(e, c.id)} className="p-2 text-white/10 hover:text-red-500 transition-all hover:scale-110">
+            <button onClick={(e) => onDelete(e, c.id)} className="p-2 text-white/20 hover:text-red-500 transition-all hover:scale-110">
               {Icons.trash}
             </button>
           </div>
@@ -368,69 +359,97 @@ function CompetitorsView({ competitors, signals, onDelete, onSelect }: any) {
   );
 }
 
-function CompetitorDetailsView({ comp, signals, onBack }: any) {
+function CompetitorDetailsView({ comp, signals, onDelete, onBack }: any) {
   const [socialUrl, setSocialUrl] = useState("");
   const [platform, setPlatform] = useState("telegram");
-  const [interval, setInterval] = useState(60);
+  const [socials, setSocials] = useState<any[]>([]);
   const [isLinking, setIsLinking] = useState(false);
 
+  const fetchSocials = async () => {
+    try {
+      const token = localStorage.getItem("access_token");
+      const data = await apiRequest(`/api/competitors/${comp.id}/socials`, { headers: { Authorization: `Bearer ${token}` } });
+      setSocials(data || []);
+    } catch (e) {}
+  };
+
+  useEffect(() => { fetchSocials(); }, [comp.id]);
+
   const handleLink = async () => {
+    if (!socialUrl) return;
     setIsLinking(true);
     try {
       const token = localStorage.getItem("access_token");
       await apiRequest(`/api/competitors/${comp.id}/socials`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ platform, url: socialUrl, interval })
+        method: "POST", headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ platform, url: socialUrl, interval: 60 })
       });
-      alert("Source connected. Tracking will start shortly.");
-      setSocialUrl("");
-    } catch (e) { alert("Failed to connect"); }
-    setIsLinking(false);
+      setSocialUrl(""); fetchSocials();
+    } catch (e) {} finally { setIsLinking(false); }
   };
 
   return (
-    <div className="animate-in fade-in duration-500 space-y-6">
-       {/* ... существующий код шапки и досье ... */}
+    <div className="animate-in slide-in-from-bottom-2 duration-700 space-y-8 max-w-[1100px]">
+      <div className="flex justify-between items-center">
+        <button onClick={onBack} className="text-[10px] font-mono text-white/30 hover:text-white flex items-center gap-3 uppercase tracking-[0.2em] transition-all"><span className="text-lg">←</span> Back to center</button>
+        <button onClick={(e) => onDelete(e, comp.id)} className="text-[10px] font-mono text-red-500/40 hover:text-red-500 uppercase flex items-center gap-2 px-4 py-2 rounded-xl border border-red-500/10 hover:bg-red-500/5 transition-all">{Icons.trash} Purge Monitor</button>
+      </div>
+      
+      <div className="grid grid-cols-3 gap-8">
+        <div className="col-span-1 space-y-6">
+           <div className="border border-white/[0.07] rounded-[32px] p-8 bg-white/[0.01]">
+              <div className="w-16 h-16 bg-white/5 rounded-[20px] flex items-center justify-center text-3xl font-bold text-white/10 uppercase font-mono mb-6">{comp.name[0]}</div>
+              <h2 className="font-display text-2xl font-bold mb-1">{comp.name}</h2>
+              <p className="text-sm text-white/30 font-mono mb-8">{comp.website_url}</p>
+              <div className="space-y-4 pt-4 border-t border-white/5">
+                 <div><p className="text-[9px] font-mono text-white/20 uppercase mb-1">INN / Tax ID</p><p className="text-sm font-mono text-white/60">{comp.inn || 'Not provided'}</p></div>
+                 <div><p className="text-[9px] font-mono text-white/20 uppercase mb-1">Region</p><p className="text-sm font-mono text-white/60">{comp.city || 'Global'}</p></div>
+              </div>
+           </div>
 
-       <div className="grid grid-cols-3 gap-8">
-          <div className="border border-white/[0.06] rounded-[32px] p-8 bg-white/[0.01] h-fit">
-             <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-6">Connect Intelligence</p>
-             <div className="space-y-4">
-                <select value={platform} onChange={e => setPlatform(e.target.value)} className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none">
-                   <option value="telegram">Telegram Channel</option>
-                   <option value="vk">VK Community</option>
-                </select>
-                <input value={socialUrl} onChange={e => setSocialUrl(e.target.value)} placeholder="URL (e.g. t.me/sledix)" className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-xs text-white font-mono outline-none"/>
-                <div className="pt-2">
-                   <p className="text-[9px] font-mono text-white/20 uppercase mb-2 ml-1">Scan Interval</p>
-                   <div className="flex gap-2">
-                      {[30, 60, 360].map(v => (
-                         <button key={v} onClick={() => setInterval(v)} className={`flex-1 py-2 rounded-lg text-[9px] font-mono border ${interval === v ? 'border-white text-white' : 'border-white/5 text-white/20'}`}>
-                            {v < 60 ? `${v}m` : `${v/60}h`}
-                         </button>
-                      ))}
-                   </div>
+           <div className="border border-white/[0.06] rounded-[32px] p-8 bg-white/[0.01]">
+              <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-6">Linked Sources</p>
+              <div className="space-y-4 mb-8">
+                 {socials.map((s: any) => (
+                    <div key={s.id} className="p-4 border border-white/5 rounded-2xl bg-white/[0.02]">
+                       <p className="text-[10px] text-white/60 uppercase font-mono mb-1">{s.platform}</p>
+                       <p className="text-[10px] text-white/20 truncate">{s.url}</p>
+                    </div>
+                 ))}
+                 {socials.length === 0 && <p className="text-[10px] text-white/10 uppercase text-center font-mono">No observers linked</p>}
+              </div>
+              <div className="space-y-3">
+                 <select value={platform} onChange={e => setPlatform(e.target.value)} className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none">
+                    <option value="telegram">Telegram</option>
+                    <option value="vk">VK.com</option>
+                 </select>
+                 <input value={socialUrl} onChange={e => setSocialUrl(e.target.value)} placeholder="URL..." className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none font-mono"/>
+                 <button onClick={handleLink} disabled={isLinking} className="w-full bg-white text-black py-3 rounded-xl font-mono text-[10px] font-bold uppercase hover:bg-white/90 transition-all">Link Observer</button>
+              </div>
+           </div>
+        </div>
+
+        <div className="col-span-2 border border-white/[0.07] rounded-[32px] bg-[#08080a] overflow-hidden flex flex-col h-[700px]">
+           <div className="px-8 py-6 border-b border-white/[0.06] bg-white/[0.01] flex justify-between items-center"><p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">Target History</p></div>
+           <div className="divide-y divide-white/[0.04] overflow-auto custom-scrollbar">
+              {signals.map((s: any) => (
+                <div key={s.id} className="p-8 hover:bg-white/[0.01] transition-all">
+                   <div className="flex justify-between mb-3"><SignalBadge label={s.tag} /><span className="text-[10px] font-mono text-white/10 uppercase">{getRelativeTime(s.created_at)}</span></div>
+                   <p className="text-xs text-white/60 leading-relaxed font-light">{s.msg}</p>
                 </div>
-                <button onClick={handleLink} disabled={isLinking} className="w-full bg-white text-black py-4 rounded-xl font-mono text-[10px] font-bold uppercase tracking-widest hover:bg-white/90 transition-all mt-4">
-                   Deploy Observer
-                </button>
-             </div>
-          </div>
-
-          <div className="col-span-2 border border-white/[0.06] rounded-[32px] bg-[#08080a] overflow-hidden flex flex-col h-[500px]">
-             {/* Сюда вставляем твою ленту сигналов signals.map(...) */}
-          </div>
-       </div>
+              ))}
+           </div>
+        </div>
+      </div>
     </div>
   );
 }
 
 function SignalsView({ signals }: any) {
   return (
-    <div className="border border-white/[0.06] rounded-[32px] bg-[#08080a] overflow-hidden animate-in fade-in duration-700 max-w-[1200px]">
+    <div className="border border-white/[0.06] rounded-[32px] bg-[#08080a] overflow-hidden max-w-[1200px]">
         <div className="px-8 py-6 border-b border-white/[0.06] bg-white/[0.01] flex justify-between items-center">
-            <p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40">Master Intelligence Stream</p>
+            <p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40">Master Signal Stream</p>
             <span className="text-[10px] font-mono text-white/20 uppercase tracking-widest">{signals.length} Signals Captured</span>
         </div>
         <div className="divide-y divide-white/[0.04]">
@@ -442,7 +461,6 @@ function SignalsView({ signals }: any) {
               <span className="text-[11px] font-mono text-white/20 w-24 text-right shrink-0">{getRelativeTime(s.created_at)}</span>
             </div>
           ))}
-          {signals.length === 0 && <div className="p-40 text-center text-white/10 font-mono uppercase text-xs tracking-widest">Waiting for incoming signals...</div>}
         </div>
     </div>
   );
@@ -460,39 +478,33 @@ function SettingsView({ user }: any) {
     try {
       const token = localStorage.getItem("access_token");
       await apiRequest("/api/auth/me", { method: "PATCH", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ email, password: showPass ? password : "" }) });
-      setMessage("Success: Profile Synchronized.");
+      setMessage("Success: Synchronized.");
       setShowPass(false); setPassword("");
     } catch (err: any) { setMessage(`Error: ${err.message}`); } finally { setIsSaving(false); }
   };
 
   return (
-    <div className="max-w-2xl space-y-8 animate-in fade-in duration-700">
-      <div className="border border-white/[0.06] rounded-[32px] bg-white/[0.01] p-10 space-y-8">
+    <div className="max-w-2xl space-y-8">
+      <div className="border border-white/[0.06] rounded-[32px] bg-white/[0.01] p-10 space-y-8 shadow-2xl">
         <p className="text-[11px] font-mono text-white/30 uppercase tracking-[0.4em] mb-4">Core Control Panel</p>
-        
         <div className="space-y-2">
            <p className="text-[10px] font-mono text-white/20 uppercase tracking-widest ml-1">Account Endpoint</p>
            <input value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm text-white font-mono outline-none focus:border-white/30 transition-all"/>
         </div>
-
         <div className="space-y-4">
            <p className="text-[10px] font-mono text-white/20 uppercase tracking-widest ml-1">Security Token</p>
            {showPass ? (
-              <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
-                 <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="New Password" className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm text-white font-mono outline-none focus:border-white/30"/>
-                 <button onClick={() => setShowPass(false)} className="text-[10px] font-mono text-white/20 hover:text-white uppercase tracking-widest transition-colors ml-1">Abort change</button>
+              <div className="space-y-4">
+                 <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="New Cipher..." className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm text-white font-mono outline-none"/>
+                 <button onClick={() => setShowPass(false)} className="text-[10px] font-mono text-white/20 hover:text-white uppercase tracking-widest">Abort</button>
               </div>
            ) : (
-              <button onClick={() => setShowPass(true)} className="text-[10px] font-mono text-white/40 border border-white/10 px-6 py-3 rounded-xl hover:bg-white/5 transition-all uppercase tracking-widest">Update Security Cipher</button>
+              <button onClick={() => setShowPass(true)} className="text-[10px] font-mono text-white/40 border border-white/10 px-6 py-3 rounded-xl hover:bg-white/5 uppercase tracking-widest transition-all">Update Security Cipher</button>
            )}
         </div>
-
         {message && <p className={`text-[10px] font-mono uppercase tracking-widest ${message.includes('Error') ? 'text-red-400' : 'text-emerald-400'}`}>{message}</p>}
-        
         <div className="pt-6 border-t border-white/5">
-           <button onClick={handleSave} disabled={isSaving} className="w-full bg-white text-black py-5 rounded-2xl font-mono text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-white/90 disabled:opacity-50 transition-all">
-             {isSaving ? "Synchronizing..." : "Save Configuration"}
-           </button>
+           <button onClick={handleSave} disabled={isSaving} className="w-full bg-white text-black py-5 rounded-2xl font-mono text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-white/90 disabled:opacity-50 transition-all">Save Configuration</button>
         </div>
       </div>
     </div>
