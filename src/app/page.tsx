@@ -37,7 +37,7 @@ const T: Record<Lang, {
 }> = {
   EN: {
     badge: "AI-native competitive intelligence",
-    hero_title: ["Know every move", "your competitors", "make."],
+    hero_title: ["Know every move", "your competitor", "make."],
     hero_sub: "Sledix monitors your entire competitive landscape autonomously — pricing, hiring, reviews, messaging — and delivers structured intelligence daily.",
     cta: "Get early access", cta2: "How it works",
     live: "Live signal feed",
