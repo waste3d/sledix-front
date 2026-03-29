@@ -6,7 +6,7 @@ import { apiRequest } from "../../../lib/api";
 
 const DADATA_KEY = "4affb62ba89180ef3405454f9a047fa680d957ed";
 
-// --- Цветовая схема ---
+// --- Конфигурация и Стили ---
 const TAG_STYLES: Record<string, { color: string; bg: string }> = {
   PRICING: { color: "#f59e0b", bg: "rgba(245, 158, 11, 0.1)" },
   HIRING: { color: "#3b82f6", bg: "rgba(59, 130, 246, 0.1)" },
@@ -18,6 +18,7 @@ const TAG_STYLES: Record<string, { color: string; bg: string }> = {
 };
 
 // --- Хелперы ---
+
 const getRelativeTime = (dateStr: string) => {
   if (!dateStr) return "Pending";
   const diff = Math.floor((new Date().getTime() - new Date(dateStr).getTime()) / 1000);
@@ -27,6 +28,7 @@ const getRelativeTime = (dateStr: string) => {
   return `${Math.floor(diff / 86400)}d ago`;
 };
 
+// Расчет рейтинга конкурента
 const getCompScore = (comp: any, signals: any[]) => {
   let score = 55;
   if (comp.inn) score += 15;
@@ -39,12 +41,12 @@ const Icons = {
   dashboard:   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1"/><rect x="9" y="1.5" width="5.5" height="5.5" rx="1"/><rect x="1.5" y="9" width="5.5" height="5.5" rx="1"/><rect x="9" y="9" width="5.5" height="5.5" rx="1"/></svg>,
   competitors: <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>,
   signals:     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1 8h2l2-5 3 10 2-7 2 4 1-2h2"/></svg>,
-  settings:    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.1 3.1l1.4 1.4M11.5 11.5l1.4 1.4M3.1 12.9l1.4-1.4M11.5 4.5l1.4-1.4"/></svg>,
+  settings:    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="8" cy="8" r="2"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.5 3.5l1 1M11.5 11.5l1 1M3.5 12.5l1-1M11.5 4.5l1-1"/></svg>,
   trash:       <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M2 4h12M5 4V2.5c0-.3.2-.5.5-.5h5c.3 0 .5.2.5.5V4M6 7v5M10 7v5M3 4l1 10c0 .6.4 1 1 1h6c.6 0 1-.4 1-1l1-10" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   chevron:     <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 12l4-4-4-4" strokeLinecap="round" strokeLinejoin="round"/></svg>
 };
 
-// --- ВИЗУАЛЬНЫЕ КОМПОНЕНТЫ ---
+// --- Визуальные компоненты ---
 
 function SignalBadge({ label }: { label: string }) {
   const style = TAG_STYLES[label] || { color: "#71717a", bg: "rgba(113, 113, 122, 0.1)" };
@@ -54,45 +56,34 @@ function SignalBadge({ label }: { label: string }) {
   );
 }
 
-function ActivityChart({ data }: { data: any[] }) {
-  if (!data || data.length === 0) return <div className="h-full w-full flex items-center justify-center border border-dashed border-white/5 rounded-3xl text-[10px] font-mono text-white/10">WAITING_FOR_DATA</div>;
-  
-  const maxValue = Math.max(...data.map(d => d.value), 1);
-  const width = 800;
-  const height = 200;
-  const padding = 40;
+function Sparkline({ color }: { color: string }) {
+  return (
+    <svg width="60" height="20" viewBox="0 0 60 20" className="opacity-30">
+      <path d="M0 15 Q 15 5, 30 12 T 60 8" fill="none" stroke={color} strokeWidth="1.5" />
+    </svg>
+  );
+}
 
-  // Генерируем точки для SVG пути
+function ActivityChart({ data }: { data: any[] }) {
+  if (!data || data.length === 0) return <div className="h-full w-full flex items-center justify-center border border-dashed border-white/5 rounded-[32px] text-[10px] font-mono text-white/10 uppercase">Awaiting telemetry...</div>;
+  const maxValue = Math.max(...data.map(d => d.value), 1);
+  const width = 800; const height = 200; const padding = 40;
   const points = data.map((d, i) => ({
     x: (i / (data.length - 1)) * (width - padding * 2) + padding,
     y: height - ((d.value / maxValue) * (height - padding * 2) + padding)
   }));
-
   const d = `M ${points[0].x} ${points[0].y} ` + points.slice(1).map(p => `L ${p.x} ${p.y}`).join(" ");
   const areaD = `${d} L ${points[points.length - 1].x} ${height} L ${points[0].x} ${height} Z`;
-
   return (
-    <div className="w-full h-full group relative">
+    <div className="w-full h-full relative">
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible">
-        <defs>
-          <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#10b981" stopOpacity="0.2" />
-            <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {/* Сетка */}
-        {[0, 1, 2, 3].map(i => (
-          <line key={i} x1={padding} y1={padding + i * (height - padding * 2) / 3} x2={width - padding} y2={padding + i * (height - padding * 2) / 3} stroke="white" strokeOpacity="0.03" strokeWidth="1" />
-        ))}
-        {/* Область */}
-        <path d={areaD} fill="url(#areaGradient)" className="transition-all duration-1000" />
-        {/* Линия */}
-        <path d={d} fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-1000" />
-        {/* Точки */}
+        <defs><linearGradient id="areaG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10b981" stopOpacity="0.2" /><stop offset="100%" stopColor="#10b981" stopOpacity="0" /></linearGradient></defs>
+        <path d={areaD} fill="url(#areaG)" className="transition-all duration-1000" />
+        <path d={d} fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         {points.map((p, i) => (
-          <g key={i} className="cursor-pointer">
-            <circle cx={p.x} cy={p.y} r="4" fill="#060608" stroke="#10b981" strokeWidth="2" />
-            <text x={p.x} y={height - 10} textAnchor="middle" fill="white" fillOpacity="0.2" fontSize="10" className="font-mono">{data[i].label}</text>
+          <g key={i} className="group/pt">
+            <circle cx={p.x} cy={p.y} r="3" fill="#060608" stroke="#10b981" strokeWidth="2" />
+            <text x={p.x} y={height - 10} textAnchor="middle" fill="white" fillOpacity="0.2" fontSize="10" className="font-mono uppercase">{data[i].label}</text>
           </g>
         ))}
       </svg>
@@ -103,30 +94,29 @@ function ActivityChart({ data }: { data: any[] }) {
 function SignalDonut({ data }: { data: any[] }) {
   const total = data.reduce((acc, curr) => acc + curr.value, 0);
   let cumulativePercent = 0;
-  if (total === 0) return <div className="h-40 w-40 rounded-full border border-dashed border-white/10 flex items-center justify-center text-[9px] font-mono text-white/10">NO_INTEL</div>;
-
+  if (total === 0) return <div className="h-40 w-40 rounded-full border border-dashed border-white/10 flex items-center justify-center text-[9px] font-mono text-white/10 uppercase tracking-widest">Zero Data</div>;
   return (
-    <div className="flex flex-col items-center">
-      <div className="relative mb-8">
-        <svg width="180" height="180" viewBox="0 0 32 32" className="rotate-[-90deg]">
+    <div className="flex items-center gap-10">
+      <div className="relative">
+        <svg width="150" height="150" viewBox="0 0 32 32">
           {data.map((item, i) => {
             const percent = (item.value / total) * 100;
-            const offset = 100 - cumulativePercent;
+            const offset = cumulativePercent;
             cumulativePercent += percent;
-            return <circle key={i} r="16" cx="16" cy="16" fill="none" stroke={TAG_STYLES[item.label]?.color || "#fff"} strokeWidth="3" strokeDasharray={`${percent} ${100 - percent}`} strokeDashoffset={offset} className="transition-all duration-1000" />;
+            return <circle key={i} r="15.9" cx="16" cy="16" fill="none" stroke={TAG_STYLES[item.label]?.color || "#fff"} strokeWidth="3" strokeDasharray={`${percent} ${100 - percent}`} strokeDashoffset={-offset} className="transition-all duration-1000" />;
           })}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-display font-bold text-white">{total}</span>
-          <span className="text-[8px] font-mono text-white/20 uppercase tracking-tighter">Total Signals</span>
+            <span className="text-2xl font-display font-bold text-white/90">{total}</span>
+            <span className="text-[7px] font-mono text-white/20 uppercase tracking-tighter">Signals</span>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-x-8 gap-y-2 w-full">
+      <div className="space-y-2.5">
         {data.map((item, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <div className="w-1 h-1 rounded-full" style={{ backgroundColor: TAG_STYLES[item.label]?.color }} />
-            <span className="text-[9px] font-mono text-white/30 uppercase">{item.label}</span>
-            <span className="text-[9px] font-mono text-white/60 ml-auto">{item.value}</span>
+          <div key={i} className="flex items-center gap-3">
+            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: TAG_STYLES[item.label]?.color }} />
+            <span className="text-[10px] font-mono text-white/30 uppercase">{item.label}</span>
+            <span className="text-[10px] font-mono text-white/70 ml-auto">{item.value}</span>
           </div>
         ))}
       </div>
@@ -150,6 +140,7 @@ export default function DashboardPage() {
   const [signals, setSignals] = useState<any[]>([]);
   const [stats, setStats] = useState<any[]>([]);
   const [dist, setDist] = useState<any[]>([]);
+  const [socialsMap, setSocialsMap] = useState<Record<string, any[]>>({});
   
   const [showModal, setShowModal] = useState(false);
   const [newCompName, setNewCompName] = useState("");
@@ -185,8 +176,19 @@ export default function DashboardPage() {
         apiRequest(`/api/stats/activity`, { headers: { Authorization: `Bearer ${token}` } }),
         apiRequest(`/api/stats/distribution`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
+
       if (uRes.status === 'fulfilled') setUser(uRes.value);
-      if (cRes.status === 'fulfilled') setCompetitors(cRes.value || []);
+      if (cRes.status === 'fulfilled') {
+          const comps = cRes.value || [];
+          setCompetitors(comps);
+          // Загружаем соцсети для каждого конкурента для подсчета Data Points
+          comps.forEach(async (c: any) => {
+             try {
+                const sData = await apiRequest(`/api/competitors/${c.id}/socials`, { headers: { Authorization: `Bearer ${token}` } });
+                setSocialsMap(prev => ({...prev, [c.id]: sData || []}));
+             } catch (e) {}
+          });
+      }
       if (sRes.status === 'fulfilled') setSignals(sRes.value || []);
       if (stRes.status === 'fulfilled') setStats(stRes.value || []);
       if (dsRes.status === 'fulfilled') setDist(dsRes.value || []);
@@ -212,7 +214,7 @@ export default function DashboardPage() {
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (!confirm("Permanently remove this monitor?")) return;
+    if (!confirm("Remove this monitor?")) return;
     try {
       const token = localStorage.getItem("access_token");
       await apiRequest(`/api/competitors/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
@@ -221,7 +223,7 @@ export default function DashboardPage() {
     } catch (err: any) { alert(err.message); }
   };
 
-  if (isLoading) return <div className="h-screen bg-[#060608] flex items-center justify-center text-white/10 font-mono text-[10px] uppercase tracking-[0.4em]">Synchronizing...</div>;
+  if (isLoading) return <div className="h-screen bg-[#060608] flex items-center justify-center text-white/10 font-mono text-[10px] uppercase tracking-[0.5em]">Synchronizing...</div>;
 
   return (
     <div className="flex h-screen bg-[#060608] text-white overflow-hidden font-sans antialiased selection:bg-white/10">
@@ -229,7 +231,7 @@ export default function DashboardPage() {
       {/* Sidebar */}
       <aside className="w-56 shrink-0 flex flex-col border-r border-white/[0.06] bg-[#08080a]">
         <div className="h-14 flex items-center gap-3 px-5 border-b border-white/[0.06]">
-          <div className="text-white"><SledixLogo /></div>
+          <svg width="22" height="22" viewBox="0 0 120 120" fill="none"><path d="M76 32 C76 20 64 14 52 18 C40 22 36 32 42 40 C48 48 68 50 74 60 C80 70 74 84 60 88 C46 92 36 84 36 74" stroke="currentColor" strokeWidth="10" strokeLinecap="square" fill="none" /></svg>
           <span className="font-display font-bold text-sm tracking-tight">Sledix</span>
         </div>
         <div className="px-3 pt-4 pb-2">
@@ -237,29 +239,25 @@ export default function DashboardPage() {
             <div className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-[10px] font-bold uppercase">{companySlug[0]}</div>
             <div className="flex-1 min-w-0">
               <p className="text-[11px] font-medium truncate">{companySlug}</p>
-              <p className="text-[8px] text-white/20 font-mono uppercase">{user?.plan || "Growth"}</p>
+              <p className="text-[8px] text-white/20 font-mono uppercase">{user?.plan || "Growth"} plan</p>
             </div>
           </div>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-0.5">
-          <button onClick={() => { setPage("dashboard"); setSelectedComp(null); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all ${page==="dashboard" && !selectedComp?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.dashboard} Dashboard</button>
-          <button onClick={() => { setPage("competitors"); setSelectedComp(null); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all ${page==="competitors"?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.competitors} Monitors <span className="ml-auto text-[9px] bg-white/5 px-1.5 rounded font-mono">{competitors.length}</span></button>
-          <button onClick={() => { setPage("signals"); setSelectedComp(null); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all ${page==="signals"?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.signals} Signals <span className="ml-auto text-[9px] bg-white/5 px-1.5 rounded font-mono">{signals.length}</span></button>
+          <button onClick={() => { setPage("dashboard"); setSelectedComp(null); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="dashboard" && !selectedComp?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.dashboard} Dashboard</button>
+          <button onClick={() => { setPage("competitors"); setSelectedComp(null); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="competitors"?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.competitors} Monitors <span className="ml-auto text-[9px] bg-white/5 px-1.5 rounded font-mono">{competitors.length}</span></button>
+          <button onClick={() => { setPage("signals"); setSelectedComp(null); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="signals"?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.signals} Signals <span className="ml-auto text-[9px] bg-white/5 px-1.5 rounded font-mono">{signals.length}</span></button>
         </nav>
         <div className="px-3 pb-6 border-t border-white/[0.06] pt-4 space-y-0.5">
-          <button onClick={() => setPage("settings")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all ${page === "settings" ? "bg-white/[0.08] text-white" : "text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.settings} Settings</button>
+          <button onClick={() => setPage("settings")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page === "settings" ? "bg-white/[0.08] text-white" : "text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.settings} Settings</button>
           <div className="flex items-center gap-3 px-3 py-4 mt-2">
-            <div className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-white/30">{user?.email[0].toUpperCase()}</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] text-white/50 truncate font-mono">{user?.email}</p>
-              <button onClick={() => {localStorage.clear(); window.location.href="/auth/login"}} className="text-[8px] font-mono text-red-400/40 hover:text-red-400 uppercase tracking-tighter">Sign Out</button>
-            </div>
+            <div className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-white/30">{user?.email?.[0]?.toUpperCase() || "?"}</div>
+            <div className="flex-1 min-w-0"><p className="text-[10px] text-white/50 truncate font-mono">{user?.email}</p><button onClick={() => {localStorage.clear(); window.location.href="/auth/login"}} className="text-[8px] font-mono text-red-400/40 hover:text-red-400 uppercase tracking-tighter">Sign Out</button></div>
           </div>
         </div>
       </aside>
 
-      {/* Main Area */}
-      <div className="flex-1 flex flex-col overflow-hidden relative bg-[#060608]">
+      <div className="flex-1 flex flex-col overflow-hidden relative">
         <header className="h-14 shrink-0 flex items-center justify-between px-8 border-b border-white/[0.06] bg-[#060608]/50 backdrop-blur-xl z-20">
           <h1 className="font-display text-base font-bold tracking-tight uppercase text-white/90">{selectedComp ? selectedComp.name : page}</h1>
           <div className="flex items-center gap-6">
@@ -273,7 +271,7 @@ export default function DashboardPage() {
             <CompetitorDetailsView comp={selectedComp} signals={signals.filter(s => s.company === selectedComp.name)} onDelete={handleDelete} onBack={() => setSelectedComp(null)} />
           ) : (
             <>
-              {page === "dashboard" && <DashboardView count={competitors.length} signals={signals} stats={stats} dist={dist} />}
+              {page === "dashboard" && <DashboardView count={competitors.length} signals={signals} stats={stats} dist={dist} socials={socialsMap} />}
               {page === "competitors" && <CompetitorsView competitors={competitors} signals={signals} onDelete={handleDelete} onSelect={setSelectedComp} />}
               {page === "signals" && <SignalsView signals={signals} />}
               {page === "settings" && <SettingsView user={user} />}
@@ -312,7 +310,7 @@ export default function DashboardPage() {
                 )}
               </div>
               <div className="relative" ref={cityRef}>
-                <p className="text-[9px] font-mono text-white/30 uppercase mb-2">Node Location</p>
+                <p className="text-[9px] font-mono text-white/30 uppercase mb-2">Geographical Node</p>
                 <input required value={city} onChange={e => {
                    setCity(e.target.value);
                    if (e.target.value.length >= 2) {
@@ -330,8 +328,8 @@ export default function DashboardPage() {
                   </div>
                 )}
               </div>
-              <div><p className="text-[9px] font-mono text-white/30 uppercase mb-2">Digital Domain</p><input required value={newCompUrl} onChange={e => setNewCompUrl(e.target.value)} placeholder="www.example.com" className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm outline-none focus:border-white/30 font-mono"/></div>
-              <div className="flex gap-4 pt-4"><button type="button" onClick={() => setShowModal(false)} className="flex-1 border border-white/10 py-4 rounded-2xl text-[10px] font-mono font-bold uppercase text-white/30">Cancel</button><button type="submit" disabled={isAdding} className="flex-1 bg-white text-black py-4 rounded-2xl text-[10px] font-mono font-bold uppercase">{isAdding ? "Saving..." : "Start Monitor"}</button></div>
+              <div><p className="text-[9px] font-mono text-white/30 uppercase mb-2">Website</p><input required value={newCompUrl} onChange={e => setNewCompUrl(e.target.value)} placeholder="www.domain.com" className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm outline-none focus:border-white/30 font-mono"/></div>
+              <div className="flex gap-4 pt-4"><button type="button" onClick={() => setShowModal(false)} className="flex-1 border border-white/10 py-4 rounded-2xl text-[10px] font-mono font-bold uppercase text-white/30 transition-all hover:text-white">Cancel</button><button type="submit" disabled={isAdding} className="flex-1 bg-white text-black py-4 rounded-2xl text-[10px] font-mono font-bold uppercase hover:bg-white/90 disabled:opacity-50 transition-all">{isAdding ? "Saving..." : "Start"}</button></div>
             </form>
           </div>
         </div>
@@ -340,22 +338,34 @@ export default function DashboardPage() {
   );
 }
 
-// --- VIEWS ---
+// --- СТРАНИЦЫ (VIEWS) ---
 
-function DashboardView({ count, signals, stats, dist }: any) {
-  const avgScore = count > 0 ? Math.round(signals.length * 4 / count + 62) : 0;
+function DashboardView({ count, signals, stats, dist, socials }: any) {
+  // Реальный объем данных: каждый монитор (1) + наличие ИНН (1) + каждая соцсеть (1) + каждый сигнал (1)
+  let dataPointsCount = count + signals.length;
+  Object.values(socials).forEach((s: any) => dataPointsCount += s.length);
+  
+  // Покрытие сканирования
+  const monitoredWithSignals = new Set(signals.map((s: any) => s.company)).size;
+  const coverage = count > 0 ? Math.round((monitoredWithSignals / count) * 100) : 0;
+
   return (
     <div className="space-y-10 animate-in fade-in duration-1000 max-w-[1300px]">
-      {/* Cards Row */}
       <div className="grid grid-cols-4 gap-6">
-        {[ { label: "Monitors", value: count }, { label: "Signal Density", value: signals.length }, { label: "Threat Index", value: Math.min(avgScore, 99) }, { label: "Status", value: "Online" }].map((s, i) => (
-          <div key={i} className="border border-white/[0.06] rounded-[24px] p-6 bg-[#08080a] relative overflow-hidden group border-b-2 border-b-white/5">
+        {[ 
+          { label: "Monitors", value: count, color: "#fff" }, 
+          { label: "Signal Density", value: signals.length, color: "#10b981" }, 
+          { label: "Data Points", value: dataPointsCount, color: "#3b82f6" }, 
+          { label: "Scan Coverage", value: `${coverage}%`, color: "#f59e0b" }
+        ].map((s, i) => (
+          <div key={i} className="border border-white/[0.06] rounded-[24px] p-6 bg-[#08080a] relative overflow-hidden group border-b-2 border-b-white/5 transition-all">
+            <div className="absolute top-0 left-0 w-full h-1 opacity-40 bg-gradient-to-r from-transparent via-current to-transparent" style={{ color: s.color }} />
+            <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-100 transition-opacity"><Sparkline color={s.color} /></div>
             <p className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/20 mb-3">{s.label}</p>
-            <p className="font-display text-4xl font-bold tracking-tighter">{s.value}</p>
+            <p className="font-display text-4xl font-bold tracking-tighter text-white/90">{s.value}</p>
           </div>
         ))}
       </div>
-      
       <div className="grid grid-cols-12 gap-8">
           <div className="col-span-8 border border-white/[0.06] rounded-[40px] p-10 bg-[#08080a] flex flex-col justify-between h-[480px]">
              <p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40 mb-10">Intelligence Activity (7 Days)</p>
@@ -365,7 +375,6 @@ function DashboardView({ count, signals, stats, dist }: any) {
              <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/20 mb-10 w-full text-left">Distribution</p>
              <SignalDonut data={dist} />
           </div>
-          
           <div className="col-span-4 border border-white/[0.06] rounded-[32px] bg-[#08080a] p-8 h-[450px] flex flex-col shadow-xl">
              <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30 mb-8 border-b border-white/5 pb-4">Master Feed</p>
              <div className="space-y-6 flex-1 overflow-auto pr-2 custom-scrollbar">
@@ -378,15 +387,14 @@ function DashboardView({ count, signals, stats, dist }: any) {
                ))}
              </div>
           </div>
-
-          <div className="col-span-8 border border-white/[0.06] rounded-[40px] bg-[#08080a] p-1 h-[450px]">
+          <div className="col-span-8 border border-white/[0.06] rounded-[40px] bg-[#08080a] p-1 shadow-2xl h-[450px]">
              <div className="w-full h-full bg-[#08080a] rounded-[39px] flex flex-col items-center justify-center relative overflow-hidden">
                 <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
                 <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center mb-6 bg-white/[0.01]">
                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
                 </div>
                 <h2 className="font-display text-xl font-bold mb-2 tracking-tight uppercase">Strategic Matrix</h2>
-                <p className="text-white/20 text-[10px] font-mono uppercase tracking-widest max-w-sm text-center leading-relaxed">Analyzing {count} targets. Data synchronization optimal.</p>
+                <p className="text-white/20 text-[10px] font-mono uppercase tracking-widest max-w-sm text-center leading-relaxed">Analyzing {count} targets. Sector benchmarks synchronized.</p>
              </div>
           </div>
       </div>
@@ -408,7 +416,7 @@ function CompetitorsView({ competitors, signals, onDelete, onSelect }: any) {
             <p className="text-[10px] font-mono uppercase text-white/30 tracking-widest">{c.city || 'Global Node'}</p>
             <button onClick={(e) => onDelete(e, c.id)} className="p-2 text-white/10 hover:text-red-500 transition-all hover:scale-110">{Icons.trash}</button>
           </div>
-          <div className="flex items-center justify-between"><span className="text-[9px] font-mono uppercase text-emerald-400/60 border border-emerald-400/20 bg-emerald-400/5 px-3 py-1 rounded-full">Tracking Active</span><div className="text-[9px] font-mono uppercase text-white/20 group-hover:text-white transition-colors flex items-center gap-1.5">Details {Icons.chevron}</div></div>
+          <div className="flex items-center justify-between"><span className="text-[9px] font-mono uppercase text-emerald-400/60 border border-emerald-400/20 bg-emerald-400/5 px-3 py-1 rounded-full">Tracking Active</span><div className="text-[9px] font-mono uppercase text-white/20 group-hover:text-white transition-colors flex items-center gap-1.5">View Details {Icons.chevron}</div></div>
         </div>
       ))}
       {competitors.length === 0 && <div className="col-span-full border border-dashed border-white/10 rounded-[40px] p-32 text-center text-white/10 font-mono uppercase text-xs tracking-widest">Awaiting targets...</div>}
@@ -421,6 +429,8 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack }: any) {
   const [platform, setPlatform] = useState("telegram");
   const [socials, setSocials] = useState<any[]>([]);
   const [isLinking, setIsLinking] = useState(false);
+  const [msg, setMsg] = useState({ text: "", type: "" });
+
   const fetchSocials = async () => {
     try {
       const token = localStorage.getItem("access_token");
@@ -429,18 +439,21 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack }: any) {
     } catch (e) {}
   };
   useEffect(() => { fetchSocials(); }, [comp.id]);
+
   const handleLink = async () => {
     if (!socialUrl) return;
     setIsLinking(true);
     try {
       const token = localStorage.getItem("access_token");
       await apiRequest(`/api/competitors/${comp.id}/socials`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ platform, url: socialUrl, interval: 60 }) });
+      setMsg({ text: "Linked!", type: "success" });
       setSocialUrl(""); fetchSocials();
-    } catch (e) {} finally { setIsLinking(false); }
+    } catch (e) { setMsg({ text: "Error linking", type: "error" }); } finally { setIsLinking(false); }
   };
+
   return (
     <div className="animate-in slide-in-from-bottom-2 duration-700 space-y-10 max-w-[1200px]">
-      <div className="flex justify-between items-center"><button onClick={onBack} className="text-[10px] font-mono text-white/30 hover:text-white flex items-center gap-3 uppercase tracking-widest transition-all"><span className="text-lg">←</span> Center</button><button onClick={(e) => onDelete(e, comp.id)} className="text-[10px] font-mono text-red-500/40 hover:text-red-500 uppercase px-5 py-2 rounded-xl border border-red-500/10 hover:bg-red-500/5 transition-all">Archive Monitor</button></div>
+      <div className="flex justify-between items-center"><button onClick={onBack} className="text-[10px] font-mono text-white/30 hover:text-white flex items-center gap-3 uppercase tracking-widest transition-all"><span className="text-lg">←</span> Hub</button><button onClick={(e) => onDelete(e, comp.id)} className="text-[10px] font-mono text-red-500/40 hover:text-red-400 uppercase px-5 py-2 rounded-xl border border-red-500/10 hover:bg-red-500/5 transition-all">Archive Monitor</button></div>
       <div className="grid grid-cols-3 gap-10">
         <div className="col-span-1 space-y-8">
            <div className="border border-white/[0.07] rounded-[40px] p-10 bg-[#08080a]">
@@ -453,18 +466,20 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack }: any) {
               </div>
            </div>
            <div className="border border-white/[0.06] rounded-[40px] p-10 bg-[#08080a]">
-              <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-8">Observers</p>
+              <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-8">Intelligence Sources</p>
               <div className="space-y-4 mb-10">
                  {socials.map((s: any) => (<div key={s.id} className="p-5 border border-white/5 rounded-3xl bg-white/[0.01] flex justify-between items-center"><p className="text-[11px] text-white/60 font-mono uppercase">{s.platform}</p><div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 animate-pulse"/></div>))}
               </div>
               <div className="space-y-4 pt-8 border-t border-white/5">
                  <select value={platform} onChange={e => setPlatform(e.target.value)} className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-xs text-white outline-none"><option value="telegram">Telegram</option><option value="vk">VK.com</option></select>
-                 <input value={socialUrl} onChange={e => setSocialUrl(e.target.value)} placeholder="Observer URL..." className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-xs text-white outline-none font-mono focus:border-white/30 transition-all"/><button onClick={handleLink} disabled={isLinking} className="w-full bg-white text-black py-5 rounded-2xl font-mono text-[11px] font-bold uppercase hover:bg-white/90 transition-all">Link Observer</button>
+                 <input value={socialUrl} onChange={e => setSocialUrl(e.target.value)} placeholder="Observer URL..." className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-xs text-white outline-none font-mono focus:border-white/30 transition-all"/>
+                 {msg.text && <p className={`text-[9px] font-mono uppercase ${msg.type==='error'?'text-red-400':'text-emerald-400'}`}>{msg.text}</p>}
+                 <button onClick={handleLink} disabled={isLinking} className="w-full bg-white text-black py-5 rounded-2xl font-mono text-[11px] font-bold uppercase hover:bg-white/90 transition-all">Link Source</button>
               </div>
            </div>
         </div>
         <div className="col-span-2 border border-white/[0.07] rounded-[40px] bg-[#08080a] overflow-hidden flex flex-col h-[850px]">
-           <div className="px-10 py-8 border-b border-white/[0.06] flex justify-between items-center bg-white/[0.01]"><p className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/40">Raw Intel Feed</p></div>
+           <div className="px-10 py-8 border-b border-white/[0.06] flex justify-between items-center bg-white/[0.01]"><p className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/40">Raw Intelligence Data</p></div>
            <div className="divide-y divide-white/[0.04] overflow-auto custom-scrollbar">
               {signals.map((s: any) => (<div key={s.id} className="p-10 hover:bg-white/[0.01] transition-all"><div className="flex justify-between items-center mb-4"><SignalBadge label={s.tag} /><span className="text-[10px] font-mono text-white/10 uppercase">{getRelativeTime(s.created_at)}</span></div><p className="text-[13px] text-white/50 leading-relaxed font-light">{s.msg}</p></div>))}
            </div>
@@ -477,7 +492,7 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack }: any) {
 function SignalsView({ signals }: any) {
   return (
     <div className="border border-white/[0.06] rounded-[40px] bg-[#08080a] overflow-hidden max-w-[1200px] animate-in fade-in duration-700">
-        <div className="px-10 py-8 border-b border-white/[0.06] bg-white/[0.01] flex justify-between items-center"><p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40">Global Intel Stream</p><span className="text-[10px] font-mono text-white/20 uppercase tracking-widest">{signals.length} Signals Captured</span></div>
+        <div className="px-10 py-8 border-b border-white/[0.06] bg-white/[0.01] flex justify-between items-center"><p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40">Master Intelligence Stream</p><span className="text-[10px] font-mono text-white/20 uppercase tracking-widest">{signals.length} Signals Captured</span></div>
         <div className="divide-y divide-white/[0.04]">
           {signals.map((s: any) => (<div key={s.id} className="flex items-center gap-12 px-10 py-8 hover:bg-white/[0.01] transition-all"><div className="w-32 shrink-0"><p className="text-[11px] font-bold text-white/70 uppercase font-mono truncate tracking-tighter">{s.company}</p></div><p className="flex-1 text-[13px] text-white/40 font-light leading-relaxed">{s.msg}</p><SignalBadge label={s.tag} /><span className="text-[11px] font-mono text-white/20 w-24 text-right shrink-0 font-mono">{getRelativeTime(s.created_at)}</span></div>))}
         </div>
@@ -496,7 +511,7 @@ function SettingsView({ user }: any) {
     try {
       const token = localStorage.getItem("access_token");
       await apiRequest("/api/auth/me", { method: "PATCH", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ email, password: showPass ? password : "" }) });
-      setMessage("Success: Profile Configuration Synchronized");
+      setMessage("Success: Configuration Synchronized");
       setShowPass(false); setPassword("");
     } catch (err: any) { setMessage(`Error: ${err.message}`); } finally { setIsSaving(false); }
   };
@@ -505,20 +520,10 @@ function SettingsView({ user }: any) {
       <div className="border border-white/[0.06] rounded-[40px] bg-[#08080a] p-12 space-y-10 shadow-2xl">
         <p className="text-[11px] font-mono text-white/30 uppercase tracking-[0.4em] mb-10">Command Center</p>
         <div className="space-y-4"><p className="text-[10px] font-mono text-white/20 uppercase tracking-widest ml-1">Identity Endpoint</p><input value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-6 py-5 text-[13px] text-white font-mono outline-none focus:border-white/30 transition-all"/></div>
-        <div className="space-y-6"><p className="text-[10px] font-mono text-white/20 uppercase tracking-widest ml-1">Security Cipher</p>{showPass ? (<div className="space-y-6 animate-in slide-in-from-top-2 duration-300"><input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="New Cipher..." className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-6 py-5 text-[13px] text-white font-mono outline-none focus:border-white/30"/><button onClick={() => setShowPass(false)} className="text-[10px] font-mono text-white/20 hover:text-white uppercase tracking-widest transition-colors ml-1">Abort Update</button></div>) : (<button onClick={() => setShowPass(true)} className="text-[10px] font-mono text-white/40 border border-white/10 px-8 py-4 rounded-2xl hover:bg-white/5 transition-all uppercase tracking-widest">Update Access Cipher</button>)}</div>
+        <div className="space-y-6"><p className="text-[10px] font-mono text-white/20 uppercase tracking-widest ml-1">Security Cipher</p>{showPass ? (<div className="space-y-6 animate-in slide-in-from-top-2 duration-300"><input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="New Cipher..." className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-6 py-5 text-[13px] text-white font-mono outline-none focus:border-white/30"/><button onClick={() => setShowPass(false)} className="text-[10px] font-mono text-white/20 hover:text-white uppercase tracking-widest transition-colors ml-1">Abort Key Change</button></div>) : (<button onClick={() => setShowPass(true)} className="text-[10px] font-mono text-white/40 border border-white/10 px-8 py-4 rounded-2xl hover:bg-white/5 transition-all uppercase tracking-widest">Update Access Cipher</button>)}</div>
         {message && <p className={`text-[10px] font-mono uppercase tracking-widest ${message.includes('Error') ? 'text-red-400' : 'text-emerald-400'}`}>{message}</p>}
         <div className="pt-10 border-t border-white/5"><button onClick={handleSave} disabled={isSaving} className="w-full bg-white text-black py-6 rounded-[24px] font-mono text-[11px] font-bold uppercase tracking-[0.3em] hover:bg-white/90 disabled:opacity-50 transition-all">Synchronize Configuration</button></div>
       </div>
     </div>
-  );
-}
-function SledixLogo({ size = 28 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
-      <path
-        d="M76 32 C76 20 64 14 52 18 C40 22 36 32 42 40 C48 48 68 50 74 60 C80 70 74 84 60 88 C46 92 36 84 36 74"
-        stroke="currentColor" strokeWidth="8" strokeLinecap="square" fill="none"
-      />
-    </svg>
   );
 }
