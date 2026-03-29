@@ -205,7 +205,7 @@ export default function DashboardPage() {
             <CompetitorDetailsView comp={selectedComp} signals={signals.filter(s => s.company === selectedComp.name)} onDelete={handleDelete} onBack={() => setSelectedComp(null)} />
           ) : (
             <>
-              {page === "dashboard" && <DashboardView count={competitors.length} signals={signals} />}
+              {page === "dashboard" && <DashboardView count={competitors.length} signals={signals} stats={stats}/>}
               {page === "competitors" && <CompetitorsView competitors={competitors} signals={signals} onDelete={handleDelete} onSelect={setSelectedComp} />}
               {page === "signals" && <SignalsView signals={signals} />}
               {page === "settings" && <SettingsView user={user} />}
