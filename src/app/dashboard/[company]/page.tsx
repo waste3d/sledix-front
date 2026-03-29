@@ -271,7 +271,7 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack }: any) {
            </div>
 
            <div className="border border-white/[0.06] rounded-[40px] p-10 bg-[#08080a]">
-              <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-8">Observers</p>
+              <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-8">Observers &amp; Watchers</p>
               <div className="space-y-4 mb-10">
                  {socials.map((s: any) => (<div key={s.id} className="p-5 border border-white/5 rounded-3xl bg-white/[0.01] flex justify-between items-center"><p className="text-[11px] text-white/60 font-mono uppercase">{s.platform}</p><div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 animate-pulse"/></div>))}
               </div>
