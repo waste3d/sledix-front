@@ -89,6 +89,8 @@ export default function DashboardPage() {
   const [partySuggestions, setPartySuggestions] = useState<any[]>([]);
   const [citySuggestions, setCitySuggestions] = useState<any[]>([]);
 
+  const [stats, setStats] = useState<any[]>([]);
+
   // Мгновенная проверка авторизации
   if (typeof window !== "undefined" && !localStorage.getItem("access_token")) {
     window.location.href = "/auth/login";
@@ -108,14 +110,16 @@ export default function DashboardPage() {
   const fetchData = async () => {
     const token = localStorage.getItem("access_token");
     try {
-      const [uRes, cRes, sRes] = await Promise.allSettled([
+      const [uRes, cRes, sRes, stRes] = await Promise.allSettled([
         apiRequest(`/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } }),
         apiRequest(`/api/competitors`, { headers: { Authorization: `Bearer ${token}` } }),
-        apiRequest(`/api/signals`, { headers: { Authorization: `Bearer ${token}` } })
+        apiRequest(`/api/signals`, { headers: { Authorization: `Bearer ${token}` } }),
+        apiRequest(`/api/stats/activity`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
       if (uRes.status === 'fulfilled') setUser(uRes.value);
       if (cRes.status === 'fulfilled') setCompetitors(cRes.value || []);
       if (sRes.status === 'fulfilled') setSignals(sRes.value || []);
+      if (stRes.status === 'fulfilled') setStats(stRes.value || []);
       setIsLoading(false);
     } catch (err) { setIsLoading(false); }
   };
@@ -137,6 +141,7 @@ export default function DashboardPage() {
       fetchData();
     } catch (err: any) { alert(err.message); } finally { setIsAdding(false); }
   };
+
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -281,43 +286,96 @@ export default function DashboardPage() {
 
 // --- СТРАНИЦЫ (VIEWS) ---
 
-function DashboardView({ count, signals }: any) {
+function DashboardView({ count, signals, stats }: any) {
+  // Рассчитываем средний Score по всем конкурентам
+  const avgScore = count > 0 
+    ? Math.round(signals.length * 5 / count + 60) // Упрощенная формула для дашборда
+    : 0;
+
   return (
-    <div className="space-y-10 max-w-[1200px]">
+    <div className="space-y-10 max-w-[1200px] animate-in fade-in duration-1000">
+      
+      {/* Верхний ряд: Основные показатели (Реальные цифры) */}
       <div className="grid grid-cols-4 gap-6">
         {[
           { label: "Active Monitors", value: count }, 
           { label: "Signal Density", value: signals.length }, 
-          { label: "Intelligence Index", value: "84" }, 
-          { label: "Status", value: "Online" }
+          { label: "Intelligence Index", value: Math.min(avgScore, 99) }, 
+          { label: "System Status", value: "Online" }
         ].map((s, i) => (
-          <div key={i} className="border border-white/[0.06] rounded-[24px] p-6 bg-white/[0.01]">
+          <div key={i} className="border border-white/[0.06] rounded-[24px] p-6 bg-white/[0.01] hover:bg-white/[0.02] transition-all border-b-2 border-b-white/5">
             <p className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/20 mb-3">{s.label}</p>
-            <p className="font-display text-4xl font-bold tracking-tighter">{s.value}</p>
+            <p className="font-display text-4xl font-bold tracking-tighter text-white/90">
+                {s.value}
+            </p>
           </div>
         ))}
       </div>
       
       <div className="grid grid-cols-3 gap-8">
-          <div className="col-span-2 border border-white/[0.06] rounded-[40px] p-24 text-center bg-gradient-to-b from-white/[0.02] to-transparent">
-             <div className="w-16 h-16 bg-white/[0.03] border border-white/5 rounded-full flex items-center justify-center mx-auto mb-6 text-xl animate-pulse">📡</div>
-             <h2 className="font-display text-xl font-bold mb-2">Autonomous System Active</h2>
-             <p className="text-white/20 text-xs font-mono max-w-xs mx-auto leading-relaxed">System is performing deep scans across all digital endpoints. Waiting for data spikes.</p>
+          {/* Левая колонка: График активности */}
+          <div className="col-span-2 border border-white/[0.06] rounded-[40px] p-10 bg-gradient-to-b from-white/[0.02] to-transparent flex flex-col justify-between h-[500px]">
+             <div>
+                <div className="flex justify-between items-center mb-10">
+                    <div>
+                        <p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40">Intelligence Activity</p>
+                        <p className="text-[9px] text-white/10 uppercase mt-1">Real-time data flow from linked observers</p>
+                    </div>
+                    <div className="px-3 py-1 bg-emerald-500/5 border border-emerald-500/20 rounded-full">
+                        <p className="text-[8px] font-mono text-emerald-400 uppercase tracking-widest font-bold">7-Day Analysis</p>
+                    </div>
+                </div>
+
+                {/* Если данных совсем нет, показываем заглушку внутри графика */}
+                {signals.length === 0 ? (
+                    <div className="h-48 flex items-center justify-center border border-dashed border-white/5 rounded-3xl">
+                        <p className="text-white/10 font-mono text-[10px] uppercase tracking-widest animate-pulse">Awaiting data ingestion...</p>
+                    </div>
+                ) : (
+                    <ActivityChart data={stats} />
+                )}
+             </div>
+
+             <div className="pt-8 border-t border-white/5 flex justify-between items-center">
+                <div className="flex gap-6">
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-white/10" />
+                        <span className="text-[9px] font-mono text-white/20 uppercase">Historical</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500/40" />
+                        <span className="text-[9px] font-mono text-white/20 uppercase">Latest Scans</span>
+                    </div>
+                </div>
+                <p className="text-[9px] font-mono text-white/10 uppercase tracking-[0.2em]">Neural processing active</p>
+             </div>
           </div>
-          <div className="border border-white/[0.06] rounded-[32px] bg-[#08080a] p-6 flex flex-col h-[480px]">
-             <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30 mb-8 border-b border-white/5 pb-4">Recent Intel Feed</p>
+
+          {/* Правая колонка: Недавние сигналы (Последние 10) */}
+          <div className="border border-white/[0.06] rounded-[32px] bg-[#08080a] p-6 flex flex-col h-[500px] shadow-2xl">
+             <div className="flex justify-between items-center mb-8 border-b border-white/5 pb-4">
+                <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30">Master Feed</p>
+                <span className="text-[10px] text-white/10 font-mono">Live</span>
+             </div>
+             
              <div className="space-y-6 flex-1 overflow-auto pr-2 custom-scrollbar">
                {signals.slice(0, 10).map((sig: any) => (
-                 <div key={sig.id} className="border-l-2 border-white/5 pl-5 py-0.5">
+                 <div key={sig.id} className="border-l-2 border-white/5 pl-5 py-0.5 hover:border-white/20 transition-colors">
                     <div className="flex justify-between items-center mb-1.5">
                        <SignalBadge label={sig.tag} />
-                       <p className="text-[9px] font-mono text-white/10">{getRelativeTime(sig.created_at)}</p>
+                       <p className="text-[9px] font-mono text-white/10 uppercase">{getRelativeTime(sig.created_at)}</p>
                     </div>
                     <p className="text-[11px] text-white/50 leading-relaxed font-light">{sig.msg}</p>
                     <p className="text-[10px] font-mono text-white/30 uppercase mt-2 font-bold tracking-tighter">{sig.company}</p>
                  </div>
                ))}
-               {signals.length === 0 && <p className="text-white/10 text-[10px] uppercase font-mono mt-20 text-center">No signals ingested</p>}
+               
+               {signals.length === 0 && (
+                 <div className="h-full flex flex-col items-center justify-center opacity-20">
+                    <div className="w-8 h-8 border border-dashed border-white rounded-full animate-spin mb-4" />
+                    <p className="text-white text-[10px] uppercase font-mono text-center">Initalizing stream...</p>
+                 </div>
+               )}
              </div>
           </div>
       </div>
@@ -565,3 +623,46 @@ function SettingsView({ user }: any) {
     </div>
   );
 }
+
+function ActivityChart({ data }: { data: any[] }) {
+  // Находим максимальное значение для масштабирования, минимум 1 чтобы не делить на 0
+  const maxValue = Math.max(...data.map(d => d.value), 1);
+
+  return (
+    <div className="flex items-end justify-between gap-3 h-48 w-full mt-2">
+      {data.map((day, i) => {
+        // Вычисляем высоту в процентах
+        const height = (day.value / maxValue) * 100;
+        const isToday = i === data.length - 1;
+
+        return (
+          <div key={i} className="flex-1 flex flex-col items-center gap-3 group relative">
+            {/* Тултип (появляется при наведении) */}
+            <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-white text-black text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-30 shadow-xl">
+              {day.value} signals
+            </div>
+            
+            <div className="w-full flex items-end justify-center h-full relative">
+              {/* Фоновая направляющая линия (только при наведении) */}
+              <div className="absolute inset-0 w-px bg-white/5 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity" />
+              
+              {/* Сами столбики */}
+              <div 
+                className={`w-full max-w-[24px] rounded-t-sm transition-all duration-700 ease-out 
+                  ${isToday ? 'bg-emerald-500/40 group-hover:bg-emerald-400' : 'bg-white/10 group-hover:bg-white/30'}`}
+                style={{ height: `${height}%`, minHeight: day.value > 0 ? '4px' : '2px' }}
+              />
+            </div>
+
+            {/* Подпись дня недели */}
+            <span className={`text-[9px] font-mono uppercase tracking-tighter 
+              ${isToday ? 'text-emerald-400 font-bold' : 'text-white/20'}`}>
+              {day.label}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
