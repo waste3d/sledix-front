@@ -178,17 +178,33 @@ function CompetitorsView({ competitors, signals, onDelete, onSelect }: any) {
         <div key={c.id} onClick={() => onSelect(c)} className="border border-white/[0.07] rounded-[32px] p-8 bg-[#08080a] hover:bg-[#0a0a0c] transition-all group relative cursor-pointer border-b-2 border-b-white/5">
           <div className="flex items-center gap-4 mb-8">
             <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-2xl font-bold text-white/10 uppercase font-mono group-hover:text-white/30 transition-colors">{c.name[0]}</div>
-            <div className="min-w-0 flex-1"><h4 className="font-display font-bold text-base truncate">{c.name}</h4><p className="text-[10px] text-white/20 font-mono truncate">{c.website_url}</p></div>
-            <div className="text-right"><p className="font-display text-2xl font-bold tracking-tighter text-white/90">{getCompScore(c, signals)}</p><p className="text-[8px] font-mono text-white/20 uppercase">Threat</p></div>
+            <div className="min-w-0 flex-1">
+              <h4 className="font-display font-bold text-base truncate">{c.name}</h4>
+              <p className="text-[10px] text-white/20 font-mono truncate">{c.website_url}</p>
+            </div>
+            <div className="text-right">
+               <p className="font-display text-2xl font-bold tracking-tighter text-white/90">{getCompScore(c, signals)}</p>
+               <p className="text-[8px] font-mono text-white/20 uppercase">Threat</p>
+            </div>
           </div>
           <div className="flex justify-between items-center bg-white/[0.02] p-4 rounded-2xl mb-8">
-            <p className="text-[10px] font-mono uppercase text-white/30 tracking-widest">{c.city || 'Global Node'}</p>
-            <button onClick={(e) => onDelete(e, c.id)} className="p-2 text-white/40 hover:text-red-500 transition-all hover:scale-110">{Icons.trash}</button>
+            <div>
+               <p className="text-[10px] font-mono uppercase text-white/30 tracking-widest">{c.city || 'Global Node'}</p>
+               <p className="text-[8px] font-mono text-white/10 uppercase mt-1">
+                 Web Scan: {c.last_web_scan_at ? getRelativeTime(c.last_web_scan_at) : 'Scheduled'}
+               </p>
+            </div>
+            <button onClick={(e) => onDelete(e, c.id)} className="p-2 text-white/10 hover:text-red-500 transition-all hover:scale-110">{Icons.trash}</button>
           </div>
-          <div className="flex items-center justify-between"><span className="text-[9px] font-mono uppercase text-emerald-400/60 border border-emerald-400/20 bg-emerald-400/5 px-3 py-1 rounded-full">Tracking Active</span><div className="text-[9px] font-mono uppercase text-white/20 group-hover:text-white transition-colors flex items-center gap-1.5">Dossier {Icons.chevron}</div></div>
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-2 text-[9px] font-mono uppercase text-emerald-400/60 border border-emerald-400/20 bg-emerald-400/5 px-3 py-1 rounded-full">
+              <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+              Tracking Active
+            </span>
+            <div className="text-[9px] font-mono uppercase text-white/20 group-hover:text-white transition-colors flex items-center gap-1.5">Dossier {Icons.chevron}</div>
+          </div>
         </div>
       ))}
-      {competitors.length === 0 && <div className="col-span-full border border-dashed border-white/10 rounded-[40px] p-32 text-center text-white/10 font-mono uppercase text-xs tracking-widest">Awaiting monitor deployment...</div>}
     </div>
   );
 }
@@ -198,6 +214,7 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack }: any) {
   const [platform, setPlatform] = useState("telegram");
   const [socials, setSocials] = useState<any[]>([]);
   const [isLinking, setIsLinking] = useState(false);
+
   const fetchSocials = async () => {
     try {
       const token = localStorage.getItem("access_token");
@@ -206,6 +223,7 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack }: any) {
     } catch (e) {}
   };
   useEffect(() => { fetchSocials(); }, [comp.id]);
+
   const handleLink = async () => {
     if (!socialUrl) return;
     setIsLinking(true);
@@ -215,9 +233,13 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack }: any) {
       setSocialUrl(""); fetchSocials();
     } catch (e) {} finally { setIsLinking(false); }
   };
+
   return (
     <div className="animate-in slide-in-from-bottom-2 duration-700 space-y-10 max-w-[1200px]">
-      <div className="flex justify-between items-center"><button onClick={onBack} className="text-[10px] font-mono text-white/30 hover:text-white flex items-center gap-3 uppercase tracking-widest transition-all"><span className="text-lg">←</span> Hub</button><button onClick={(e) => onDelete(e, comp.id)} className="text-[10px] font-mono text-red-500/40 hover:text-red-400 uppercase px-5 py-2 rounded-xl border border-red-500/10 hover:bg-red-500/5 transition-all">Archive</button></div>
+      <div className="flex justify-between items-center">
+        <button onClick={onBack} className="text-[10px] font-mono text-white/30 hover:text-white flex items-center gap-3 uppercase tracking-widest transition-all"><span className="text-lg">←</span> Hub</button>
+        <button onClick={(e) => onDelete(e, comp.id)} className="text-[10px] font-mono text-red-500/40 hover:text-red-400 uppercase px-5 py-2 rounded-xl border border-red-500/10 hover:bg-red-500/5 transition-all">Archive Monitor</button>
+      </div>
       <div className="grid grid-cols-3 gap-10">
         <div className="col-span-1 space-y-8">
            <div className="border border-white/[0.07] rounded-[40px] p-10 bg-[#08080a]">
@@ -229,6 +251,25 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack }: any) {
                  <div><p className="text-[10px] font-mono text-white/20 uppercase mb-2 tracking-widest">Node Region</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-4 rounded-2xl border border-white/5">{comp.city || 'GLOBAL'}</p></div>
               </div>
            </div>
+
+           {/* БЛОК СТАТУСА ПАРСИНГА САЙТА */}
+           <div className="border border-white/[0.06] rounded-[40px] p-10 bg-[#08080a]">
+              <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-8">Web Index Status</p>
+              <div className="space-y-4">
+                  <div className="flex justify-between items-center p-4 bg-white/[0.01] border border-white/5 rounded-2xl">
+                      <span className="text-[10px] text-white/40 uppercase font-mono">Indexing Engine</span>
+                      <span className="text-[10px] text-emerald-400 font-mono font-bold">ONLINE</span>
+                  </div>
+                  <div className="p-4 bg-white/[0.01] border border-white/5 rounded-2xl">
+                      <p className="text-[9px] text-white/20 uppercase font-mono mb-2">Crawler Config</p>
+                      <p className="text-[11px] text-white/50 leading-relaxed font-light">
+                          Recursive scan active. Deep-link hashing enabled. 
+                          Last sync: {comp.last_web_scan_at ? getRelativeTime(comp.last_web_scan_at) : 'Queueing...'}
+                      </p>
+                  </div>
+              </div>
+           </div>
+
            <div className="border border-white/[0.06] rounded-[40px] p-10 bg-[#08080a]">
               <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-8">Observers</p>
               <div className="space-y-4 mb-10">
