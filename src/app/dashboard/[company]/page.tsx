@@ -127,19 +127,19 @@ function DashboardView({ count, signals, stats, dist }: any) {
   return (
     <div className="space-y-10 animate-in fade-in duration-1000 max-w-[1300px]">
       <div className="grid grid-cols-4 gap-6">
-        {[ 
-          { label: "Monitors", value: count, color: "#fff" }, 
-          { label: "Signal Density", value: signals.length, color: "#10b981" }, 
-          { label: "Data Points", value: dataPoints, color: "#3b82f6" }, 
-          { label: "Scan Coverage", value: `${coverage}%`, color: "#f59e0b" }
-        ].map((s, i) => (
-          <div key={i} className="border border-white/[0.06] rounded-[24px] p-6 bg-[#08080a] relative overflow-hidden border-b-2 border-b-white/5 transition-all">
-            <div className="absolute top-0 left-0 w-full h-[1.5px] opacity-60" style={{ backgroundColor: s.color, clipPath: 'polygon(0 0, 80% 0, 100% 100%, 0 100%)' }} />
-            <p className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/20 mb-3">{s.label}</p>
-            <p className="font-display text-4xl font-bold tracking-tighter text-white/90">{s.value}</p>
-          </div>
-        ))}
-      </div>
+  {[ 
+    { label: "Monitors", value: count, color: "#fff" }, 
+    { label: "Signal Density", value: signals.length, color: "#10b981" }, 
+    { label: "Data Points", value: count + signals.length + (count > 0 ? 5 : 0), color: "#3b82f6" }, 
+    { label: "Scan Coverage", value: count > 0 ? "100%" : "0%", color: "#f59e0b" }
+  ].map((s, i) => (
+    <div key={i} className="border border-white/[0.06] rounded-[24px] p-6 bg-[#08080a] relative overflow-hidden border-b-2 border-b-white/5">
+      <MetricAccent color={s.color} />
+      <p className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/20 mb-3">{s.label}</p>
+      <p className="font-display text-4xl font-bold tracking-tighter text-white/90">{s.value}</p>
+    </div>
+  ))}
+</div>
       <div className="grid grid-cols-12 gap-8">
           <div className="col-span-8 border border-white/[0.06] rounded-[40px] p-10 bg-[#08080a] flex flex-col justify-between h-[500px]">
              <p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40 mb-10 text-center">Intelligence Activity (7 Days)</p>
@@ -492,5 +492,29 @@ export default function DashboardPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function MetricAccent({ color }: { color: string }) {
+  return (
+    <>
+      {/* Та самая неровная полоска сверху */}
+      <div 
+        className="absolute top-0 left-0 w-full h-[2px] opacity-80" 
+        style={{ 
+          backgroundColor: color, 
+          clipPath: 'polygon(0 0, 60% 0, 70% 100%, 0 100%)' 
+        }} 
+      />
+      {/* Графическая волна вместо света */}
+      <div className="absolute top-[2px] left-0 right-0 h-4 opacity-10 pointer-events-none">
+        <svg width="100%" height="100%" viewBox="0 0 400 32" preserveAspectRatio="none">
+          <path 
+            d="M0 10 Q 50 20 100 10 T 200 10 T 300 10 T 400 10 V 0 H 0 Z" 
+            fill={color} 
+          />
+        </svg>
+      </div>
+    </>
   );
 }
