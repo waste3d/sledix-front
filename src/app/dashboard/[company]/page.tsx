@@ -129,14 +129,13 @@ function DashboardView({ count, signals, stats, dist }: any) {
       <div className="grid grid-cols-4 gap-6">
   {[ 
     { label: "Monitors", value: count, color: "#fff" }, 
-    { label: "Signal Density", value: signals.length, color: "#10b981" }, 
-    { label: "Data Points", value: count + signals.length + (count > 0 ? 5 : 0), color: "#3b82f6" }, 
-    { label: "Scan Coverage", value: count > 0 ? "100%" : "0%", color: "#f59e0b" }
+    { label: "Signals Detected", value: signals.length, color: "#10b981" }, 
+    { label: "Data Units", value: count + signals.length, color: "#3b82f6" }, 
+    { label: "System Status", value: "Online", color: "#f59e0b" }
   ].map((s, i) => (
-    <div key={i} className="border border-white/[0.06] rounded-[24px] p-6 bg-[#08080a] relative overflow-hidden border-b-2 border-b-white/5">
-      <MetricAccent color={s.color} />
+    <div key={i} className="border border-white/[0.06] rounded-[20px] p-6 bg-[#08080a] relative overflow-hidden">      
       <p className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/20 mb-3">{s.label}</p>
-      <p className="font-display text-4xl font-bold tracking-tighter text-white/90">{s.value}</p>
+      <p className="font-display text-4xl font-bold tracking-tight text-white/90">{s.value}</p>
     </div>
   ))}
 </div>
