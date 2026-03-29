@@ -44,7 +44,7 @@ const Icons = {
   chevron:     <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 12l4-4-4-4" strokeLinecap="round" strokeLinejoin="round"/></svg>
 };
 
-// --- Визуальные компоненты ---
+// --- ВИЗУАЛЬНЫЕ КОМПОНЕНТЫ ---
 
 function SignalBadge({ label }: { label: string }) {
   const style = TAG_STYLES[label] || { color: "#71717a", bg: "rgba(113, 113, 122, 0.1)" };
@@ -54,26 +54,48 @@ function SignalBadge({ label }: { label: string }) {
   );
 }
 
-function Sparkline({ color }: { color: string }) {
-  return (
-    <svg width="60" height="20" viewBox="0 0 60 20" className="opacity-30">
-      <path d="M0 15 Q 15 5, 30 12 T 60 8" fill="none" stroke={color} strokeWidth="1.5" />
-    </svg>
-  );
-}
-
 function ActivityChart({ data }: { data: any[] }) {
-  if (!data || data.length === 0) return <div className="h-48 w-full flex items-center justify-center border border-dashed border-white/5 rounded-3xl text-[10px] font-mono text-white/10 uppercase">Awaiting telemetry...</div>;
+  if (!data || data.length === 0) return <div className="h-full w-full flex items-center justify-center border border-dashed border-white/5 rounded-3xl text-[10px] font-mono text-white/10">WAITING_FOR_DATA</div>;
+  
   const maxValue = Math.max(...data.map(d => d.value), 1);
+  const width = 800;
+  const height = 200;
+  const padding = 40;
+
+  // Генерируем точки для SVG пути
+  const points = data.map((d, i) => ({
+    x: (i / (data.length - 1)) * (width - padding * 2) + padding,
+    y: height - ((d.value / maxValue) * (height - padding * 2) + padding)
+  }));
+
+  const d = `M ${points[0].x} ${points[0].y} ` + points.slice(1).map(p => `L ${p.x} ${p.y}`).join(" ");
+  const areaD = `${d} L ${points[points.length - 1].x} ${height} L ${points[0].x} ${height} Z`;
+
   return (
-    <div className="flex items-end justify-between gap-3 h-48 w-full mt-2">
-      {data.map((day, i) => (
-        <div key={i} className="flex-1 flex flex-col items-center gap-3 group relative">
-          <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-white text-black text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-all z-30">{day.value}</div>
-          <div className="w-full flex items-end justify-center h-full"><div className={`w-full max-w-[20px] rounded-t-sm transition-all duration-700 ${i === data.length - 1 ? 'bg-emerald-500/40' : 'bg-white/10'}`} style={{ height: `${(day.value / maxValue) * 100}%`, minHeight: '2px' }} /></div>
-          <span className="text-[9px] font-mono text-white/20 uppercase">{day.label}</span>
-        </div>
-      ))}
+    <div className="w-full h-full group relative">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible">
+        <defs>
+          <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#10b981" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {/* Сетка */}
+        {[0, 1, 2, 3].map(i => (
+          <line key={i} x1={padding} y1={padding + i * (height - padding * 2) / 3} x2={width - padding} y2={padding + i * (height - padding * 2) / 3} stroke="white" strokeOpacity="0.03" strokeWidth="1" />
+        ))}
+        {/* Область */}
+        <path d={areaD} fill="url(#areaGradient)" className="transition-all duration-1000" />
+        {/* Линия */}
+        <path d={d} fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-1000" />
+        {/* Точки */}
+        {points.map((p, i) => (
+          <g key={i} className="cursor-pointer">
+            <circle cx={p.x} cy={p.y} r="4" fill="#060608" stroke="#10b981" strokeWidth="2" />
+            <text x={p.x} y={height - 10} textAnchor="middle" fill="white" fillOpacity="0.2" fontSize="10" className="font-mono">{data[i].label}</text>
+          </g>
+        ))}
+      </svg>
     </div>
   );
 }
@@ -81,24 +103,30 @@ function ActivityChart({ data }: { data: any[] }) {
 function SignalDonut({ data }: { data: any[] }) {
   const total = data.reduce((acc, curr) => acc + curr.value, 0);
   let cumulativePercent = 0;
-  if (total === 0) return <div className="h-40 w-40 rounded-full border border-dashed border-white/10 flex items-center justify-center text-[9px] font-mono text-white/10">ZERO_DATA</div>;
+  if (total === 0) return <div className="h-40 w-40 rounded-full border border-dashed border-white/10 flex items-center justify-center text-[9px] font-mono text-white/10">NO_INTEL</div>;
+
   return (
-    <div className="flex items-center gap-8">
-      <svg width="140" height="140" viewBox="0 0 32 32" className="rotate-[-90deg]">
-        {data.map((item, i) => {
-          const percent = (item.value / total) * 100;
-          const offset = 100 - cumulativePercent;
-          cumulativePercent += percent;
-          return <circle key={i} r="16" cx="16" cy="16" fill="none" stroke={TAG_STYLES[item.label]?.color || "#fff"} strokeWidth="5" strokeDasharray={`${percent} ${100 - percent}`} strokeDashoffset={offset} className="transition-all duration-1000" />;
-        })}
-        <circle r="11" cx="16" cy="16" fill="#08080a" />
-      </svg>
-      <div className="space-y-2">
+    <div className="flex flex-col items-center">
+      <div className="relative mb-8">
+        <svg width="180" height="180" viewBox="0 0 32 32" className="rotate-[-90deg]">
+          {data.map((item, i) => {
+            const percent = (item.value / total) * 100;
+            const offset = 100 - cumulativePercent;
+            cumulativePercent += percent;
+            return <circle key={i} r="16" cx="16" cy="16" fill="none" stroke={TAG_STYLES[item.label]?.color || "#fff"} strokeWidth="3" strokeDasharray={`${percent} ${100 - percent}`} strokeDashoffset={offset} className="transition-all duration-1000" />;
+          })}
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-2xl font-display font-bold text-white">{total}</span>
+          <span className="text-[8px] font-mono text-white/20 uppercase tracking-tighter">Total Signals</span>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-x-8 gap-y-2 w-full">
         {data.map((item, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: TAG_STYLES[item.label]?.color }} />
-            <span className="text-[10px] font-mono text-white/30 uppercase">{item.label}</span>
-            <span className="text-[10px] font-mono text-white/70 ml-auto">{item.value}</span>
+          <div key={i} className="flex items-center gap-2">
+            <div className="w-1 h-1 rounded-full" style={{ backgroundColor: TAG_STYLES[item.label]?.color }} />
+            <span className="text-[9px] font-mono text-white/30 uppercase">{item.label}</span>
+            <span className="text-[9px] font-mono text-white/60 ml-auto">{item.value}</span>
           </div>
         ))}
       </div>
@@ -106,7 +134,7 @@ function SignalDonut({ data }: { data: any[] }) {
   );
 }
 
-// --- ГЛАВНЫЙ КОМПОНЕНТ ---
+// --- ОСНОВНОЙ КОМПОНЕНТ ---
 export default function DashboardPage() {
   const params = useParams();
   const router = useRouter();
@@ -184,7 +212,7 @@ export default function DashboardPage() {
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (!confirm("Remove this monitor permanently?")) return;
+    if (!confirm("Permanently remove this monitor?")) return;
     try {
       const token = localStorage.getItem("access_token");
       await apiRequest(`/api/competitors/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
@@ -193,37 +221,45 @@ export default function DashboardPage() {
     } catch (err: any) { alert(err.message); }
   };
 
-  if (isLoading) return <div className="h-screen bg-[#060608] flex items-center justify-center text-white/10 font-mono text-[10px] uppercase tracking-[0.5em]">Synchronizing...</div>;
+  if (isLoading) return <div className="h-screen bg-[#060608] flex items-center justify-center text-white/10 font-mono text-[10px] uppercase tracking-[0.4em]">Synchronizing...</div>;
 
   return (
     <div className="flex h-screen bg-[#060608] text-white overflow-hidden font-sans antialiased selection:bg-white/10">
       
+      {/* Sidebar */}
       <aside className="w-56 shrink-0 flex flex-col border-r border-white/[0.06] bg-[#08080a]">
         <div className="h-14 flex items-center gap-3 px-5 border-b border-white/[0.06]">
-          <svg width="22" height="22" viewBox="0 0 120 120" fill="none"><path d="M76 32 C76 20 64 14 52 18 C40 22 36 32 42 40 C48 48 68 50 74 60 C80 70 74 84 60 88 C46 92 36 84 36 74" stroke="currentColor" strokeWidth="10" strokeLinecap="square" fill="none" /></svg>
+          <div className="text-white"><SledixLogo /></div>
           <span className="font-display font-bold text-sm tracking-tight">Sledix</span>
         </div>
         <div className="px-3 pt-4 pb-2">
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.05]">
             <div className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-[10px] font-bold uppercase">{companySlug[0]}</div>
-            <div className="flex-1 min-w-0"><p className="text-[11px] font-medium truncate">{companySlug}</p><p className="text-[8px] text-white/20 font-mono uppercase">{user?.plan || "Growth"}</p></div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-medium truncate">{companySlug}</p>
+              <p className="text-[8px] text-white/20 font-mono uppercase">{user?.plan || "Growth"}</p>
+            </div>
           </div>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-0.5">
-          <button onClick={() => {setPage("dashboard"); setSelectedComp(null);}} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="dashboard" && !selectedComp?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.dashboard} Dashboard</button>
-          <button onClick={() => {setPage("competitors"); setSelectedComp(null);}} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="competitors"?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.competitors} Monitors <span className="ml-auto text-[9px] bg-white/5 px-1.5 rounded font-mono">{competitors.length}</span></button>
-          <button onClick={() => {setPage("signals"); setSelectedComp(null);}} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="signals"?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.signals} Signals <span className="ml-auto text-[9px] bg-white/5 px-1.5 rounded font-mono">{signals.length}</span></button>
+          <button onClick={() => { setPage("dashboard"); setSelectedComp(null); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all ${page==="dashboard" && !selectedComp?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.dashboard} Dashboard</button>
+          <button onClick={() => { setPage("competitors"); setSelectedComp(null); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all ${page==="competitors"?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.competitors} Monitors <span className="ml-auto text-[9px] bg-white/5 px-1.5 rounded font-mono">{competitors.length}</span></button>
+          <button onClick={() => { setPage("signals"); setSelectedComp(null); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all ${page==="signals"?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.signals} Signals <span className="ml-auto text-[9px] bg-white/5 px-1.5 rounded font-mono">{signals.length}</span></button>
         </nav>
         <div className="px-3 pb-6 border-t border-white/[0.06] pt-4 space-y-0.5">
-          <button onClick={() => setPage("settings")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="settings"?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.settings} Settings</button>
+          <button onClick={() => setPage("settings")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all ${page === "settings" ? "bg-white/[0.08] text-white" : "text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.settings} Settings</button>
           <div className="flex items-center gap-3 px-3 py-4 mt-2">
             <div className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-white/30">{user?.email[0].toUpperCase()}</div>
-            <div className="flex-1 min-w-0"><p className="text-[10px] text-white/50 truncate font-mono">{user?.email}</p><button onClick={() => {localStorage.clear(); window.location.href="/auth/login"}} className="text-[8px] font-mono text-red-400/40 hover:text-red-400 uppercase tracking-tighter">Sign Out</button></div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] text-white/50 truncate font-mono">{user?.email}</p>
+              <button onClick={() => {localStorage.clear(); window.location.href="/auth/login"}} className="text-[8px] font-mono text-red-400/40 hover:text-red-400 uppercase tracking-tighter">Sign Out</button>
+            </div>
           </div>
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col overflow-hidden relative">
+      {/* Main Area */}
+      <div className="flex-1 flex flex-col overflow-hidden relative bg-[#060608]">
         <header className="h-14 shrink-0 flex items-center justify-between px-8 border-b border-white/[0.06] bg-[#060608]/50 backdrop-blur-xl z-20">
           <h1 className="font-display text-base font-bold tracking-tight uppercase text-white/90">{selectedComp ? selectedComp.name : page}</h1>
           <div className="flex items-center gap-6">
@@ -250,7 +286,7 @@ export default function DashboardPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[100] flex items-center justify-center p-6">
           <div className="bg-[#0f1012] border border-white/10 rounded-[40px] p-10 w-full max-w-md shadow-2xl relative">
-            <h3 className="font-display text-2xl font-bold mb-1">New Monitor</h3>
+            <h3 className="font-display text-xl font-bold mb-1">New Monitor</h3>
             <p className="text-white/20 text-[10px] mb-8 font-mono uppercase tracking-[0.3em]">Identification phase</p>
             <form onSubmit={handleAdd} className="space-y-6">
               <div className="relative" ref={companyRef}>
@@ -263,7 +299,7 @@ export default function DashboardPage() {
                       body: JSON.stringify({ query: e.target.value })
                     }).then(r => r.json()).then(d => setPartySuggestions(d.suggestions || []));
                    } else setPartySuggestions([]);
-                }} className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-white/30 transition-all font-mono"/>
+                }} className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm outline-none focus:border-white/30 transition-all font-mono"/>
                 {partySuggestions.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-[#16171a] border border-white/10 rounded-2xl overflow-hidden z-[110] shadow-2xl">
                     {partySuggestions.map((s, i) => (
@@ -276,7 +312,7 @@ export default function DashboardPage() {
                 )}
               </div>
               <div className="relative" ref={cityRef}>
-                <p className="text-[9px] font-mono text-white/30 uppercase mb-2">Geographical Node</p>
+                <p className="text-[9px] font-mono text-white/30 uppercase mb-2">Node Location</p>
                 <input required value={city} onChange={e => {
                    setCity(e.target.value);
                    if (e.target.value.length >= 2) {
@@ -285,7 +321,7 @@ export default function DashboardPage() {
                       body: JSON.stringify({ query: e.target.value, from_bound: { value: "city" }, to_bound: { value: "city" } })
                     }).then(r => r.json()).then(d => setCitySuggestions(d.suggestions || []));
                    } else setCitySuggestions([]);
-                }} className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-white/30 transition-all font-mono"/>
+                }} className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm outline-none focus:border-white/30 transition-all font-mono"/>
                 {citySuggestions.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-[#16171a] border border-white/10 rounded-2xl overflow-hidden z-[110] shadow-2xl">
                     {citySuggestions.map((s, i) => (
@@ -294,8 +330,8 @@ export default function DashboardPage() {
                   </div>
                 )}
               </div>
-              <div><p className="text-[9px] font-mono text-white/30 uppercase mb-2">Website</p><input required value={newCompUrl} onChange={e => setNewCompUrl(e.target.value)} placeholder="www.domain.com" className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm outline-none focus:border-white/30 font-mono"/></div>
-              <div className="flex gap-4 pt-4"><button type="button" onClick={() => setShowModal(false)} className="flex-1 border border-white/10 py-4 rounded-2xl text-[10px] font-mono font-bold uppercase text-white/30">Cancel</button><button type="submit" disabled={isAdding} className="flex-1 bg-white text-black py-4 rounded-2xl text-[10px] font-mono font-bold uppercase">{isAdding ? "Saving..." : "Start"}</button></div>
+              <div><p className="text-[9px] font-mono text-white/30 uppercase mb-2">Digital Domain</p><input required value={newCompUrl} onChange={e => setNewCompUrl(e.target.value)} placeholder="www.example.com" className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm outline-none focus:border-white/30 font-mono"/></div>
+              <div className="flex gap-4 pt-4"><button type="button" onClick={() => setShowModal(false)} className="flex-1 border border-white/10 py-4 rounded-2xl text-[10px] font-mono font-bold uppercase text-white/30">Cancel</button><button type="submit" disabled={isAdding} className="flex-1 bg-white text-black py-4 rounded-2xl text-[10px] font-mono font-bold uppercase">{isAdding ? "Saving..." : "Start Monitor"}</button></div>
             </form>
           </div>
         </div>
@@ -304,21 +340,22 @@ export default function DashboardPage() {
   );
 }
 
-// --- СТРАНИЦЫ (VIEWS) ---
+// --- VIEWS ---
 
 function DashboardView({ count, signals, stats, dist }: any) {
   const avgScore = count > 0 ? Math.round(signals.length * 4 / count + 62) : 0;
   return (
     <div className="space-y-10 animate-in fade-in duration-1000 max-w-[1300px]">
+      {/* Cards Row */}
       <div className="grid grid-cols-4 gap-6">
-        {[ { label: "Active Monitors", value: count, color: "#fff" }, { label: "Signal Density", value: signals.length, color: "#10b981" }, { label: "Intelligence Index", value: Math.min(avgScore, 99), color: "#f59e0b" }, { label: "Status", value: "Online", color: "#3b82f6" }].map((s, i) => (
-          <div key={i} className="border border-white/[0.06] rounded-[24px] p-6 bg-[#08080a] relative overflow-hidden group border-b-2 border-b-white/5 transition-all">
-            <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-100 transition-opacity"><Sparkline color={s.color} /></div>
+        {[ { label: "Monitors", value: count }, { label: "Signal Density", value: signals.length }, { label: "Threat Index", value: Math.min(avgScore, 99) }, { label: "Status", value: "Online" }].map((s, i) => (
+          <div key={i} className="border border-white/[0.06] rounded-[24px] p-6 bg-[#08080a] relative overflow-hidden group border-b-2 border-b-white/5">
             <p className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/20 mb-3">{s.label}</p>
-            <p className="font-display text-4xl font-bold tracking-tighter text-white/90">{s.value}</p>
+            <p className="font-display text-4xl font-bold tracking-tighter">{s.value}</p>
           </div>
         ))}
       </div>
+      
       <div className="grid grid-cols-12 gap-8">
           <div className="col-span-8 border border-white/[0.06] rounded-[40px] p-10 bg-[#08080a] flex flex-col justify-between h-[480px]">
              <p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40 mb-10">Intelligence Activity (7 Days)</p>
@@ -328,20 +365,28 @@ function DashboardView({ count, signals, stats, dist }: any) {
              <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/20 mb-10 w-full text-left">Distribution</p>
              <SignalDonut data={dist} />
           </div>
-          <div className="col-span-4 border border-white/[0.06] rounded-[32px] bg-[#08080a] p-8 h-[450px] flex flex-col">
-             <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30 mb-8 border-b border-white/5 pb-4">Live Intel Stream</p>
+          
+          <div className="col-span-4 border border-white/[0.06] rounded-[32px] bg-[#08080a] p-8 h-[450px] flex flex-col shadow-xl">
+             <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30 mb-8 border-b border-white/5 pb-4">Master Feed</p>
              <div className="space-y-6 flex-1 overflow-auto pr-2 custom-scrollbar">
                {signals.slice(0, 10).map((sig: any) => (
-                 <div key={sig.id} className="border-l-2 border-white/5 pl-5 py-0.5"><div className="flex justify-between items-center mb-1.5"><SignalBadge label={sig.tag} /><p className="text-[9px] font-mono text-white/10 uppercase">{getRelativeTime(sig.created_at)}</p></div><p className="text-[11px] text-white/50 leading-relaxed line-clamp-2">{sig.msg}</p><p className="text-[9px] font-mono text-white/30 uppercase mt-2 font-bold">{sig.company}</p></div>
+                 <div key={sig.id} className="border-l-2 border-white/5 pl-5 py-0.5">
+                    <div className="flex justify-between items-center mb-1.5"><SignalBadge label={sig.tag} /><p className="text-[9px] font-mono text-white/10 uppercase">{getRelativeTime(sig.created_at)}</p></div>
+                    <p className="text-[11px] text-white/50 leading-relaxed line-clamp-2">{sig.msg}</p>
+                    <p className="text-[9px] font-mono text-white/30 uppercase mt-2 font-bold">{sig.company}</p>
+                 </div>
                ))}
              </div>
           </div>
-          <div className="col-span-8 border border-white/[0.06] rounded-[40px] bg-[#08080a] p-1 shadow-2xl h-[450px]">
+
+          <div className="col-span-8 border border-white/[0.06] rounded-[40px] bg-[#08080a] p-1 h-[450px]">
              <div className="w-full h-full bg-[#08080a] rounded-[39px] flex flex-col items-center justify-center relative overflow-hidden">
                 <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-                <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center mb-6 bg-white/[0.01] animate-pulse">📡</div>
+                <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center mb-6 bg-white/[0.01]">
+                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                </div>
                 <h2 className="font-display text-xl font-bold mb-2 tracking-tight uppercase">Strategic Matrix</h2>
-                <p className="text-white/20 text-[10px] font-mono uppercase tracking-widest max-w-sm text-center leading-relaxed">Autonomous scans in progress. Comparing targets against sector baselines.</p>
+                <p className="text-white/20 text-[10px] font-mono uppercase tracking-widest max-w-sm text-center leading-relaxed">Analyzing {count} targets. Data synchronization optimal.</p>
              </div>
           </div>
       </div>
@@ -361,11 +406,12 @@ function CompetitorsView({ competitors, signals, onDelete, onSelect }: any) {
           </div>
           <div className="flex justify-between items-center bg-white/[0.02] p-4 rounded-2xl mb-8">
             <p className="text-[10px] font-mono uppercase text-white/30 tracking-widest">{c.city || 'Global Node'}</p>
-            <button onClick={(e) => onDelete(e, c.id)} className="p-2 text-white/20 hover:text-red-500 transition-all hover:scale-110">{Icons.trash}</button>
+            <button onClick={(e) => onDelete(e, c.id)} className="p-2 text-white/10 hover:text-red-500 transition-all hover:scale-110">{Icons.trash}</button>
           </div>
-          <div className="flex items-center justify-between"><span className="text-[9px] font-mono uppercase text-emerald-400/60 border border-emerald-400/20 bg-emerald-400/5 px-3 py-1 rounded-full">Tracking Active</span><div className="text-[9px] font-mono uppercase text-white/20 group-hover:text-white transition-colors flex items-center gap-1.5">View Dossier {Icons.chevron}</div></div>
+          <div className="flex items-center justify-between"><span className="text-[9px] font-mono uppercase text-emerald-400/60 border border-emerald-400/20 bg-emerald-400/5 px-3 py-1 rounded-full">Tracking Active</span><div className="text-[9px] font-mono uppercase text-white/20 group-hover:text-white transition-colors flex items-center gap-1.5">Details {Icons.chevron}</div></div>
         </div>
       ))}
+      {competitors.length === 0 && <div className="col-span-full border border-dashed border-white/10 rounded-[40px] p-32 text-center text-white/10 font-mono uppercase text-xs tracking-widest">Awaiting targets...</div>}
     </div>
   );
 }
@@ -375,7 +421,6 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack }: any) {
   const [platform, setPlatform] = useState("telegram");
   const [socials, setSocials] = useState<any[]>([]);
   const [isLinking, setIsLinking] = useState(false);
-
   const fetchSocials = async () => {
     try {
       const token = localStorage.getItem("access_token");
@@ -384,7 +429,6 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack }: any) {
     } catch (e) {}
   };
   useEffect(() => { fetchSocials(); }, [comp.id]);
-
   const handleLink = async () => {
     if (!socialUrl) return;
     setIsLinking(true);
@@ -394,26 +438,22 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack }: any) {
       setSocialUrl(""); fetchSocials();
     } catch (e) {} finally { setIsLinking(false); }
   };
-
   return (
     <div className="animate-in slide-in-from-bottom-2 duration-700 space-y-10 max-w-[1200px]">
-      <div className="flex justify-between items-center">
-        <button onClick={onBack} className="text-[10px] font-mono text-white/30 hover:text-white flex items-center gap-3 uppercase tracking-widest transition-all"><span className="text-lg">←</span> Central Hub</button>
-        <button onClick={(e) => onDelete(e, comp.id)} className="text-[10px] font-mono text-red-500/40 hover:text-red-500 uppercase px-5 py-2 rounded-xl border border-red-500/10 hover:bg-red-500/5 transition-all">Archive Monitor</button>
-      </div>
+      <div className="flex justify-between items-center"><button onClick={onBack} className="text-[10px] font-mono text-white/30 hover:text-white flex items-center gap-3 uppercase tracking-widest transition-all"><span className="text-lg">←</span> Center</button><button onClick={(e) => onDelete(e, comp.id)} className="text-[10px] font-mono text-red-500/40 hover:text-red-500 uppercase px-5 py-2 rounded-xl border border-red-500/10 hover:bg-red-500/5 transition-all">Archive Monitor</button></div>
       <div className="grid grid-cols-3 gap-10">
         <div className="col-span-1 space-y-8">
            <div className="border border-white/[0.07] rounded-[40px] p-10 bg-[#08080a]">
               <div className="w-20 h-20 bg-white/5 rounded-[24px] flex items-center justify-center text-4xl font-bold text-white/10 uppercase font-mono mb-10">{comp.name[0]}</div>
               <h2 className="font-display text-3xl font-bold mb-2">{comp.name}</h2>
               <p className="text-sm text-white/30 font-mono mb-10 pb-10 border-b border-white/5">{comp.website_url}</p>
-              <div className="space-y-6">
-                 <div><p className="text-[10px] font-mono text-white/20 uppercase mb-2 tracking-widest">Tax Identity / INN</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-4 rounded-2xl border border-white/5">{comp.inn || 'UNIDENTIFIED'}</p></div>
+              <div className="space-y-6 pt-2">
+                 <div><p className="text-[10px] font-mono text-white/20 uppercase mb-2 tracking-widest">Tax Identity</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-4 rounded-2xl border border-white/5">{comp.inn || 'UNIDENTIFIED'}</p></div>
                  <div><p className="text-[10px] font-mono text-white/20 uppercase mb-2 tracking-widest">Node Region</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-4 rounded-2xl border border-white/5">{comp.city || 'GLOBAL'}</p></div>
               </div>
            </div>
            <div className="border border-white/[0.06] rounded-[40px] p-10 bg-[#08080a]">
-              <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-8">Observers Linked</p>
+              <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-8">Observers</p>
               <div className="space-y-4 mb-10">
                  {socials.map((s: any) => (<div key={s.id} className="p-5 border border-white/5 rounded-3xl bg-white/[0.01] flex justify-between items-center"><p className="text-[11px] text-white/60 font-mono uppercase">{s.platform}</p><div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 animate-pulse"/></div>))}
               </div>
@@ -424,10 +464,9 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack }: any) {
            </div>
         </div>
         <div className="col-span-2 border border-white/[0.07] rounded-[40px] bg-[#08080a] overflow-hidden flex flex-col h-[850px]">
-           <div className="px-10 py-8 border-b border-white/[0.06] flex justify-between items-center bg-white/[0.01]"><p className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/40">Raw Intelligence Data</p></div>
+           <div className="px-10 py-8 border-b border-white/[0.06] flex justify-between items-center bg-white/[0.01]"><p className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/40">Raw Intel Feed</p></div>
            <div className="divide-y divide-white/[0.04] overflow-auto custom-scrollbar">
               {signals.map((s: any) => (<div key={s.id} className="p-10 hover:bg-white/[0.01] transition-all"><div className="flex justify-between items-center mb-4"><SignalBadge label={s.tag} /><span className="text-[10px] font-mono text-white/10 uppercase">{getRelativeTime(s.created_at)}</span></div><p className="text-[13px] text-white/50 leading-relaxed font-light">{s.msg}</p></div>))}
-              {signals.length === 0 && <div className="p-40 text-center text-white/10 font-mono uppercase text-[10px] tracking-[0.3em] animate-pulse">Initializing data ingestion stream...</div>}
            </div>
         </div>
       </div>
@@ -438,10 +477,9 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack }: any) {
 function SignalsView({ signals }: any) {
   return (
     <div className="border border-white/[0.06] rounded-[40px] bg-[#08080a] overflow-hidden max-w-[1200px] animate-in fade-in duration-700">
-        <div className="px-10 py-8 border-b border-white/[0.06] bg-white/[0.01] flex justify-between items-center"><p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40">Master Intelligence Stream</p><span className="text-[10px] font-mono text-white/20 uppercase tracking-widest">{signals.length} Signals Captured</span></div>
+        <div className="px-10 py-8 border-b border-white/[0.06] bg-white/[0.01] flex justify-between items-center"><p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40">Global Intel Stream</p><span className="text-[10px] font-mono text-white/20 uppercase tracking-widest">{signals.length} Signals Captured</span></div>
         <div className="divide-y divide-white/[0.04]">
           {signals.map((s: any) => (<div key={s.id} className="flex items-center gap-12 px-10 py-8 hover:bg-white/[0.01] transition-all"><div className="w-32 shrink-0"><p className="text-[11px] font-bold text-white/70 uppercase font-mono truncate tracking-tighter">{s.company}</p></div><p className="flex-1 text-[13px] text-white/40 font-light leading-relaxed">{s.msg}</p><SignalBadge label={s.tag} /><span className="text-[11px] font-mono text-white/20 w-24 text-right shrink-0 font-mono">{getRelativeTime(s.created_at)}</span></div>))}
-          {signals.length === 0 && <div className="p-40 text-center text-white/10 font-mono uppercase text-[10px] tracking-widest">No active signals detected.</div>}
         </div>
     </div>
   );
@@ -458,7 +496,7 @@ function SettingsView({ user }: any) {
     try {
       const token = localStorage.getItem("access_token");
       await apiRequest("/api/auth/me", { method: "PATCH", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ email, password: showPass ? password : "" }) });
-      setMessage("Success: Synchronized");
+      setMessage("Success: Profile Configuration Synchronized");
       setShowPass(false); setPassword("");
     } catch (err: any) { setMessage(`Error: ${err.message}`); } finally { setIsSaving(false); }
   };
@@ -467,10 +505,20 @@ function SettingsView({ user }: any) {
       <div className="border border-white/[0.06] rounded-[40px] bg-[#08080a] p-12 space-y-10 shadow-2xl">
         <p className="text-[11px] font-mono text-white/30 uppercase tracking-[0.4em] mb-10">Command Center</p>
         <div className="space-y-4"><p className="text-[10px] font-mono text-white/20 uppercase tracking-widest ml-1">Identity Endpoint</p><input value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-6 py-5 text-[13px] text-white font-mono outline-none focus:border-white/30 transition-all"/></div>
-        <div className="space-y-6"><p className="text-[10px] font-mono text-white/20 uppercase tracking-widest ml-1">Security Cipher</p>{showPass ? (<div className="space-y-6 animate-in slide-in-from-top-2 duration-300"><input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="New Cipher..." className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-6 py-5 text-[13px] text-white font-mono outline-none focus:border-white/30"/><button onClick={() => setShowPass(false)} className="text-[10px] font-mono text-white/20 hover:text-white uppercase tracking-widest transition-colors ml-1">Abort Key Change</button></div>) : (<button onClick={() => setShowPass(true)} className="text-[10px] font-mono text-white/40 border border-white/10 px-8 py-4 rounded-2xl hover:bg-white/5 transition-all uppercase tracking-widest">Update Access Cipher</button>)}</div>
+        <div className="space-y-6"><p className="text-[10px] font-mono text-white/20 uppercase tracking-widest ml-1">Security Cipher</p>{showPass ? (<div className="space-y-6 animate-in slide-in-from-top-2 duration-300"><input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="New Cipher..." className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-6 py-5 text-[13px] text-white font-mono outline-none focus:border-white/30"/><button onClick={() => setShowPass(false)} className="text-[10px] font-mono text-white/20 hover:text-white uppercase tracking-widest transition-colors ml-1">Abort Update</button></div>) : (<button onClick={() => setShowPass(true)} className="text-[10px] font-mono text-white/40 border border-white/10 px-8 py-4 rounded-2xl hover:bg-white/5 transition-all uppercase tracking-widest">Update Access Cipher</button>)}</div>
         {message && <p className={`text-[10px] font-mono uppercase tracking-widest ${message.includes('Error') ? 'text-red-400' : 'text-emerald-400'}`}>{message}</p>}
         <div className="pt-10 border-t border-white/5"><button onClick={handleSave} disabled={isSaving} className="w-full bg-white text-black py-6 rounded-[24px] font-mono text-[11px] font-bold uppercase tracking-[0.3em] hover:bg-white/90 disabled:opacity-50 transition-all">Synchronize Configuration</button></div>
       </div>
     </div>
+  );
+}
+function SledixLogo({ size = 28 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
+      <path
+        d="M76 32 C76 20 64 14 52 18 C40 22 36 32 42 40 C48 48 68 50 74 60 C80 70 74 84 60 88 C46 92 36 84 36 74"
+        stroke="currentColor" strokeWidth="8" strokeLinecap="square" fill="none"
+      />
+    </svg>
   );
 }
