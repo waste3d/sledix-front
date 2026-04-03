@@ -15,6 +15,7 @@ const TAG_STYLES: Record<string, { color: string; bg: string }> = {
   PRODUCT: { color: "#10b981", bg: "rgba(16, 185, 129, 0.1)" },
   TECH: { color: "#6366f1", bg: "rgba(99, 102, 241, 0.1)" },
   MARKETING: { color: "#ec4899", bg: "rgba(236, 72, 153, 0.1)" },
+  NEWS: { color: "#f87171", bg: "rgba(248, 113, 113, 0.1)" },   
 };
 
 // --- Хелперы ---
