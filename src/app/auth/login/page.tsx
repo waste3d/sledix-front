@@ -58,7 +58,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="border border-white/10 rounded-3xl p-8 md:p-10 bg-white/[0.02] backdrop-blur-xl">
           <h1 className="font-display text-3xl font-bold mb-2">Welcome back</h1>
-          <p className="text-white/30 text-sm mb-8 font-light font-mono uppercase tracking-widest">Sign in to your workspace</p>
+          <p className="text-white/30 text-sm mb-8 font-light font-mono uppercase tracking-widest">Sign in to your dashboard</p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
