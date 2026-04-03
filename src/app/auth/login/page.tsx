@@ -23,10 +23,15 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
+    let telegramId = null;
+    if (typeof window !== "undefined" && (window as any).Telegram?.WebApp) {
+      telegramId = (window as any).Telegram.WebApp.initDataUnsafe?.user?.id;
+    }
+
     try {
       const data = await apiRequest("/api/auth/login", { // или /register
         method: "POST",
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, telegram_id: telegramId }),
       });
 
       // Твой apiRequest вернул payload.data, поэтому data — это { user, access_token }

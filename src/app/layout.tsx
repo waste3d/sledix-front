@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Syne, DM_Sans, DM_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -33,7 +34,13 @@ export default function RootLayout({
       lang="en"
       className={`${syne.variable} ${dmSans.variable} ${dmMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#080809]">{children}</body>
+      <body className="min-h-full flex flex-col bg-[#080809]">
+        {children}
+        <Script
+          src="https://telegram.org/js/telegram-web-app.js"
+          strategy="beforeInteractive"
+        />
+      </body>
     </html>
   );
 }
