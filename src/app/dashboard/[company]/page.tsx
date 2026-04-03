@@ -444,7 +444,7 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack, onViewDiff }: 
               <p className="text-sm text-white/30 font-mono mb-10 pb-10 border-b border-white/5">{comp.website_url}</p>
               <div className="space-y-6 pt-2">
                  <div><p className="text-[10px] font-mono text-white/20 uppercase mb-2 tracking-widest">Tax Identity</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-4 rounded-2xl border border-white/5">{comp.inn || 'UNIDENTIFIED'}</p></div>
-                 <div><p className="text-[10px] font-mono text-white/20 uppercase mb-2 tracking-widest">Node Region</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-4 rounded-2xl border border-white/5">{comp.city || 'GLOBAL'}</p></div>
+                 <div><p className="text-[10px] font-mono text-white/20 uppercase mb-2 tracking-widest">Company Region</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-4 rounded-2xl border border-white/5">{comp.city || 'GLOBAL'}</p></div>
               </div>
            </div>
            <div className="border border-white/[0.06] rounded-[40px] p-10 bg-[#08080a]">
