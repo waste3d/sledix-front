@@ -58,7 +58,7 @@ const T: Record<Lang, {
       { icon: "🐦", title: "Social signals", desc: "LinkedIn, X, Reddit. Catch the conversation before it trends." },
       { icon: "⚖️", title: "Legal & patents", desc: "ToS changes and new patents — early warning on their roadmap." },
     ],
-    price_badge: "Pricing", price_title: "Simple. No surprises.", price_sub: "Crayon charges $15,000/year. We don't.",
+    price_badge: "Pricing", price_title: "Simple. No surprises.", price_sub: "Peoples charges $3500/month. We don't.",
     plans: [
       { name: "Starter", desc: "For startups tracking 1–3 competitors", features: ["5 competitors","Daily digest","Website monitoring","Email alerts"], cta: "Join waitlist" },
       { name: "Growth",  desc: "For teams that need real-time edge",    features: ["20 competitors","Real-time alerts","Auto battle cards","Slack integration","Win/loss tracking"], cta: "Get started" },
