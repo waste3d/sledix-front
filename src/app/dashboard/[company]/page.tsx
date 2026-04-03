@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiRequest } from "../../../lib/api";
+import ReactDiffViewer from "react-diff-viewer-continued";
 
 const DADATA_KEY = "4affb62ba89180ef3405454f9a047fa680d957ed";
 
@@ -15,7 +16,6 @@ const TAG_STYLES: Record<string, { color: string; bg: string }> = {
   PRODUCT: { color: "#10b981", bg: "rgba(16, 185, 129, 0.1)" },
   TECH: { color: "#6366f1", bg: "rgba(99, 102, 241, 0.1)" },
   MARKETING: { color: "#ec4899", bg: "rgba(236, 72, 153, 0.1)" },
-  NEWS: { color: "#f87171", bg: "rgba(248, 113, 113, 0.1)" },   
 };
 
 // --- Хелперы ---
@@ -45,7 +45,7 @@ const Icons = {
   chevron:     <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 12l4-4-4-4" strokeLinecap="round" strokeLinejoin="round"/></svg>
 };
 
-// --- Атомные компоненты ---
+// --- Визуальные компоненты ---
 
 function SignalBadge({ label }: { label: string }) {
   const style = TAG_STYLES[label] || { color: "#71717a", bg: "rgba(113, 113, 122, 0.1)" };
@@ -55,11 +55,16 @@ function SignalBadge({ label }: { label: string }) {
   );
 }
 
-function Sparkline({ color }: { color: string }) {
+function MetricAccent({ color }: { color: string }) {
   return (
-    <svg width="60" height="20" viewBox="0 0 60 20" className="opacity-30">
-      <path d="M0 15 Q 15 5, 30 12 T 60 8" fill="none" stroke={color} strokeWidth="1.5" />
-    </svg>
+    <>
+      <div className="absolute top-0 left-0 w-full h-[1.5px] opacity-80" style={{ backgroundColor: color, clipPath: 'polygon(0 0, 60% 0, 70% 100%, 0 100%)' }} />
+      <div className="absolute top-[1.5px] left-0 right-0 h-4 opacity-[0.08] pointer-events-none">
+        <svg width="100%" height="100%" viewBox="0 0 400 32" preserveAspectRatio="none">
+          <path d="M0 10 Q 50 20 100 10 T 200 10 T 300 10 T 400 10 V 0 H 0 Z" fill={color} />
+        </svg>
+      </div>
+    </>
   );
 }
 
@@ -90,250 +95,7 @@ function ActivityChart({ data }: { data: any[] }) {
   );
 }
 
-function ClassificationMatrix({ data }: { data: any[] }) {
-  const total = data.reduce((acc, curr) => acc + curr.value, 0);
-  const maxValue = Math.max(...data.map(d => d.value), 1);
-  if (total === 0) return <div className="p-10 text-center text-white/5 font-mono text-[10px] uppercase tracking-widest border border-dashed border-white/5 rounded-3xl">No signals to classify</div>;
-  return (
-    <div className="w-full space-y-7 py-2">
-      {data.map((item, i) => (
-        <div key={i} className="group">
-          <div className="flex justify-between items-end mb-2">
-            <div className="flex items-center gap-3">
-              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: TAG_STYLES[item.label]?.color || "#fff" }} />
-              <span className="text-[10px] font-mono text-white/30 uppercase tracking-[0.2em]">{item.label}</span>
-            </div>
-            <span className="text-[10px] font-mono text-white/80 font-bold">{item.value}</span>
-          </div>
-          <div className="h-[1px] w-full bg-white/5">
-            <div className="h-full transition-all duration-1000 ease-out" style={{ width: `${(item.value / maxValue) * 100}%`, backgroundColor: TAG_STYLES[item.label]?.color || "#fff" }} />
-          </div>
-        </div>
-      ))}
-      <div className="pt-6 mt-6 border-t border-white/5 flex justify-between items-center">
-        <span className="text-[9px] font-mono text-white/20 uppercase tracking-widest">Aggregate signals</span>
-        <span className="text-[14px] font-display font-bold text-white/90">{total}</span>
-      </div>
-    </div>
-  );
-}
-
-// --- Представления страниц ---
-
-function DashboardView({ count, signals, stats, dist }: any) {
-  const compWithSignals = new Set(signals.map((s: any) => s.company)).size;
-  const coverage = count > 0 ? Math.round((compWithSignals / count) * 100) : 0;
-  const dataPoints = count + signals.length + (count > 0 ? 1 : 0);
-
-  return (
-    <div className="space-y-10 animate-in fade-in duration-1000 max-w-[1300px]">
-      <div className="grid grid-cols-4 gap-6">
-  {[ 
-    { label: "Monitors", value: count, color: "#fff" }, 
-    { label: "Signals Detected", value: signals.length, color: "#10b981" }, 
-    { label: "Data Units", value: count + signals.length, color: "#3b82f6" }, 
-    { label: "System Status", value: "Online", color: "#f59e0b" }
-  ].map((s, i) => (
-    <div key={i} className="border border-white/[0.06] rounded-[20px] p-6 bg-[#08080a] relative overflow-hidden">      
-      <p className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/20 mb-3">{s.label}</p>
-      <p className="font-display text-4xl font-bold tracking-tight text-white/90">{s.value}</p>
-    </div>
-  ))}
-</div>
-      <div className="grid grid-cols-12 gap-8">
-          <div className="col-span-8 border border-white/[0.06] rounded-[40px] p-10 bg-[#08080a] flex flex-col justify-between h-[500px]">
-             <p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40 mb-10 text-center">Intelligence Activity (7 Days)</p>
-             <ActivityChart data={stats} />
-          </div>
-          <div className="col-span-4 border border-white/[0.06] rounded-[32px] p-10 bg-[#08080a] h-[500px] flex flex-col relative overflow-hidden">
-             <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/20 mb-10 w-full text-left">Signal Matrix</p>
-             <ClassificationMatrix data={dist} />
-          </div>
-          <div className="col-span-4 border border-white/[0.06] rounded-[32px] bg-[#08080a] p-8 h-[450px] flex flex-col shadow-2xl">
-             <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30 mb-8 border-b border-white/5 pb-4">Master Feed</p>
-             <div className="space-y-6 flex-1 overflow-auto pr-2 custom-scrollbar text-white/50 font-light">
-               {signals.slice(0, 10).map((sig: any) => (
-                 <div key={sig.id} className="border-l-2 border-white/5 pl-5 py-0.5">
-                    <div className="flex justify-between items-center mb-1.5"><SignalBadge label={sig.tag} /><p className="text-[9px] font-mono text-white/10 uppercase">{getRelativeTime(sig.created_at)}</p></div>
-                    <p className="text-[11px] leading-relaxed line-clamp-2">{sig.msg}</p>
-                    <p className="text-[9px] font-mono text-white/30 uppercase mt-2 font-bold">{sig.company}</p>
-                 </div>
-               ))}
-             </div>
-          </div>
-          <div className="col-span-8 border border-white/[0.06] rounded-[40px] bg-[#08080a] h-[450px] relative overflow-hidden flex flex-col items-center justify-center border-b-4 border-b-white/5">
-                <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
-                <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center mb-6 bg-white/[0.01] animate-pulse">📡</div>
-                <h2 className="font-display text-xl font-bold mb-2 tracking-tight uppercase">Strategic Matrix</h2>
-                <p className="text-white/20 text-[10px] font-mono uppercase tracking-widest max-w-sm text-center leading-relaxed">Analyzing {count} targets. Data synchronization optimal.</p>
-          </div>
-      </div>
-    </div>
-  );
-}
-
-function CompetitorsView({ competitors, signals, onDelete, onSelect }: any) {
-  return (
-    <div className="grid grid-cols-3 gap-8 animate-in fade-in duration-700 max-w-[1300px]">
-      {competitors.map((c: any) => (
-        <div key={c.id} onClick={() => onSelect(c)} className="border border-white/[0.07] rounded-[32px] p-8 bg-[#08080a] hover:bg-[#0a0a0c] transition-all group relative cursor-pointer border-b-2 border-b-white/5">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-2xl font-bold text-white/10 uppercase font-mono group-hover:text-white/30 transition-colors">{c.name[0]}</div>
-            <div className="min-w-0 flex-1">
-              <h4 className="font-display font-bold text-base truncate">{c.name}</h4>
-              <p className="text-[10px] text-white/20 font-mono truncate">{c.website_url}</p>
-            </div>
-            <div className="text-right">
-               <p className="font-display text-2xl font-bold tracking-tighter text-white/90">{getCompScore(c, signals)}</p>
-               <p className="text-[8px] font-mono text-white/20 uppercase">Threat</p>
-            </div>
-          </div>
-          <div className="flex justify-between items-center bg-white/[0.02] p-4 rounded-2xl mb-8">
-            <div>
-               <p className="text-[10px] font-mono uppercase text-white/30 tracking-widest">{c.city || 'Global Node'}</p>
-               <p className="text-[8px] font-mono text-white/10 uppercase mt-1">
-                 Web Scan: {c.last_web_scan_at ? getRelativeTime(c.last_web_scan_at) : 'Scheduled'}
-               </p>
-            </div>
-            <button onClick={(e) => onDelete(e, c.id)} className="p-2 text-white/10 hover:text-red-500 transition-all hover:scale-110">{Icons.trash}</button>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-[9px] font-mono uppercase text-emerald-400/60 border border-emerald-400/20 bg-emerald-400/5 px-3 py-1 rounded-full">
-              <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
-              Tracking Active
-            </span>
-            <div className="text-[9px] font-mono uppercase text-white/20 group-hover:text-white transition-colors flex items-center gap-1.5">Dossier {Icons.chevron}</div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function CompetitorDetailsView({ comp, signals, onDelete, onBack }: any) {
-  const [socialUrl, setSocialUrl] = useState("");
-  const [platform, setPlatform] = useState("telegram");
-  const [socials, setSocials] = useState<any[]>([]);
-  const [isLinking, setIsLinking] = useState(false);
-
-  const fetchSocials = async () => {
-    try {
-      const token = localStorage.getItem("access_token");
-      const data = await apiRequest(`/api/competitors/${comp.id}/socials`, { headers: { Authorization: `Bearer ${token}` } });
-      setSocials(data || []);
-    } catch (e) {}
-  };
-  useEffect(() => { fetchSocials(); }, [comp.id]);
-
-  const handleLink = async () => {
-    if (!socialUrl) return;
-    setIsLinking(true);
-    try {
-      const token = localStorage.getItem("access_token");
-      await apiRequest(`/api/competitors/${comp.id}/socials`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ platform, url: socialUrl, interval: 60 }) });
-      setSocialUrl(""); fetchSocials();
-    } catch (e) {} finally { setIsLinking(false); }
-  };
-
-  return (
-    <div className="animate-in slide-in-from-bottom-2 duration-700 space-y-10 max-w-[1200px]">
-      <div className="flex justify-between items-center">
-        <button onClick={onBack} className="text-[10px] font-mono text-white/30 hover:text-white flex items-center gap-3 uppercase tracking-widest transition-all"><span className="text-lg">←</span> Hub</button>
-        <button onClick={(e) => onDelete(e, comp.id)} className="text-[10px] font-mono text-red-500/40 hover:text-red-400 uppercase px-5 py-2 rounded-xl border border-red-500/10 hover:bg-red-500/5 transition-all">Archive Monitor</button>
-      </div>
-      <div className="grid grid-cols-3 gap-10">
-        <div className="col-span-1 space-y-8">
-           <div className="border border-white/[0.07] rounded-[40px] p-10 bg-[#08080a]">
-              <div className="w-20 h-20 bg-white/5 rounded-[24px] flex items-center justify-center text-4xl font-bold text-white/10 uppercase font-mono mb-10">{comp.name[0]}</div>
-              <h2 className="font-display text-3xl font-bold mb-2">{comp.name}</h2>
-              <p className="text-sm text-white/30 font-mono mb-10 pb-10 border-b border-white/5">{comp.website_url}</p>
-              <div className="space-y-6 pt-2">
-                 <div><p className="text-[10px] font-mono text-white/20 uppercase mb-2 tracking-widest">Tax Identity</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-4 rounded-2xl border border-white/5">{comp.inn || 'UNIDENTIFIED'}</p></div>
-                 <div><p className="text-[10px] font-mono text-white/20 uppercase mb-2 tracking-widest">Node Region</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-4 rounded-2xl border border-white/5">{comp.city || 'GLOBAL'}</p></div>
-              </div>
-           </div>
-
-           {/* БЛОК СТАТУСА ПАРСИНГА САЙТА */}
-           <div className="border border-white/[0.06] rounded-[40px] p-10 bg-[#08080a]">
-              <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-8">Web Index Status</p>
-              <div className="space-y-4">
-                  <div className="flex justify-between items-center p-4 bg-white/[0.01] border border-white/5 rounded-2xl">
-                      <span className="text-[10px] text-white/40 uppercase font-mono">Indexing Engine</span>
-                      <span className="text-[10px] text-emerald-400 font-mono font-bold">ONLINE</span>
-                  </div>
-                  <div className="p-4 bg-white/[0.01] border border-white/5 rounded-2xl">
-                      <p className="text-[9px] text-white/20 uppercase font-mono mb-2">Crawler Config</p>
-                      <p className="text-[11px] text-white/50 leading-relaxed font-light">
-                          Recursive scan active. Deep-link hashing enabled. 
-                          Last sync: {comp.last_web_scan_at ? getRelativeTime(comp.last_web_scan_at) : 'Queueing...'}
-                      </p>
-                  </div>
-              </div>
-           </div>
-
-           <div className="border border-white/[0.06] rounded-[40px] p-10 bg-[#08080a]">
-              <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-8">Observers</p>
-              <div className="space-y-4 mb-10">
-                 {socials.map((s: any) => (<div key={s.id} className="p-5 border border-white/5 rounded-3xl bg-white/[0.01] flex justify-between items-center"><p className="text-[11px] text-white/60 font-mono uppercase">{s.platform}</p><div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 animate-pulse"/></div>))}
-              </div>
-              <div className="space-y-4 pt-8 border-t border-white/5">
-                 <select value={platform} onChange={e => setPlatform(e.target.value)} className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-xs text-white outline-none"><option value="telegram">Telegram</option><option value="vk">VK.com</option></select>
-                 <input value={socialUrl} onChange={e => setSocialUrl(e.target.value)} placeholder="Observer URL..." className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-xs text-white outline-none font-mono focus:border-white/30 transition-all"/><button onClick={handleLink} disabled={isLinking} className="w-full bg-white text-black py-5 rounded-2xl font-mono text-[11px] font-bold uppercase hover:bg-white/90 transition-all">Link Observer</button>
-              </div>
-           </div>
-        </div>
-        <div className="col-span-2 border border-white/[0.07] rounded-[40px] bg-[#08080a] overflow-hidden flex flex-col h-[850px]">
-           <div className="px-10 py-8 border-b border-white/[0.06] flex justify-between items-center bg-white/[0.01]"><p className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/40">Raw Intelligence Data</p></div>
-           <div className="divide-y divide-white/[0.04] overflow-auto custom-scrollbar">
-              {signals.map((s: any) => (<div key={s.id} className="p-10 hover:bg-white/[0.01] transition-all"><div className="flex justify-between items-center mb-4"><SignalBadge label={s.tag} /><span className="text-[10px] font-mono text-white/10 uppercase">{getRelativeTime(s.created_at)}</span></div><p className="text-[13px] text-white/50 leading-relaxed font-light">{s.msg}</p></div>))}
-           </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SignalsView({ signals }: any) {
-  return (
-    <div className="border border-white/[0.06] rounded-[40px] bg-[#08080a] overflow-hidden max-w-[1200px] animate-in fade-in duration-700">
-        <div className="px-10 py-8 border-b border-white/[0.06] bg-white/[0.01] flex justify-between items-center"><p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40">Master Intelligence Stream</p><span className="text-[10px] font-mono text-white/20 uppercase tracking-widest">{signals.length} Signals Captured</span></div>
-        <div className="divide-y divide-white/[0.04]">
-          {signals.map((s: any) => (<div key={s.id} className="flex items-center gap-12 px-10 py-8 hover:bg-white/[0.01] transition-all"><div className="w-32 shrink-0"><p className="text-[11px] font-bold text-white/70 uppercase font-mono truncate tracking-tighter">{s.company}</p></div><p className="flex-1 text-[13px] text-white/40 font-light leading-relaxed">{s.msg}</p><SignalBadge label={s.tag} /><span className="text-[11px] font-mono text-white/20 w-24 text-right shrink-0 font-mono">{getRelativeTime(s.created_at)}</span></div>))}
-          {signals.length === 0 && <div className="p-40 text-center text-white/10 font-mono uppercase text-[10px] tracking-widest">No active signals detected.</div>}
-        </div>
-    </div>
-  );
-}
-
-function SettingsView({ user }: any) {
-  const [email, setEmail] = useState(user?.email || "");
-  const [password, setPassword] = useState("");
-  const [showPass, setShowPass] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [message, setMessage] = useState("");
-  const handleSave = async () => {
-    setIsSaving(true); setMessage("");
-    try {
-      const token = localStorage.getItem("access_token");
-      await apiRequest("/api/auth/me", { method: "PATCH", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ email, password: showPass ? password : "" }) });
-      setMessage("Success: Configuration Synchronized");
-      setShowPass(false); setPassword("");
-    } catch (err: any) { setMessage(`Error: ${err.message}`); } finally { setIsSaving(false); }
-  };
-  return (
-    <div className="max-w-2xl space-y-10 animate-in fade-in duration-700">
-      <div className="border border-white/[0.06] rounded-[40px] bg-[#08080a] p-12 space-y-10 shadow-2xl">
-        <p className="text-[11px] font-mono text-white/30 uppercase tracking-[0.4em] mb-10">Command Center</p>
-        <div className="space-y-4"><p className="text-[10px] font-mono text-white/20 uppercase tracking-widest ml-1">Identity Endpoint</p><input value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-6 py-5 text-[13px] text-white font-mono outline-none focus:border-white/30 transition-all"/></div>
-        <div className="space-y-6"><p className="text-[10px] font-mono text-white/20 uppercase tracking-widest ml-1">Security Cipher</p>{showPass ? (<div className="space-y-6 animate-in slide-in-from-top-2 duration-300"><input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="New Cipher..." className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-6 py-5 text-[13px] text-white font-mono outline-none focus:border-white/30"/><button onClick={() => setShowPass(false)} className="text-[10px] font-mono text-white/20 hover:text-white uppercase tracking-widest transition-colors ml-1">Abort Key Change</button></div>) : (<button onClick={() => setShowPass(true)} className="text-[10px] font-mono text-white/40 border border-white/10 px-8 py-4 rounded-2xl hover:bg-white/5 transition-all uppercase tracking-widest">Update Access Cipher</button>)}</div>
-        {message && <p className={`text-[10px] font-mono uppercase tracking-widest ${message.includes('Error') ? 'text-red-400' : 'text-emerald-400'}`}>{message}</p>}
-        <div className="pt-10 border-t border-white/5"><button onClick={handleSave} disabled={isSaving} className="w-full bg-white text-black py-6 rounded-[24px] font-mono text-[11px] font-bold uppercase tracking-[0.3em] hover:bg-white/90 disabled:opacity-50 transition-all">Synchronize Configuration</button></div>
-      </div>
-    </div>
-  );
-}
-
-// --- ОСНОВНОЙ КОМПОНЕНТ СТРАНИЦЫ ---
+// --- ГЛАВНЫЙ КОМПОНЕНТ ---
 export default function DashboardPage() {
   const params = useParams();
   const router = useRouter();
@@ -359,6 +121,10 @@ export default function DashboardPage() {
 
   const [partySuggestions, setPartySuggestions] = useState<any[]>([]);
   const [citySuggestions, setCitySuggestions] = useState<any[]>([]);
+
+  // Diff Modal State
+  const [diffData, setDiffData] = useState<{old: string, new: string} | null>(null);
+  const [showDiffModal, setShowDiffModal] = useState(false);
 
   if (typeof window !== "undefined" && !localStorage.getItem("access_token")) {
     window.location.href = "/auth/login";
@@ -394,6 +160,17 @@ export default function DashboardPage() {
   };
 
   useEffect(() => { if (companySlug) fetchData(); }, [companySlug]);
+
+  const openDiff = async (signalId: string) => {
+    try {
+      const token = localStorage.getItem("access_token");
+      const data = await apiRequest(`/api/signals/${signalId}/diff`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setDiffData(data);
+      setShowDiffModal(true);
+    } catch (e) { alert("Intelligence diff not available for this event."); }
+  };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -436,14 +213,14 @@ export default function DashboardPage() {
             <div className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-[10px] font-bold uppercase">{companySlug[0]}</div>
             <div className="flex-1 min-w-0">
               <p className="text-[11px] font-medium truncate">{companySlug}</p>
-              <p className="text-[8px] text-white/20 font-mono uppercase">{user?.plan || "Growth"} Active</p>
+              <p className="text-[8px] text-white/20 font-mono uppercase">{user?.plan || "Growth"} plan</p>
             </div>
           </div>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-0.5">
-          <button onClick={() => { setPage("dashboard"); setSelectedComp(null); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all ${page==="dashboard" && !selectedComp?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.dashboard} Dashboard</button>
-          <button onClick={() => { setPage("competitors"); setSelectedComp(null); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all ${page==="competitors"?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.competitors} Monitors <span className="ml-auto text-[9px] bg-white/5 px-1.5 rounded font-mono">{competitors.length}</span></button>
-          <button onClick={() => { setPage("signals"); setSelectedComp(null); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="signals"?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.signals} Signals <span className="ml-auto text-[9px] bg-white/5 px-1.5 rounded font-mono">{signals.length}</span></button>
+          <button onClick={() => {setPage("dashboard"); setSelectedComp(null);}} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="dashboard" && !selectedComp?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.dashboard} Dashboard</button>
+          <button onClick={() => {setPage("competitors"); setSelectedComp(null);}} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="competitors"?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.competitors} Monitors <span className="ml-auto text-[9px] bg-white/5 px-1.5 rounded font-mono">{competitors.length}</span></button>
+          <button onClick={() => {setPage("signals"); setSelectedComp(null);}} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="signals"?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.signals} Signals <span className="ml-auto text-[9px] bg-white/5 px-1.5 rounded font-mono">{signals.length}</span></button>
         </nav>
         <div className="px-3 pb-6 border-t border-white/[0.06] pt-4 space-y-0.5">
           <button onClick={() => setPage("settings")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page === "settings" ? "bg-white/[0.08] text-white" : "text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.settings} Settings</button>
@@ -466,19 +243,19 @@ export default function DashboardPage() {
 
         <div className="flex-1 overflow-auto p-8 custom-scrollbar bg-[#060608]">
           {selectedComp ? (
-            <CompetitorDetailsView comp={selectedComp} signals={signals.filter(s => s.company === selectedComp.name)} onDelete={handleDelete} onBack={() => setSelectedComp(null)} />
+            <CompetitorDetailsView comp={selectedComp} signals={signals.filter(s => s.company === selectedComp.name)} onDelete={handleDelete} onBack={() => setSelectedComp(null)} onViewDiff={openDiff} />
           ) : (
             <>
-              {page === "dashboard" && <DashboardView count={competitors.length} signals={signals} stats={stats} dist={dist} />}
+              {page === "dashboard" && <DashboardView count={competitors.length} signals={signals} stats={stats} />}
               {page === "competitors" && <CompetitorsView competitors={competitors} signals={signals} onDelete={handleDelete} onSelect={setSelectedComp} />}
-              {page === "signals" && <SignalsView signals={signals} />}
+              {page === "signals" && <SignalsView signals={signals} onViewDiff={openDiff} />}
               {page === "settings" && <SettingsView user={user} />}
             </>
           )}
         </div>
       </div>
 
-      {/* --- MODAL --- */}
+      {/* --- MODAL: Add Monitor --- */}
       {showModal && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[100] flex items-center justify-center p-6">
           <div className="bg-[#0f1012] border border-white/10 rounded-[40px] p-10 w-full max-w-md shadow-2xl relative">
@@ -527,8 +304,43 @@ export default function DashboardPage() {
                 )}
               </div>
               <div><p className="text-[9px] font-mono text-white/30 uppercase mb-2">Website</p><input required value={newCompUrl} onChange={e => setNewCompUrl(e.target.value)} placeholder="www.domain.com" className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm outline-none focus:border-white/30 font-mono"/></div>
-              <div className="flex gap-4 pt-4"><button type="button" onClick={() => setShowModal(false)} className="flex-1 border border-white/10 py-4 rounded-2xl text-[10px] font-mono font-bold uppercase text-white/30 transition-all hover:text-white">Cancel</button><button type="submit" disabled={isAdding} className="flex-1 bg-white text-black py-4 rounded-2xl text-[10px] font-mono font-bold uppercase hover:bg-white/90 disabled:opacity-50 transition-all">Deploy Monitor</button></div>
+              <div className="flex gap-4 pt-4"><button type="button" onClick={() => setShowModal(false)} className="flex-1 border border-white/10 py-4 rounded-2xl text-[10px] font-mono font-bold uppercase text-white/30">Cancel</button><button type="submit" disabled={isAdding} className="flex-1 bg-white text-black py-4 rounded-2xl text-[10px] font-mono font-bold uppercase">{isAdding ? "Saving..." : "Start Monitor"}</button></div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL: DIFF VIEWER --- */}
+      {showDiffModal && diffData && (
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[200] flex flex-col p-10">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h3 className="font-display text-2xl font-bold uppercase tracking-tight">Structural Intelligence Diff</h3>
+              <p className="text-[10px] font-mono text-white/20 uppercase tracking-[0.3em]">Comparing site content snapshots</p>
+            </div>
+            <button onClick={() => setShowDiffModal(false)} className="px-8 py-3 bg-white text-black rounded-2xl text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-white/90 transition-all">Close</button>
+          </div>
+          <div className="flex-1 overflow-auto rounded-[32px] border border-white/10 bg-[#08080a] custom-scrollbar">
+            <ReactDiffViewer 
+              oldValue={diffData.old} 
+              newValue={diffData.new} 
+              splitView={true}
+              useDarkTheme={true}
+              styles={{
+                variables: {
+                  dark: {
+                    diffViewerBackground: '#08080a',
+                    addedBackground: 'rgba(16, 185, 129, 0.08)',
+                    addedColor: '#10b981',
+                    removedBackground: 'rgba(239, 68, 68, 0.08)',
+                    removedColor: '#ef4444',
+                    wordAddedBackground: 'rgba(16, 185, 129, 0.2)',
+                    wordRemovedBackground: 'rgba(239, 68, 68, 0.2)',
+                  }
+                },
+                contentText: { fontSize: '11px', fontFamily: 'var(--font-mono)', lineHeight: '1.6' }
+              }}
+            />
           </div>
         </div>
       )}
@@ -536,26 +348,168 @@ export default function DashboardPage() {
   );
 }
 
-function MetricAccent({ color }: { color: string }) {
+// --- VIEWS ---
+
+function DashboardView({ count, signals, stats }: any) {
+  const compWithSignals = new Set(signals.map((s: any) => s.company)).size;
+  const coverage = count > 0 ? Math.round((compWithSignals / count) * 100) : 0;
+  const dataPoints = count + signals.length + (count > 0 ? 1 : 0);
+
   return (
-    <>
-      {/* Та самая неровная полоска сверху */}
-      <div 
-        className="absolute top-0 left-0 w-full h-[2px] opacity-80" 
-        style={{ 
-          backgroundColor: color, 
-          clipPath: 'polygon(0 0, 60% 0, 70% 100%, 0 100%)' 
-        }} 
-      />
-      {/* Графическая волна вместо света */}
-      <div className="absolute top-[2px] left-0 right-0 h-4 opacity-10 pointer-events-none">
-        <svg width="100%" height="100%" viewBox="0 0 400 32" preserveAspectRatio="none">
-          <path 
-            d="M0 10 Q 50 20 100 10 T 200 10 T 300 10 T 400 10 V 0 H 0 Z" 
-            fill={color} 
-          />
-        </svg>
+    <div className="space-y-10 animate-in fade-in duration-1000 max-w-[1300px]">
+      <div className="grid grid-cols-4 gap-6">
+        {[ 
+          { label: "Monitors", value: count, color: "#fff" }, 
+          { label: "Signal Density", value: signals.length, color: "#10b981" }, 
+          { label: "Data Points", value: dataPoints, color: "#3b82f6" }, 
+          { label: "Scan Coverage", value: `${coverage}%`, color: "#f59e0b" }
+        ].map((s, i) => (
+          <div key={i} className="border border-white/[0.06] rounded-[24px] p-6 bg-[#08080a] relative overflow-hidden border-b-2 border-b-white/5 transition-all">
+            <MetricAccent color={s.color} />
+            <p className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/20 mb-3">{s.label}</p>
+            <p className="font-display text-4xl font-bold tracking-tighter text-white/90">{s.value}</p>
+          </div>
+        ))}
       </div>
-    </>
+      <div className="grid grid-cols-12 gap-8">
+          <div className="col-span-8 border border-white/[0.06] rounded-[40px] p-10 bg-[#08080a] flex flex-col justify-between h-[500px]">
+             <p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40 mb-10 text-center">Intelligence Activity (7 Days)</p>
+             <ActivityChart data={stats} />
+          </div>
+          <div className="col-span-4 border border-white/[0.06] rounded-[32px] bg-[#08080a] p-8 h-[500px] flex flex-col shadow-2xl">
+             <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30 mb-8 border-b border-white/5 pb-4">Master Feed</p>
+             <div className="space-y-6 flex-1 overflow-auto pr-2 custom-scrollbar text-white/50 font-light">
+               {signals.slice(0, 10).map((sig: any) => (
+                 <div key={sig.id} className="border-l-2 border-white/5 pl-5 py-0.5">
+                    <div className="flex justify-between items-center mb-1.5"><SignalBadge label={sig.tag} /><p className="text-[9px] font-mono text-white/10 uppercase">{getRelativeTime(sig.created_at)}</p></div>
+                    <p className="text-[11px] leading-relaxed line-clamp-2">{sig.msg}</p>
+                    <p className="text-[9px] font-mono text-white/30 uppercase mt-2 font-bold">{sig.company}</p>
+                 </div>
+               ))}
+             </div>
+          </div>
+          <div className="col-span-12 border border-white/[0.06] rounded-[40px] bg-[#08080a] h-[300px] relative overflow-hidden flex flex-col items-center justify-center border-dashed">
+                <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+                <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center mb-6 bg-white/[0.01] animate-pulse">📡</div>
+                <h2 className="font-display text-xl font-bold mb-1 tracking-tight uppercase">Strategic Matrix Active</h2>
+                <p className="text-white/20 text-[10px] font-mono uppercase tracking-widest max-w-sm text-center">Analyzing {count} targets. Data synchronization optimal.</p>
+          </div>
+      </div>
+    </div>
+  );
+}
+
+function CompetitorsView({ competitors, signals, onDelete, onSelect }: any) {
+  return (
+    <div className="grid grid-cols-3 gap-8 animate-in fade-in duration-700 max-w-[1300px]">
+      {competitors.map((c: any) => (
+        <div key={c.id} onClick={() => onSelect(c)} className="border border-white/[0.07] rounded-[32px] p-8 bg-[#08080a] hover:bg-[#0a0a0c] transition-all group relative cursor-pointer border-b-2 border-b-white/5">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-2xl font-bold text-white/10 uppercase font-mono group-hover:text-white/30 transition-colors">{c.name[0]}</div>
+            <div className="min-w-0 flex-1"><h4 className="font-display font-bold text-base truncate">{c.name}</h4><p className="text-[10px] text-white/20 font-mono truncate">{c.website_url}</p></div>
+            <div className="text-right">
+               <p className="font-display text-2xl font-bold tracking-tighter text-white/90">{getCompScore(c, signals)}</p>
+               <p className="text-[8px] font-mono text-white/20 uppercase">Threat</p>
+            </div>
+          </div>
+          <div className="flex justify-between items-center bg-white/[0.02] p-4 rounded-2xl mb-8">
+            <p className="text-[10px] font-mono uppercase text-white/30 tracking-widest">{c.city || 'Global Node'}</p>
+            <button onClick={(e) => onDelete(e, c.id)} className="p-2 text-white/40 hover:text-red-500 transition-all hover:scale-110">{Icons.trash}</button>
+          </div>
+          <div className="flex items-center justify-between"><span className="text-[9px] font-mono uppercase text-emerald-400/60 border border-emerald-400/20 bg-emerald-400/5 px-3 py-1 rounded-full">Tracking Active</span><div className="text-[9px] font-mono uppercase text-white/20 group-hover:text-white transition-colors flex items-center gap-1.5">Dossier {Icons.chevron}</div></div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CompetitorDetailsView({ comp, signals, onDelete, onBack, onViewDiff }: any) {
+  return (
+    <div className="animate-in slide-in-from-bottom-2 duration-700 space-y-10 max-w-[1200px]">
+      <div className="flex justify-between items-center"><button onClick={onBack} className="text-[10px] font-mono text-white/30 hover:text-white flex items-center gap-3 uppercase tracking-widest transition-all"><span className="text-lg">←</span> Hub</button><button onClick={(e) => onDelete(e, comp.id)} className="text-[10px] font-mono text-red-500/40 hover:text-red-400 uppercase px-5 py-2 rounded-xl border border-red-500/10 hover:bg-red-500/5 transition-all">Archive</button></div>
+      <div className="grid grid-cols-3 gap-10">
+        <div className="col-span-1 space-y-8">
+           <div className="border border-white/[0.07] rounded-[40px] p-10 bg-[#08080a]">
+              <div className="w-20 h-20 bg-white/5 rounded-[24px] flex items-center justify-center text-4xl font-bold text-white/10 uppercase font-mono mb-10">{comp.name[0]}</div>
+              <h2 className="font-display text-3xl font-bold mb-2">{comp.name}</h2>
+              <p className="text-sm text-white/30 font-mono mb-10 pb-10 border-b border-white/5">{comp.website_url}</p>
+              <div className="space-y-6 pt-2">
+                 <div><p className="text-[10px] font-mono text-white/20 uppercase mb-2 tracking-widest">Tax Identity</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-4 rounded-2xl border border-white/5">{comp.inn || 'UNIDENTIFIED'}</p></div>
+                 <div><p className="text-[10px] font-mono text-white/20 uppercase mb-2 tracking-widest">Node Region</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-4 rounded-2xl border border-white/5">{comp.city || 'GLOBAL'}</p></div>
+              </div>
+           </div>
+        </div>
+        <div className="col-span-2 border border-white/[0.07] rounded-[40px] bg-[#08080a] overflow-hidden flex flex-col h-[750px]">
+           <div className="px-10 py-8 border-b border-white/[0.06] flex justify-between items-center bg-white/[0.01]"><p className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/40">Raw Intelligence Data</p></div>
+           <div className="divide-y divide-white/[0.04] overflow-auto custom-scrollbar">
+              {signals.map((s: any) => (
+                <div key={s.id} className="p-10 hover:bg-white/[0.01] transition-all">
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center gap-3">
+                      <SignalBadge label={s.tag} />
+                      {s.tag === 'PRODUCT' && (
+                        <button onClick={() => onViewDiff(s.id)} className="text-[9px] font-mono text-emerald-400 hover:underline uppercase">View Diff</button>
+                      )}
+                    </div>
+                    <span className="text-[10px] font-mono text-white/10 uppercase">{getRelativeTime(s.created_at)}</span>
+                  </div>
+                  <p className="text-[13px] text-white/50 leading-relaxed font-light">{s.msg}</p>
+                </div>
+              ))}
+           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SignalsView({ signals, onViewDiff }: any) {
+  return (
+    <div className="border border-white/[0.06] rounded-[40px] bg-[#08080a] overflow-hidden max-w-[1200px] animate-in fade-in duration-700">
+        <div className="px-10 py-8 border-b border-white/[0.06] bg-white/[0.01] flex justify-between items-center"><p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40">Master Intelligence Stream</p><span className="text-[10px] font-mono text-white/20 uppercase tracking-widest">{signals.length} Signals Captured</span></div>
+        <div className="divide-y divide-white/[0.04]">
+          {signals.map((s: any) => (
+            <div key={s.id} className="flex items-center gap-12 px-10 py-8 hover:bg-white/[0.01] transition-all">
+              <div className="w-32 shrink-0"><p className="text-[11px] font-bold text-white/70 uppercase font-mono truncate tracking-tighter">{s.company}</p></div>
+              <p className="flex-1 text-[13px] text-white/40 font-light leading-relaxed">{s.msg}</p>
+              <div className="flex flex-col items-end gap-2">
+                <SignalBadge label={s.tag} />
+                {s.tag === 'PRODUCT' && (
+                  <button onClick={() => onViewDiff(s.id)} className="text-[9px] font-mono text-emerald-400 hover:underline uppercase">Visual Diff</button>
+                )}
+              </div>
+              <span className="text-[11px] font-mono text-white/20 w-24 text-right shrink-0 font-mono">{getRelativeTime(s.created_at)}</span>
+            </div>
+          ))}
+        </div>
+    </div>
+  );
+}
+
+function SettingsView({ user }: any) {
+  const [email, setEmail] = useState(user?.email || "");
+  const [password, setPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const handleSave = async () => {
+    setIsSaving(true); setMessage("");
+    try {
+      const token = localStorage.getItem("access_token");
+      await apiRequest("/api/auth/me", { method: "PATCH", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ email, password: showPass ? password : "" }) });
+      setMessage("Success: Configuration Synchronized");
+      setShowPass(false); setPassword("");
+    } catch (err: any) { setMessage(`Error: ${err.message}`); } finally { setIsSaving(false); }
+  };
+  return (
+    <div className="max-w-2xl space-y-10 animate-in fade-in duration-700">
+      <div className="border border-white/[0.06] rounded-[40px] bg-[#08080a] p-12 space-y-10 shadow-2xl">
+        <p className="text-[11px] font-mono text-white/30 uppercase tracking-[0.4em] mb-10">Command Center</p>
+        <div className="space-y-4"><p className="text-[10px] font-mono text-white/20 uppercase tracking-widest ml-1">Identity Endpoint</p><input value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-6 py-5 text-[13px] text-white font-mono outline-none focus:border-white/30 transition-all"/></div>
+        <div className="space-y-6"><p className="text-[10px] font-mono text-white/20 uppercase tracking-widest ml-1">Security Cipher</p>{showPass ? (<div className="space-y-6 animate-in slide-in-from-top-2 duration-300"><input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="New Cipher..." className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-6 py-5 text-[13px] text-white font-mono outline-none focus:border-white/30"/><button onClick={() => setShowPass(false)} className="text-[10px] font-mono text-white/20 hover:text-white uppercase tracking-widest transition-colors ml-1">Abort Update</button></div>) : (<button onClick={() => setShowPass(true)} className="text-[10px] font-mono text-white/40 border border-white/10 px-8 py-4 rounded-2xl hover:bg-white/5 transition-all uppercase tracking-widest">Update Access Cipher</button>)}</div>
+        {message && <p className={`text-[10px] font-mono uppercase tracking-widest ${message.includes('Error') ? 'text-red-400' : 'text-emerald-400'}`}>{message}</p>}
+        <div className="pt-10 border-t border-white/5"><button onClick={handleSave} disabled={isSaving} className="w-full bg-white text-black py-6 rounded-[24px] font-mono text-[11px] font-bold uppercase tracking-[0.3em] hover:bg-white/90 disabled:opacity-50 transition-all">Synchronize Configuration</button></div>
+      </div>
+    </div>
   );
 }
