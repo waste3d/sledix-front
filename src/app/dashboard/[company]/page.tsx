@@ -45,7 +45,11 @@ const Icons = {
   chevron:     <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 12l4-4-4-4" strokeLinecap="round" strokeLinejoin="round"/></svg>
 };
 
-// --- Визуальные компоненты ---
+// --- Компоненты UI ---
+
+function MetricAccent({ color }: { color: string }) {
+  return <div className="absolute top-0 left-0 w-full h-[1.5px] opacity-60" style={{ backgroundColor: color, clipPath: 'polygon(0 0, 60% 0, 70% 100%, 0 100%)' }} />;
+}
 
 function SignalBadge({ label }: { label: string }) {
   const style = TAG_STYLES[label] || { color: "#71717a", bg: "rgba(113, 113, 122, 0.1)" };
@@ -55,23 +59,10 @@ function SignalBadge({ label }: { label: string }) {
   );
 }
 
-function MetricAccent({ color }: { color: string }) {
-  return (
-    <>
-      <div className="absolute top-0 left-0 w-full h-[1.5px] opacity-80" style={{ backgroundColor: color, clipPath: 'polygon(0 0, 60% 0, 70% 100%, 0 100%)' }} />
-      <div className="absolute top-[1.5px] left-0 right-0 h-4 opacity-[0.08] pointer-events-none">
-        <svg width="100%" height="100%" viewBox="0 0 400 32" preserveAspectRatio="none">
-          <path d="M0 10 Q 50 20 100 10 T 200 10 T 300 10 T 400 10 V 0 H 0 Z" fill={color} />
-        </svg>
-      </div>
-    </>
-  );
-}
-
 function ActivityChart({ data }: { data: any[] }) {
-  if (!data || data.length === 0) return <div className="h-full w-full flex items-center justify-center border border-dashed border-white/5 rounded-3xl text-[10px] font-mono text-white/10 uppercase tracking-[0.5em]">Awaiting Telemetry...</div>;
+  if (!data || data.length === 0) return <div className="h-48 w-full flex items-center justify-center border border-dashed border-white/5 rounded-3xl text-[10px] font-mono text-white/10 uppercase">Waiting for telemetry...</div>;
   const maxValue = Math.max(...data.map(d => d.value), 1);
-  const width = 800; const height = 240; const padding = 40;
+  const width = 800; const height = 200; const padding = 40;
   const points = data.map((d, i) => ({
     x: (i / (data.length - 1)) * (width - padding * 2) + padding,
     y: height - ((d.value / maxValue) * (height - padding * 2) + padding)
@@ -81,13 +72,13 @@ function ActivityChart({ data }: { data: any[] }) {
   return (
     <div className="w-full h-full relative">
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible">
-        <defs><linearGradient id="areaG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#fff" stopOpacity="0.05" /><stop offset="100%" stopColor="#fff" stopOpacity="0" /></linearGradient></defs>
+        <defs><linearGradient id="areaG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10b981" stopOpacity="0.2" /><stop offset="100%" stopColor="#10b981" stopOpacity="0" /></linearGradient></defs>
         <path d={areaD} fill="url(#areaG)" className="transition-all duration-1000" />
-        <path d={d} fill="none" stroke="white" strokeOpacity="0.15" strokeWidth="1.5" strokeLinecap="round" />
+        <path d={d} fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         {points.map((p, i) => (
           <g key={i}>
-            <circle cx={p.x} cy={p.y} r="2.5" fill="#fff" />
-            <text x={p.x} y={height - 10} textAnchor="middle" fill="white" fillOpacity="0.2" fontSize="10" className="font-mono uppercase tracking-widest">{data[i].label}</text>
+            <circle cx={p.x} cy={p.y} r="3" fill="#060608" stroke="#10b981" strokeWidth="2" />
+            <text x={p.x} y={height - 10} textAnchor="middle" fill="white" fillOpacity="0.2" fontSize="10" className="font-mono uppercase">{data[i].label}</text>
           </g>
         ))}
       </svg>
@@ -95,7 +86,30 @@ function ActivityChart({ data }: { data: any[] }) {
   );
 }
 
-// --- ГЛАВНЫЙ КОМПОНЕНТ ---
+function ClassificationMatrix({ data }: { data: any[] }) {
+  const total = data.reduce((acc, curr) => acc + curr.value, 0);
+  const maxValue = Math.max(...data.map(d => d.value), 1);
+  return (
+    <div className="w-full space-y-7 py-2">
+      {data.map((item, i) => (
+        <div key={i}>
+          <div className="flex justify-between items-end mb-2">
+            <span className="text-[10px] font-mono text-white/30 uppercase tracking-[0.2em]">{item.label}</span>
+            <span className="text-[10px] font-mono text-white/80">{item.value}</span>
+          </div>
+          <div className="h-[1px] w-full bg-white/5">
+            <div className="h-full transition-all duration-1000" style={{ width: `${(item.value / maxValue) * 100}%`, backgroundColor: TAG_STYLES[item.label]?.color || "#fff" }} />
+          </div>
+        </div>
+      ))}
+      <div className="pt-6 mt-6 border-t border-white/5 flex justify-between items-center text-[9px] font-mono text-white/20 uppercase tracking-widest">
+        <span>Aggregate signals</span><span className="text-white/90 text-sm font-display font-bold">{total}</span>
+      </div>
+    </div>
+  );
+}
+
+// --- ОСНОВНОЙ КОМПОНЕНТ ---
 export default function DashboardPage() {
   const params = useParams();
   const router = useRouter();
@@ -122,7 +136,6 @@ export default function DashboardPage() {
   const [partySuggestions, setPartySuggestions] = useState<any[]>([]);
   const [citySuggestions, setCitySuggestions] = useState<any[]>([]);
 
-  // Diff Modal State
   const [diffData, setDiffData] = useState<{old: string, new: string} | null>(null);
   const [showDiffModal, setShowDiffModal] = useState(false);
 
@@ -164,12 +177,9 @@ export default function DashboardPage() {
   const openDiff = async (signalId: string) => {
     try {
       const token = localStorage.getItem("access_token");
-      const data = await apiRequest(`/api/signals/${signalId}/diff`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setDiffData(data);
-      setShowDiffModal(true);
-    } catch (e) { alert("Intelligence diff not available for this event."); }
+      const data = await apiRequest(`/api/signals/${signalId}/diff`, { headers: { Authorization: `Bearer ${token}` } });
+      setDiffData(data); setShowDiffModal(true);
+    } catch (e) { alert("Visual diff not available for this event."); }
   };
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -186,9 +196,9 @@ export default function DashboardPage() {
     } catch (err: any) { alert(err.message); } finally { setIsAdding(false); }
   };
 
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    if (!confirm("Permanently remove this monitor?")) return;
+  const handleDelete = async (e: any, id: string) => {
+    if (e.stopPropagation) e.stopPropagation();
+    if (!confirm("Delete monitor?")) return;
     try {
       const token = localStorage.getItem("access_token");
       await apiRequest(`/api/competitors/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
@@ -200,9 +210,7 @@ export default function DashboardPage() {
   if (isLoading) return <div className="h-screen bg-[#060608] flex items-center justify-center text-white/10 font-mono text-[10px] uppercase tracking-[0.5em]">Synchronizing...</div>;
 
   return (
-    <div className="flex h-screen bg-[#060608] text-white overflow-hidden font-sans antialiased selection:bg-white/10">
-      
-      {/* Sidebar */}
+    <div className="flex h-screen bg-[#060608] text-white overflow-hidden font-sans antialiased">
       <aside className="w-56 shrink-0 flex flex-col border-r border-white/[0.06] bg-[#08080a]">
         <div className="h-14 flex items-center gap-3 px-5 border-b border-white/[0.06]">
           <svg width="22" height="22" viewBox="0 0 120 120" fill="none"><path d="M76 32 C76 20 64 14 52 18 C40 22 36 32 42 40 C48 48 68 50 74 60 C80 70 74 84 60 88 C46 92 36 84 36 74" stroke="currentColor" strokeWidth="10" strokeLinecap="square" fill="none" /></svg>
@@ -211,10 +219,7 @@ export default function DashboardPage() {
         <div className="px-3 pt-4 pb-2">
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.05]">
             <div className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-[10px] font-bold uppercase">{companySlug[0]}</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-medium truncate">{companySlug}</p>
-              <p className="text-[8px] text-white/20 font-mono uppercase">{user?.plan || "Growth"} plan</p>
-            </div>
+            <div className="flex-1 min-w-0"><p className="text-[11px] font-medium truncate">{companySlug}</p><p className="text-[8px] text-white/20 font-mono uppercase">{user?.plan || "Growth"} plan</p></div>
           </div>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-0.5">
@@ -224,14 +229,10 @@ export default function DashboardPage() {
         </nav>
         <div className="px-3 pb-6 border-t border-white/[0.06] pt-4 space-y-0.5">
           <button onClick={() => setPage("settings")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page === "settings" ? "bg-white/[0.08] text-white" : "text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.settings} Settings</button>
-          <div className="flex items-center gap-3 px-3 py-4 mt-2">
-            <div className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-white/30">{user?.email?.[0]?.toUpperCase()}</div>
-            <div className="flex-1 min-w-0"><p className="text-[10px] text-white/50 truncate font-mono">{user?.email}</p><button onClick={() => {localStorage.clear(); window.location.href="/auth/login"}} className="text-[8px] font-mono text-red-400/40 hover:text-red-400 uppercase tracking-tighter">Sign Out</button></div>
-          </div>
+          <div className="flex items-center gap-3 px-3 py-4 mt-2"><div className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-white/30">{user?.email?.[0]?.toUpperCase()}</div><div className="flex-1 min-w-0"><p className="text-[10px] text-white/50 truncate font-mono">{user?.email}</p><button onClick={() => {localStorage.clear(); window.location.href="/auth/login"}} className="text-[8px] font-mono text-red-400/40 hover:text-red-400 uppercase tracking-tighter">Sign Out</button></div></div>
         </div>
       </aside>
 
-      {/* Main Area */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
         <header className="h-14 shrink-0 flex items-center justify-between px-8 border-b border-white/[0.06] bg-[#060608]/50 backdrop-blur-xl z-20">
           <h1 className="font-display text-base font-bold tracking-tight uppercase text-white/90">{selectedComp ? selectedComp.name : page}</h1>
@@ -246,7 +247,7 @@ export default function DashboardPage() {
             <CompetitorDetailsView comp={selectedComp} signals={signals.filter(s => s.company === selectedComp.name)} onDelete={handleDelete} onBack={() => setSelectedComp(null)} onViewDiff={openDiff} />
           ) : (
             <>
-              {page === "dashboard" && <DashboardView count={competitors.length} signals={signals} stats={stats} />}
+              {page === "dashboard" && <DashboardView count={competitors.length} signals={signals} stats={stats} dist={dist} />}
               {page === "competitors" && <CompetitorsView competitors={competitors} signals={signals} onDelete={handleDelete} onSelect={setSelectedComp} />}
               {page === "signals" && <SignalsView signals={signals} onViewDiff={openDiff} />}
               {page === "settings" && <SettingsView user={user} />}
@@ -255,7 +256,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* --- MODAL: Add Monitor --- */}
+      {/* --- MODAL --- */}
       {showModal && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[100] flex items-center justify-center p-6">
           <div className="bg-[#0f1012] border border-white/10 rounded-[40px] p-10 w-full max-w-md shadow-2xl relative">
@@ -304,40 +305,26 @@ export default function DashboardPage() {
                 )}
               </div>
               <div><p className="text-[9px] font-mono text-white/30 uppercase mb-2">Website</p><input required value={newCompUrl} onChange={e => setNewCompUrl(e.target.value)} placeholder="www.domain.com" className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm outline-none focus:border-white/30 font-mono"/></div>
-              <div className="flex gap-4 pt-4"><button type="button" onClick={() => setShowModal(false)} className="flex-1 border border-white/10 py-4 rounded-2xl text-[10px] font-mono font-bold uppercase text-white/30">Cancel</button><button type="submit" disabled={isAdding} className="flex-1 bg-white text-black py-4 rounded-2xl text-[10px] font-mono font-bold uppercase">{isAdding ? "Saving..." : "Start Monitor"}</button></div>
+              <div className="flex gap-4 pt-4"><button type="button" onClick={() => setShowModal(false)} className="flex-1 border border-white/10 py-4 rounded-2xl text-[10px] font-mono font-bold uppercase text-white/30 transition-all hover:text-white">Cancel</button><button type="submit" disabled={isAdding} className="flex-1 bg-white text-black py-4 rounded-2xl text-[10px] font-mono font-bold uppercase">{isAdding ? "Saving..." : "Start"}</button></div>
             </form>
           </div>
         </div>
       )}
 
-      {/* --- MODAL: DIFF VIEWER --- */}
+      {/* --- DIFF MODAL --- */}
       {showDiffModal && diffData && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[200] flex flex-col p-10">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h3 className="font-display text-2xl font-bold uppercase tracking-tight">Structural Intelligence Diff</h3>
-              <p className="text-[10px] font-mono text-white/20 uppercase tracking-[0.3em]">Comparing site content snapshots</p>
+              <h3 className="font-display text-2xl font-bold uppercase tracking-tight">Intelligence Diff Viewer</h3>
+              <p className="text-[10px] font-mono text-white/20 uppercase tracking-[0.3em]">GitHub Style Comparison</p>
             </div>
-            <button onClick={() => setShowDiffModal(false)} className="px-8 py-3 bg-white text-black rounded-2xl text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-white/90 transition-all">Close</button>
+            <button onClick={() => setShowDiffModal(false)} className="px-8 py-3 bg-white text-black rounded-2xl text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-white/90">Close</button>
           </div>
           <div className="flex-1 overflow-auto rounded-[32px] border border-white/10 bg-[#08080a] custom-scrollbar">
-            <ReactDiffViewer 
-              oldValue={diffData.old} 
-              newValue={diffData.new} 
-              splitView={true}
-              useDarkTheme={true}
+            <ReactDiffViewer oldValue={diffData.old} newValue={diffData.new} splitView={true} useDarkTheme={true}
               styles={{
-                variables: {
-                  dark: {
-                    diffViewerBackground: '#08080a',
-                    addedBackground: 'rgba(16, 185, 129, 0.08)',
-                    addedColor: '#10b981',
-                    removedBackground: 'rgba(239, 68, 68, 0.08)',
-                    removedColor: '#ef4444',
-                    wordAddedBackground: 'rgba(16, 185, 129, 0.2)',
-                    wordRemovedBackground: 'rgba(239, 68, 68, 0.2)',
-                  }
-                },
+                variables: { dark: { diffViewerBackground: '#08080a', addedBackground: 'rgba(16, 185, 129, 0.08)', addedColor: '#10b981', removedBackground: 'rgba(239, 68, 68, 0.08)', removedColor: '#ef4444' } },
                 contentText: { fontSize: '11px', fontFamily: 'var(--font-mono)', lineHeight: '1.6' }
               }}
             />
@@ -348,12 +335,12 @@ export default function DashboardPage() {
   );
 }
 
-// --- VIEWS ---
+// --- СТРАНИЦЫ (VIEWS) ---
 
-function DashboardView({ count, signals, stats }: any) {
+function DashboardView({ count, signals, stats, dist }: any) {
+  const dataPoints = count + signals.length;
   const compWithSignals = new Set(signals.map((s: any) => s.company)).size;
   const coverage = count > 0 ? Math.round((compWithSignals / count) * 100) : 0;
-  const dataPoints = count + signals.length + (count > 0 ? 1 : 0);
 
   return (
     <div className="space-y-10 animate-in fade-in duration-1000 max-w-[1300px]">
@@ -376,7 +363,11 @@ function DashboardView({ count, signals, stats }: any) {
              <p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40 mb-10 text-center">Intelligence Activity (7 Days)</p>
              <ActivityChart data={stats} />
           </div>
-          <div className="col-span-4 border border-white/[0.06] rounded-[32px] bg-[#08080a] p-8 h-[500px] flex flex-col shadow-2xl">
+          <div className="col-span-4 border border-white/[0.06] rounded-[32px] p-10 bg-[#08080a] h-[500px] flex flex-col relative overflow-hidden">
+             <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/20 mb-10 w-full text-left">Signal Matrix</p>
+             <ClassificationMatrix data={dist} />
+          </div>
+          <div className="col-span-4 border border-white/[0.06] rounded-[32px] bg-[#08080a] p-8 h-[450px] flex flex-col shadow-2xl">
              <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30 mb-8 border-b border-white/5 pb-4">Master Feed</p>
              <div className="space-y-6 flex-1 overflow-auto pr-2 custom-scrollbar text-white/50 font-light">
                {signals.slice(0, 10).map((sig: any) => (
@@ -388,11 +379,11 @@ function DashboardView({ count, signals, stats }: any) {
                ))}
              </div>
           </div>
-          <div className="col-span-12 border border-white/[0.06] rounded-[40px] bg-[#08080a] h-[300px] relative overflow-hidden flex flex-col items-center justify-center border-dashed">
+          <div className="col-span-8 border border-white/[0.06] rounded-[40px] bg-[#08080a] h-[450px] relative overflow-hidden flex flex-col items-center justify-center border-b-4 border-b-white/5 border-dashed">
                 <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
                 <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center mb-6 bg-white/[0.01] animate-pulse">📡</div>
-                <h2 className="font-display text-xl font-bold mb-1 tracking-tight uppercase">Strategic Matrix Active</h2>
-                <p className="text-white/20 text-[10px] font-mono uppercase tracking-widest max-w-sm text-center">Analyzing {count} targets. Data synchronization optimal.</p>
+                <h2 className="font-display text-xl font-bold mb-2 tracking-tight uppercase">Strategic Matrix</h2>
+                <p className="text-white/20 text-[10px] font-mono uppercase tracking-widest max-w-sm text-center leading-relaxed">System is performing autonomous deep scans. Data synchronization optimal.</p>
           </div>
       </div>
     </div>
@@ -407,10 +398,7 @@ function CompetitorsView({ competitors, signals, onDelete, onSelect }: any) {
           <div className="flex items-center gap-4 mb-8">
             <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-2xl font-bold text-white/10 uppercase font-mono group-hover:text-white/30 transition-colors">{c.name[0]}</div>
             <div className="min-w-0 flex-1"><h4 className="font-display font-bold text-base truncate">{c.name}</h4><p className="text-[10px] text-white/20 font-mono truncate">{c.website_url}</p></div>
-            <div className="text-right">
-               <p className="font-display text-2xl font-bold tracking-tighter text-white/90">{getCompScore(c, signals)}</p>
-               <p className="text-[8px] font-mono text-white/20 uppercase">Threat</p>
-            </div>
+            <div className="text-right"><p className="font-display text-2xl font-bold tracking-tighter text-white/90">{getCompScore(c, signals)}</p><p className="text-[8px] font-mono text-white/20 uppercase">Threat</p></div>
           </div>
           <div className="flex justify-between items-center bg-white/[0.02] p-4 rounded-2xl mb-8">
             <p className="text-[10px] font-mono uppercase text-white/30 tracking-widest">{c.city || 'Global Node'}</p>
@@ -424,9 +412,30 @@ function CompetitorsView({ competitors, signals, onDelete, onSelect }: any) {
 }
 
 function CompetitorDetailsView({ comp, signals, onDelete, onBack, onViewDiff }: any) {
+  const [socialUrl, setSocialUrl] = useState("");
+  const [platform, setPlatform] = useState("telegram");
+  const [socials, setSocials] = useState<any[]>([]);
+  const [isLinking, setIsLinking] = useState(false);
+  const fetchSocials = async () => {
+    try {
+      const token = localStorage.getItem("access_token");
+      const data = await apiRequest(`/api/competitors/${comp.id}/socials`, { headers: { Authorization: `Bearer ${token}` } });
+      setSocials(data || []);
+    } catch (e) {}
+  };
+  useEffect(() => { fetchSocials(); }, [comp.id]);
+  const handleLink = async () => {
+    if (!socialUrl) return;
+    setIsLinking(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      await apiRequest(`/api/competitors/${comp.id}/socials`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ platform, url: socialUrl, interval: 60 }) });
+      setSocialUrl(""); fetchSocials();
+    } catch (e) {} finally { setIsLinking(false); }
+  };
   return (
     <div className="animate-in slide-in-from-bottom-2 duration-700 space-y-10 max-w-[1200px]">
-      <div className="flex justify-between items-center"><button onClick={onBack} className="text-[10px] font-mono text-white/30 hover:text-white flex items-center gap-3 uppercase tracking-widest transition-all"><span className="text-lg">←</span> Hub</button><button onClick={(e) => onDelete(e, comp.id)} className="text-[10px] font-mono text-red-500/40 hover:text-red-400 uppercase px-5 py-2 rounded-xl border border-red-500/10 hover:bg-red-500/5 transition-all">Archive</button></div>
+      <div className="flex justify-between items-center"><button onClick={onBack} className="text-[10px] font-mono text-white/30 hover:text-white flex items-center gap-3 uppercase tracking-widest transition-all"><span className="text-lg">←</span> Hub</button><button onClick={(e) => onDelete(e, comp.id)} className="text-[10px] font-mono text-red-500/40 hover:text-red-400 uppercase px-5 py-2 rounded-xl border border-red-500/10 hover:bg-red-500/5 transition-all">Archive Monitor</button></div>
       <div className="grid grid-cols-3 gap-10">
         <div className="col-span-1 space-y-8">
            <div className="border border-white/[0.07] rounded-[40px] p-10 bg-[#08080a]">
@@ -438,18 +447,26 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack, onViewDiff }: 
                  <div><p className="text-[10px] font-mono text-white/20 uppercase mb-2 tracking-widest">Node Region</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-4 rounded-2xl border border-white/5">{comp.city || 'GLOBAL'}</p></div>
               </div>
            </div>
+           <div className="border border-white/[0.06] rounded-[40px] p-10 bg-[#08080a]">
+              <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-8">Observers</p>
+              <div className="space-y-4 mb-10">
+                 {socials.map((s: any) => (<div key={s.id} className="p-5 border border-white/5 rounded-3xl bg-white/[0.01] flex justify-between items-center"><p className="text-[11px] text-white/60 font-mono uppercase">{s.platform}</p><div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 animate-pulse"/></div>))}
+              </div>
+              <div className="space-y-4 pt-8 border-t border-white/5">
+                 <select value={platform} onChange={e => setPlatform(e.target.value)} className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-xs text-white outline-none"><option value="telegram">Telegram</option><option value="vk">VK.com</option></select>
+                 <input value={socialUrl} onChange={e => setSocialUrl(e.target.value)} placeholder="Observer URL..." className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-xs text-white outline-none font-mono focus:border-white/30 transition-all"/><button onClick={handleLink} disabled={isLinking} className="w-full bg-white text-black py-5 rounded-2xl font-mono text-[11px] font-bold uppercase hover:bg-white/90 transition-all">Link Observer</button>
+              </div>
+           </div>
         </div>
-        <div className="col-span-2 border border-white/[0.07] rounded-[40px] bg-[#08080a] overflow-hidden flex flex-col h-[750px]">
-           <div className="px-10 py-8 border-b border-white/[0.06] flex justify-between items-center bg-white/[0.01]"><p className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/40">Raw Intelligence Data</p></div>
+        <div className="col-span-2 border border-white/[0.07] rounded-[40px] bg-[#08080a] overflow-hidden flex flex-col h-[850px]">
+           <div className="px-10 py-8 border-b border-white/[0.06] flex justify-between items-center bg-white/[0.01]"><p className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/40">Intelligence Data</p></div>
            <div className="divide-y divide-white/[0.04] overflow-auto custom-scrollbar">
               {signals.map((s: any) => (
                 <div key={s.id} className="p-10 hover:bg-white/[0.01] transition-all">
                   <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-3">
                       <SignalBadge label={s.tag} />
-                      {s.tag === 'PRODUCT' && (
-                        <button onClick={() => onViewDiff(s.id)} className="text-[9px] font-mono text-emerald-400 hover:underline uppercase">View Diff</button>
-                      )}
+                      {s.tag === 'PRODUCT' && <button onClick={() => onViewDiff(s.id)} className="text-[9px] font-mono text-emerald-400 hover:underline uppercase">View Changes</button>}
                     </div>
                     <span className="text-[10px] font-mono text-white/10 uppercase">{getRelativeTime(s.created_at)}</span>
                   </div>
@@ -474,9 +491,7 @@ function SignalsView({ signals, onViewDiff }: any) {
               <p className="flex-1 text-[13px] text-white/40 font-light leading-relaxed">{s.msg}</p>
               <div className="flex flex-col items-end gap-2">
                 <SignalBadge label={s.tag} />
-                {s.tag === 'PRODUCT' && (
-                  <button onClick={() => onViewDiff(s.id)} className="text-[9px] font-mono text-emerald-400 hover:underline uppercase">Visual Diff</button>
-                )}
+                {s.tag === 'PRODUCT' && <button onClick={() => onViewDiff(s.id)} className="text-[9px] font-mono text-emerald-400 hover:underline uppercase">Visual Diff</button>}
               </div>
               <span className="text-[11px] font-mono text-white/20 w-24 text-right shrink-0 font-mono">{getRelativeTime(s.created_at)}</span>
             </div>
