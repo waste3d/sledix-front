@@ -243,6 +243,7 @@ export default function DashboardPage() {
         </header>
 
         <div className="flex-1 overflow-auto p-8 custom-scrollbar bg-[#060608]">
+        {!user?.is_verified && <VerificationBanner email={user?.email} />}
           {selectedComp ? (
             <CompetitorDetailsView comp={selectedComp} signals={signals.filter(s => s.company === selectedComp.name)} onDelete={handleDelete} onBack={() => setSelectedComp(null)} onViewDiff={openDiff} />
           ) : (
@@ -524,6 +525,60 @@ function SettingsView({ user }: any) {
         <div className="space-y-6"><p className="text-[10px] font-mono text-white/20 uppercase tracking-widest ml-1">Security Cipher</p>{showPass ? (<div className="space-y-6 animate-in slide-in-from-top-2 duration-300"><input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="New Cipher..." className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-6 py-5 text-[13px] text-white font-mono outline-none focus:border-white/30"/><button onClick={() => setShowPass(false)} className="text-[10px] font-mono text-white/20 hover:text-white uppercase tracking-widest transition-colors ml-1">Abort Update</button></div>) : (<button onClick={() => setShowPass(true)} className="text-[10px] font-mono text-white/40 border border-white/10 px-8 py-4 rounded-2xl hover:bg-white/5 transition-all uppercase tracking-widest">Update Access Cipher</button>)}</div>
         {message && <p className={`text-[10px] font-mono uppercase tracking-widest ${message.includes('Error') ? 'text-red-400' : 'text-emerald-400'}`}>{message}</p>}
         <div className="pt-10 border-t border-white/5"><button onClick={handleSave} disabled={isSaving} className="w-full bg-white text-black py-6 rounded-[24px] font-mono text-[11px] font-bold uppercase tracking-[0.3em] hover:bg-white/90 disabled:opacity-50 transition-all">Synchronize Configuration</button></div>
+      </div>
+    </div>
+  );
+}
+
+function VerificationBanner({ email }: { email: string }) {
+  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
+  const handleResend = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      await apiRequest("/api/auth/resend-verification", { 
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSent(true);
+    } catch (e) {
+      alert("Error sending email");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="mb-10 animate-in slide-in-from-top-4 duration-1000">
+      <div className="relative overflow-hidden rounded-[32px] border border-amber-500/20 bg-amber-500/[0.02] p-6 md:p-8 backdrop-blur-xl group">
+        {/* Декоративное свечение */}
+        <div className="absolute -left-20 -top-20 w-64 h-64 bg-amber-500/5 blur-[80px] rounded-full pointer-events-none" />
+        
+        <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-6">
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-2xl shadow-[0_0_30px_rgba(245,158,11,0.05)] group-hover:scale-105 transition-transform">
+              ⚡
+            </div>
+            <div>
+              <h4 className="font-display text-base font-bold uppercase tracking-tight text-amber-200/90">
+                Email Verification Pending
+              </h4>
+              <p className="text-[11px] font-mono text-amber-200/40 uppercase tracking-[0.12em] mt-1.5 leading-relaxed">
+                Confirm access to <span className="text-amber-200/80 font-bold underline decoration-amber-500/30">{email}</span> to enable full intelligence node.
+              </p>
+            </div>
+          </div>
+          
+          <button 
+            onClick={handleResend}
+            disabled={sent || loading}
+            className="w-full md:w-auto px-10 py-4 rounded-xl bg-amber-500 text-black text-[10px] font-mono font-bold uppercase tracking-[0.2em] hover:bg-amber-400 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-[0_10px_20px_rgba(245,158,11,0.1)] active:scale-95"
+          >
+            {sent ? "Check Inbox" : loading ? "Sending..." : "Resend Link"}
+          </button>
+        </div>
       </div>
     </div>
   );
