@@ -387,7 +387,7 @@ export default function PeriscopeLandingV3() {
               className="text-white/40 text-base font-light leading-relaxed max-w-sm mb-10"
               style={{ animation: "fadeUp 0.7s 0.14s cubic-bezier(.16,1,.3,1) both" }}
             >
-              Periscope monitors your entire competitive landscape autonomously — pricing, hiring, reviews, messaging — and delivers structured intelligence daily.
+              Sledix monitors your entire competitive landscape autonomously — pricing, hiring, reviews, messaging — and delivers structured intelligence daily.
             </p>
 
             <div
@@ -480,7 +480,7 @@ export default function PeriscopeLandingV3() {
               Nothing<br /><span className="text-white/20">missed.</span>
             </h2>
             <p className="text-white/30 text-sm leading-relaxed font-light">
-              Six layers of intelligence, monitored continuously. From a homepage headline change to a buried ToS update — Periscope sees it first.
+              Six layers of intelligence, monitored continuously. From a homepage headline change to a buried ToS update — Sledix sees it first.
             </p>
           </Reveal>
 
