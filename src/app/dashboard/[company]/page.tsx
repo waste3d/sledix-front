@@ -551,33 +551,39 @@ function VerificationBanner({ email }: { email: string }) {
   };
 
   return (
-    <div className="mb-10 animate-in slide-in-from-top-4 duration-1000">
-      <div className="relative overflow-hidden rounded-[32px] border border-amber-500/20 bg-amber-500/[0.02] p-6 md:p-8 backdrop-blur-xl group">
-        {/* Декоративное свечение */}
-        <div className="absolute -left-20 -top-20 w-64 h-64 bg-amber-500/5 blur-[80px] rounded-full pointer-events-none" />
-        
-        <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-6">
-            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-2xl shadow-[0_0_30px_rgba(245,158,11,0.05)] group-hover:scale-105 transition-transform">
-              ⚡
-            </div>
-            <div>
-              <h4 className="font-display text-base font-bold uppercase tracking-tight text-amber-200/90">
-                Email Verification Pending
-              </h4>
-              <p className="text-[11px] font-mono text-amber-200/40 uppercase tracking-[0.12em] mt-1.5 leading-relaxed">
-                Confirm access to <span className="text-amber-200/80 font-bold underline decoration-amber-500/30">{email}</span> to enable full intelligence node.
-              </p>
-            </div>
+    <div className="mb-12 animate-in fade-in slide-in-from-top-2 duration-700">
+      <div className="border border-white/5 bg-white/[0.01] rounded-2xl p-5 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          {/* Пульсирующая точка вместо иконки */}
+          <div className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500/40 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500/80"></span>
           </div>
           
-          <button 
-            onClick={handleResend}
-            disabled={sent || loading}
-            className="w-full md:w-auto px-10 py-4 rounded-xl bg-amber-500 text-black text-[10px] font-mono font-bold uppercase tracking-[0.2em] hover:bg-amber-400 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-[0_10px_20px_rgba(245,158,11,0.1)] active:scale-95"
-          >
-            {sent ? "Check Inbox" : loading ? "Sending..." : "Resend Link"}
-          </button>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">
+              Identity Verification Required
+            </span>
+            <span className="text-[11px] font-mono text-white/20 mt-0.5">
+              Waiting for confirmation from <span className="text-white/60">{email}</span>
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-6">
+          {sent ? (
+            <span className="text-[9px] font-mono uppercase tracking-widest text-emerald-400/60 bg-emerald-400/5 px-3 py-1 rounded-full border border-emerald-400/10">
+              Check Inbox
+            </span>
+          ) : (
+            <button 
+              onClick={handleResend}
+              disabled={loading}
+              className="text-[10px] font-mono uppercase tracking-[0.15em] text-white/30 hover:text-white transition-colors border-b border-white/10 hover:border-white/40 pb-0.5 disabled:opacity-20"
+            >
+              {loading ? "Transmitting..." : "Resend Link"}
+            </button>
+          )}
         </div>
       </div>
     </div>
