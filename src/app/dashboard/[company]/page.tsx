@@ -47,8 +47,8 @@ const Icons = {
 
 // --- Компоненты UI ---
 
-function MetricAccent({ color }: { color: string }) {
-  return <div className="absolute top-0 left-0 w-full h-[1.5px] opacity-60" style={{ backgroundColor: color, clipPath: 'polygon(0 0, 60% 0, 70% 100%, 0 100%)' }} />;
+function MetricAccent() {
+  return <div className="absolute top-0 left-0 w-full h-[1.5px] opacity-60" style={{ clipPath: 'polygon(0 0, 60% 0, 70% 100%, 0 100%)' }} />;
 }
 
 function SignalBadge({ label }: { label: string }) {
@@ -347,13 +347,13 @@ function DashboardView({ count, signals, stats, dist }: any) {
     <div className="space-y-10 animate-in fade-in duration-1000 max-w-[1300px]">
       <div className="grid grid-cols-4 gap-6">
         {[ 
-          { label: "Monitors", value: count, color: "#fff" }, 
-          { label: "Signal Density", value: signals.length, color: "#10b981" }, 
-          { label: "Data Points", value: dataPoints, color: "#3b82f6" }, 
-          { label: "Scan Coverage", value: `${coverage}%`, color: "#f59e0b" }
+          { label: "Monitors", value: count}, 
+          { label: "Signal Density", value: signals.length }, 
+          { label: "Data Points", value: dataPoints }, 
+          { label: "Scan Coverage", value: `${coverage}%` }
         ].map((s, i) => (
           <div key={i} className="border border-white/[0.06] rounded-[24px] p-6 bg-[#08080a] relative overflow-hidden border-b-2 border-b-white/5 transition-all">
-            <MetricAccent color={s.color} />
+            <MetricAccent />
             <p className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/20 mb-3">{s.label}</p>
             <p className="font-display text-4xl font-bold tracking-tighter text-white/90">{s.value}</p>
           </div>
