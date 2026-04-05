@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Syne, DM_Sans, DM_Mono } from "next/font/google";
 import "./globals.css";
+import { GoogleAnalytics } from '@next/third-parties/google'
 
 const syne = Syne({
   subsets: ["latin"],
@@ -38,9 +39,11 @@ export default function RootLayout({
         {children}
         <Script
           src="https://telegram.org/js/telegram-web-app.js"
-          strategy="beforeInteractive"
+          strategy="beforeInteractive" 
         />
       </body>
+
+      <GoogleAnalytics gaId="G-7QX73392SW" />
     </html>
   );
 }
