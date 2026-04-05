@@ -28,11 +28,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Sledix — Узнайте всё о своих конкурентах",
     description: "Автономная платформа для конкурентной разведки.",
-    url: "https://sledix.com",
+    url: "https://sledix.tech",
     siteName: "Sledix",
     images: [
       {
-        url: "/og-image.png", // Сделай картинку 1200x630 и положи в public
+        url: "/icon.svg", // Сделай картинку 1200x630 и положи в public
         width: 1200,
         height: 630,
       },
