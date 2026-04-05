@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
     },
-    sitemap: 'https://sledix.com/sitemap.xml',
+    sitemap: 'https://sledix.tech/sitemap.xml',
   }
 }
