@@ -210,6 +210,40 @@ function ParticleBackground() {
   return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" style={{ opacity: 0.5 }} />;
 }
 
+// ─── Enhanced Background (Clean & Elegant) ──────────────────────────────────
+// ─── Premium Minimal Background ──────────────────────────────────────────────
+function PremiumBackground() {
+  return (
+    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#080809]">
+      
+      {/* 1. Ультра-тонкая светящаяся линия горизонта сверху (премиальный акцент) */}
+      <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
+
+      {/* 2. Главный изумрудный свет (Spotlight) — фокус на заголовке */}
+      <div 
+        className="absolute top-[-30vh] left-1/2 -translate-x-1/2 w-[80vw] md:w-[60vw] h-[60vh] rounded-[100%]" 
+        style={{ 
+          background: 'rgba(16, 185, 129, 0.10)', 
+          filter: 'blur(120px)' 
+        }} 
+      />
+
+      {/* 3. Мягкий фоновый белый свет снизу-справа для придания объема */}
+      <div 
+        className="absolute bottom-[-20vh] right-[-10vw] w-[50vw] h-[50vh] rounded-[100%]" 
+        style={{ 
+          background: 'rgba(255, 255, 255, 0.03)', 
+          filter: 'blur(100px)' 
+        }} 
+      />
+
+      {/* 4. Элегантный диагональный блик (эффект дорогого стекла) */}
+      <div className="absolute top-[-50%] left-[15%] w-[30%] h-[200%] -rotate-[35deg] bg-gradient-to-r from-transparent via-white/[0.015] to-transparent" />
+      
+    </div>
+  );
+}
+
 // ─── Reveal ───────────────────────────────────────────────────────────────────
 function useReveal() {
   const ref = useRef<HTMLDivElement>(null);
@@ -308,7 +342,8 @@ export default function PeriscopeLandingV3() {
   }, []);
 
   return (
-    <main className="bg-[#080809] text-white min-h-screen font-sans antialiased selection:bg-white/10 overflow-x-hidden">
+    <main className="bg-[#080809] text-white min-h-screen font-sans antialiased selection:bg-white/10 overflow-x-hidden relative">
+      <PremiumBackground />
       <ParticleBackground />
 
       {/* ── NAV ── */}
@@ -608,7 +643,9 @@ export default function PeriscopeLandingV3() {
           <SledixLogo size={26} />
           <span className="font-display font-bold text-sm tracking-tight">Sledix</span>
         </div>
-        <span className="text-[9px] tracking-[0.25em] uppercase text-white/15 font-mono">© 2025</span>
+        <a href="/legal/terms" className="text-[9px] tracking-[0.25em] uppercase text-white/15 font-mono hover:text-white transition-colors">Terms</a>
+        <a href="/legal/privacy" className="text-[9px] tracking-[0.25em] uppercase text-white/15 font-mono hover:text-white transition-colors">Privacy</a>
+        <span className="text-[9px] tracking-[0.25em] uppercase text-white/15 font-mono">© 2026</span>
       </footer>
 
       <style>{`
@@ -619,6 +656,21 @@ export default function PeriscopeLandingV3() {
         @keyframes slideIn {
           from { opacity: 0; transform: translateX(5px); }
           to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes blob {
+          0% { transform: translate(0px, 0px) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
+          100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob {
+          animation: blob 10s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
         }
       `}</style>
     </main>
