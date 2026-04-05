@@ -1,5 +1,6 @@
 "use client";
 
+import { apiRequest } from "@/lib/api";
 /**
  * Periscope — Landing Page v3
  * Elegant corporate. Refined typography. Subtle particles.
@@ -333,6 +334,38 @@ export default function PeriscopeLandingV3() {
   const [scrolled, setScrolled] = useState(false);
   const [lang, setLang] = useState<Lang>("EN");
   const [langOpen, setLangOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+
+const handleJoinWaitlist = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!email) return;
+
+  setIsLoading(true);
+
+  try {
+    const response = await fetch("https://formspree.io/f/mpqoongy", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({email: email, language: lang, source: "Sledix Landing Page"}),
+    });
+
+    if (response.ok) {
+      setSubmitted(true);
+    } else {
+      alert("Oops! Something went wrong. Please try again.");
+    }
+  } catch (error) {
+    console.error("Error submitting form:", error);
+    alert("Network error. Please check your connection.");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
   const t = T[lang];
 
   useEffect(() => {
@@ -615,7 +648,7 @@ export default function PeriscopeLandingV3() {
 
           <Reveal delay={100}>
             {!submitted ? (
-              <form onSubmit={e => { e.preventDefault(); if (email) setSubmitted(true); }} className="flex flex-col sm:flex-row gap-2 max-w-md">
+              <form onSubmit={handleJoinWaitlist} className="flex flex-col sm:flex-row gap-2 max-w-md">
                 <input
                   type="email" required value={email}
                   onChange={e => setEmail(e.target.value)}
