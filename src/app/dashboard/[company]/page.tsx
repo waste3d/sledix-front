@@ -243,7 +243,7 @@ export default function DashboardPage() {
         </header>
 
         <div className="flex-1 overflow-auto p-8 custom-scrollbar bg-[#060608]">
-        {!user?.is_verified && <VerificationBanner email={user?.email} />}
+        {!user?.is_email_verified && <VerificationBanner email={user?.email} />}
           {selectedComp ? (
             <CompetitorDetailsView comp={selectedComp} signals={signals.filter(s => s.company === selectedComp.name)} onDelete={handleDelete} onBack={() => setSelectedComp(null)} onViewDiff={openDiff} />
           ) : (
