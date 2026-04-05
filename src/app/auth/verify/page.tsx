@@ -4,7 +4,7 @@ import React, { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
-import { apiRequest } from "../../../lib/api"; // Твой путь до api.ts
+import { apiRequest } from "../../../lib/api";
 
 function SledixLogo({ size = 28 }: { size?: number }) {
     return (
@@ -54,7 +54,7 @@ function VerifyEmailContent() {
   useEffect(() => {
     if (!token) {
       setStatus("error");
-      setErrorMsg("No verification token found in URL.");
+      setErrorMsg("В ссылке нет токена подтверждения.");
       return;
     }
 
@@ -83,7 +83,7 @@ const verifyToken = async () => {
       }, 2000);
     } catch (err: any) {
       setStatus("error");
-      setErrorMsg(err.message || "Invalid or expired token.");
+      setErrorMsg(err.message || "Недействительный или просроченный токен.");
     }
   };
 
@@ -100,8 +100,8 @@ const verifyToken = async () => {
         {status === "loading" && (
           <div className="flex flex-col items-center animate-in fade-in duration-500">
             <Loader2 className="w-10 h-10 text-white/20 animate-spin mb-6" />
-            <h1 className="font-display text-2xl font-bold mb-2 tracking-tight">Verifying link...</h1>
-            <p className="text-white/30 text-sm font-light font-mono">Securing your workspace</p>
+            <h1 className="font-display text-2xl font-bold mb-2 tracking-tight">Проверяем ссылку…</h1>
+            <p className="text-white/30 text-sm font-light font-mono">Подключаем ваше пространство</p>
           </div>
         )}
 
@@ -110,12 +110,12 @@ const verifyToken = async () => {
             <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-6">
               <CheckCircle2 className="w-8 h-8 text-emerald-400" />
             </div>
-            <h1 className="font-display text-2xl font-bold mb-2 tracking-tight">Email verified.</h1>
-            <p className="text-white/30 text-sm font-light mb-8">Your account is fully activated.</p>
+            <h1 className="font-display text-2xl font-bold mb-2 tracking-tight">Почта подтверждена</h1>
+            <p className="text-white/30 text-sm font-light mb-8">Аккаунт полностью активирован.</p>
             
             <button disabled className="w-full bg-white text-[#080809] py-4 rounded-xl text-[11px] tracking-[0.18em] uppercase font-bold font-mono opacity-80 flex items-center justify-center gap-3">
               <span className="w-1.5 h-1.5 rounded-full bg-[#080809] animate-pulse" />
-              Redirecting...
+              Переход…
             </button>
           </div>
         )}
@@ -125,13 +125,13 @@ const verifyToken = async () => {
             <div className="w-16 h-16 rounded-full bg-[#f87171]/10 border border-[#f87171]/20 flex items-center justify-center mb-6">
               <XCircle className="w-8 h-8 text-[#f87171]" />
             </div>
-            <h1 className="font-display text-2xl font-bold mb-2 tracking-tight">Verification failed.</h1>
+            <h1 className="font-display text-2xl font-bold mb-2 tracking-tight">Не удалось подтвердить</h1>
             <p className="text-[#f87171]/70 text-xs font-mono mb-8 bg-[#f87171]/5 border border-[#f87171]/10 px-4 py-3 rounded-lg w-full">
               {errorMsg}
             </p>
             
             <Link href="/auth/login" className="w-full bg-white/[0.05] border border-white/10 text-white hover:text-black py-4 rounded-xl text-[11px] tracking-[0.18em] uppercase font-bold hover:bg-white transition-colors font-mono block">
-              Back to Login
+              Вернуться ко входу
             </Link>
           </div>
         )}

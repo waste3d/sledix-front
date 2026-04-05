@@ -60,7 +60,7 @@ export default function RegisterPage() {
       });
 
       if (!data || !data.user) {
-        throw new Error("User data not found in response");
+        throw new Error("Не удалось получить данные пользователя");
       }
 
       localStorage.setItem("access_token", data.access_token);
@@ -107,7 +107,6 @@ export default function RegisterPage() {
         <div className="relative z-10">
           <Link href="/" className="inline-flex items-center gap-3">
             <SledixLogo size={36} />
-            <span className="font-display text-xl font-bold tracking-tight">ledix</span>
           </Link>
         </div>
 
@@ -118,14 +117,14 @@ export default function RegisterPage() {
               <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-indigo-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
             </span>
-            <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-indigo-400">Node Initialization</span>
+            <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-indigo-400">Инициализация</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-display font-medium tracking-tight leading-[1.1] mb-6">
-            Construct your <br />
-            <span className="text-white/40">Intelligence Matrix</span>
+            Соберите <br />
+            <span className="text-white/40">карту конкурентнов</span>
           </h2>
           <p className="text-white/30 text-sm font-light max-w-sm leading-relaxed">
-            Deploy your dedicated workspace and start mapping your competitive landscape in real-time.
+            Запустите своё пространство и следите за конкурентами в реальном времени.
           </p>
         </div>
       </div>
@@ -139,16 +138,16 @@ export default function RegisterPage() {
             <SledixLogo size={24} />
           </Link>
           <Link href="/auth/login" className="text-[10px] font-mono uppercase tracking-widest text-white/40 hover:text-white transition-colors">
-            Sign In
+            Войти
           </Link>
         </div>
 
         {/* Десктопная ссылка авторизации сверху */}
         <div className="absolute top-10 right-12 hidden lg:block">
           <p className="text-xs text-white/40 font-light">
-            Already have an account?{" "}
+            Уже есть аккаунт?{" "}
             <Link href="/auth/login" className="text-white hover:text-indigo-400 transition-colors font-medium">
-              Sign in
+              Войти
             </Link>
           </p>
         </div>
@@ -156,15 +155,15 @@ export default function RegisterPage() {
         <div className="w-full max-w-[420px] mx-auto" style={{ animation: "fadeUp 0.6s cubic-bezier(.16,1,.3,1) both" }}>
           
           <div className="mb-10">
-            <h1 className="font-display text-3xl font-medium tracking-tight mb-2">Create workspace</h1>
-            <p className="text-white/40 text-sm font-light">Set up your intelligence hub in seconds.</p>
+            <h1 className="font-display text-3xl font-medium tracking-tight mb-2">Создать пространство</h1>
+            <p className="text-white/40 text-sm font-light">Настройте центр разведданных за пару минут.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             
             <div className="space-y-2 group">
               <label className="text-[10px] uppercase tracking-widest text-white/40 font-mono transition-colors group-focus-within:text-white/80">
-                Workspace URL
+                Название вашей компании
               </label>
               <div className="relative flex items-center border-b border-white/10 group-focus-within:border-white transition-colors">
                 <input
@@ -181,7 +180,7 @@ export default function RegisterPage() {
 
             <div className="space-y-2 group">
               <label className="text-[10px] uppercase tracking-widest text-white/40 font-mono transition-colors group-focus-within:text-white/80">
-                Work Email
+                Ваша почта
               </label>
               <input
                 required
@@ -194,7 +193,7 @@ export default function RegisterPage() {
 
             <div className="space-y-2 group">
               <label className="text-[10px] uppercase tracking-widest text-white/40 font-mono transition-colors group-focus-within:text-white/80">
-                Password
+                Пароль
               </label>
               <input
                 required
@@ -222,11 +221,11 @@ export default function RegisterPage() {
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <span className="w-1.5 h-1.5 bg-black rounded-full animate-pulse" />
-                  Deploying
+                  Развёртывание
                 </span>
               ) : (
                 <span className="relative z-10 flex items-center justify-center gap-2">
-                  Deploy Workspace
+                  Зарегистрироваться
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="transform group-hover:translate-x-1 transition-transform">
                     <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
@@ -236,8 +235,8 @@ export default function RegisterPage() {
           </form>
 
           <p className="mt-8 text-center text-[10px] tracking-[0.1em] text-white/20">
-            By creating an account, you agree to our <br className="hidden sm:block" />
-            <a href="/legal/terms" className="underline decoration-white/20 hover:text-white transition-colors">Terms of Service</a> and <a href="/legal/privacy" className="underline decoration-white/20 hover:text-white transition-colors">Privacy Policy</a>.
+            Создавая аккаунт, вы принимаете <br className="hidden sm:block" />
+            <a href="/legal/terms" className="underline decoration-white/20 hover:text-white transition-colors">Условия использования</a> и <a href="/legal/privacy" className="underline decoration-white/20 hover:text-white transition-colors">Политику конфиденциальности</a>.
           </p>
         </div>
       </div>

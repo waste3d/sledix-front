@@ -1,6 +1,5 @@
 "use client";
 
-import { apiRequest } from "@/lib/api";
 /**
  * Periscope — Landing Page v3
  * Elegant corporate. Refined typography. Subtle particles.
@@ -23,18 +22,29 @@ import React, { useState, useEffect, useRef } from "react";
 // ─── Translations ─────────────────────────────────────────────────────────────
 type Lang = "EN" | "RU" | "ZH";
 
+const TAG_COLORS = {
+  PRICING: "#f59e0b", HIRING: "#60a5fa", REVIEWS: "#f87171", PRODUCT: "#34d399", LEGAL: "#a78bfa",
+} as const;
+
+type FeedItem = { co: string; msg: string; tagKey: keyof typeof TAG_COLORS; tagLabel: string; time: string };
+type StatItem = { n: string; l: string };
+
 const T: Record<Lang, {
   badge: string; hero_title: string[]; hero_sub: string;
   cta: string; cta2: string; live: string;
+  feed: FeedItem[];
+  stats: StatItem[];
   nav: string[]; how_badge: string; how_title: string; how_sub: string;
   steps: { n: string; title: string; body: string; items: string[] }[];
-  sig_badge: string; sig_title: string; sig_sub: string;
+  sig_badge: string; sig_title: string; sig_sub: string; sig_desc: string;
   signals: { icon: string; title: string; desc: string }[];
-  price_badge: string; price_title: string; price_sub: string;
-  plans: { name: string; desc: string; features: string[]; cta: string }[];
-  wait_badge: string; wait_title: string; wait_sub: string;
-  wait_placeholder: string; wait_btn: string; wait_fine: string;
+  price_badge: string; price_title: string; price_sub: string; price_period: string;
+  plans: { name: string; price: string; desc: string; features: string[]; cta: string }[];
+  wait_badge: string; wait_title: string; wait_title_sub: string; wait_sub: string;
+  wait_placeholder: string; wait_btn: string; wait_fine: string; wait_success: string;
   early: string;
+  footer_terms: string; footer_privacy: string;
+  alert_error: string; alert_network: string;
 }> = {
   EN: {
     badge: "AI-native competitive intelligence",
@@ -42,6 +52,18 @@ const T: Record<Lang, {
     hero_sub: "Sledix monitors your entire competitive landscape autonomously — pricing, hiring, reviews, messaging — and delivers structured intelligence daily.",
     cta: "Get early access", cta2: "How it works",
     live: "Live signal feed",
+    feed: [
+      { co: "Notion", msg: "Pricing page — removed free tier mention", tagKey: "PRICING", tagLabel: "PRICING", time: "2m ago" },
+      { co: "Linear", msg: "New posting: VP of Enterprise Sales", tagKey: "HIRING", tagLabel: "HIRING", time: "14m ago" },
+      { co: "Figma", msg: "12 negative G2 reviews in 24 hours", tagKey: "REVIEWS", tagLabel: "REVIEWS", time: "31m ago" },
+      { co: "Vercel", msg: "Blog: 'Announcing AI-native infrastructure'", tagKey: "PRODUCT", tagLabel: "PRODUCT", time: "1h ago" },
+      { co: "Stripe", msg: "Terms of Service — section 4.2 modified", tagKey: "LEGAL", tagLabel: "LEGAL", time: "2h ago" },
+    ],
+    stats: [
+      { n: "120K+", l: "Signals / day" },
+      { n: "6×", l: "Cheaper than Crayon" },
+      { n: "< 5min", l: "To first insight" },
+    ],
     nav: ["Product", "Signals", "Pricing"],
     how_badge: "How it works", how_title: "Three layers.", how_sub: "One platform.",
     steps: [
@@ -59,48 +81,68 @@ const T: Record<Lang, {
       { icon: "🐦", title: "Social signals", desc: "LinkedIn, X, Reddit. Catch the conversation before it trends." },
       { icon: "⚖️", title: "Legal & patents", desc: "ToS changes and new patents — early warning on their roadmap." },
     ],
-    price_badge: "Pricing", price_title: "Simple. No surprises.", price_sub: "Peoples charges $3500/month. We don't.",
+    price_badge: "Pricing", price_title: "Simple. No surprises.", price_sub: "Peoples charges $3500/month. We don't.", price_period: "/mo",
     plans: [
-      { name: "Starter", desc: "For startups tracking 1–3 competitors", features: ["5 competitors","Daily digest","Website monitoring","Email alerts"], cta: "Join waitlist" },
-      { name: "Growth",  desc: "For teams that need real-time edge",    features: ["20 competitors","Real-time alerts","Auto battle cards","Slack integration","Win/loss tracking"], cta: "Get started" },
-      { name: "Scale",   desc: "For companies where CI is a program",   features: ["Unlimited competitors","Custom sources","CRM integration","API access","Dedicated support"], cta: "Join waitlist" },
+      { name: "Starter", price: "$49", desc: "For startups tracking 1–3 competitors", features: ["5 competitors","Daily digest","Website monitoring","Email alerts"], cta: "Join waitlist" },
+      { name: "Growth",  price: "$149", desc: "For teams that need real-time edge",    features: ["20 competitors","Real-time alerts","Auto battle cards","Slack integration","Win/loss tracking"], cta: "Get started" },
+      { name: "Scale",   price: "$499", desc: "For companies where CI is a program",   features: ["Unlimited competitors","Custom sources","CRM integration","API access","Dedicated support"], cta: "Join waitlist" },
     ],
-    wait_badge: "Early access", wait_title: "First to know.", wait_sub: "Free for the first 200 users. No credit card. Founder's pricing locked forever.",
+    wait_badge: "Early access", wait_title: "First to know.", wait_title_sub: "First to win.", wait_sub: "Free for the first 200 users. No credit card. Founder's pricing locked forever.",
     wait_placeholder: "you@company.com", wait_btn: "Join waitlist", wait_fine: "No spam · Unsubscribe anytime",
+    wait_success: "You're on the list. We'll reach out before launch.",
     early: "Early access",
+    footer_terms: "Terms", footer_privacy: "Privacy",
+    alert_error: "Something went wrong. Please try again.",
+    alert_network: "Network error. Check your connection.",
   },
   RU: {
-    badge: "AI-разведка конкурентов",
-    hero_title: ["Знай каждый шаг", "своих конкурентов", "наперёд."],
-    hero_sub: "Sledix автоматически мониторит конкурентов 24/7 — цены, найм, отзывы, PR — и присылает только важные сигналы каждый день.",
-    cta: "Получить доступ", cta2: "Как это работает",
+    badge: "AI-мониторинг конкурентов нового поколения",
+    hero_title: ["Узнайте о каждом", "шаге ваших", "конкурентов."],
+    hero_sub: "Sledix автономно мониторит всё ваше конкурентное поле — цены, найм, отзывы, позиционирование — и доставляет структурированную аналитику ежедневно.",
+    cta: "Получить ранний доступ", cta2: "Как это работает",
     live: "Живой поток сигналов",
+    feed: [
+      { co: "Notion", msg: "Страница с ценами — убрали упоминание бесплатного тарифа", tagKey: "PRICING", tagLabel: "ЦЕНЫ", time: "2 мин назад" },
+      { co: "Linear", msg: "Новая вакансия: VP Enterprise Sales", tagKey: "HIRING", tagLabel: "НАЙМ", time: "14 мин назад" },
+      { co: "Figma", msg: "12 негативных отзывов на G2 за сутки", tagKey: "REVIEWS", tagLabel: "ОТЗЫВЫ", time: "31 мин назад" },
+      { co: "Vercel", msg: "Блог: «AI-native infrastructure»", tagKey: "PRODUCT", tagLabel: "ПРОДУКТ", time: "1 ч назад" },
+      { co: "Stripe", msg: "Условия использования — изменён пункт 4.2", tagKey: "LEGAL", tagLabel: "ПРАВО", time: "2 ч назад" },
+    ],
+    stats: [
+      { n: "120K+", l: "Сигналов в сутки" },
+      { n: "6×", l: "Дешевле Crayon" },
+      { n: "< 5 мин", l: "До первого инсайта" },
+    ],
     nav: ["Продукт", "Сигналы", "Цены"],
     how_badge: "Как это работает", how_title: "Три уровня.", how_sub: "Одна платформа.",
     steps: [
-      { n: "01", title: "Мониторинг", body: "Следит за конкурентами 24/7 — сайты, вакансии, отзывы, соцсети, пресса. Каждое изменение фиксируется и оценивается по важности.", items: ["Изменения сайта и цен","Анализ вакансий","Мониторинг отзывов","PR и новости"] },
-      { n: "02", title: "Анализ", body: "Из сырых сигналов — стратегические инсайты. Замечай паттерны, предсказывай ходы конкурентов до того как это ударит по тебе.", items: ["Обнаружение паттернов","Прогнозирование трендов","Профиль конкурента","Анализ побед и потерь"] },
-      { n: "03", title: "Действие", body: "Battle cards, ежедневные дайджесты, алерты в Slack — разведка там где работает твоя команда. Продажи готовы до звонка.", items: ["Авто-генерация battle cards","Дайджест на почту и Slack","Интеграция с CRM","Настраиваемые алерты"] },
+      { n: "01", title: "Мониторинг", body: "Следит за конкурентами 24/7 — сайты, вакансии, отзывы, соцсети, пресса. Каждое изменение фиксируется и оценивается по степени влияния.", items: ["Изменения цен и сайта","Разведка вакансий и найма","Мониторинг отзывов","PR и новости"] },
+      { n: "02", title: "Анализ", body: "Сырые сигналы превращаются в стратегические инсайты. Находите паттерны, предсказывайте ходы и понимайте логику конкурентов раньше всех.", items: ["Обнаружение паттернов","Прогнозирование трендов","Профилирование конкурентов","Анализ причин побед/поражений"] },
+      { n: "03", title: "Действие", body: "Баттл-карты, дайджесты, алерты в Slack — разведка там, где работает ваша команда. Продажи готовы к возражениям еще до звонка.", items: ["Авто-баттл-карты","Дайджесты в Slack и почту","Интеграция с CRM","Настраиваемые правила уведомлений"] },
     ],
     sig_badge: "Источники сигналов", sig_title: "Ничего", sig_sub: "не упустим.",
-    sig_desc: "Шесть уровней разведки, непрерывный мониторинг. От изменения заголовка на сайте до правок в условиях — Sledix увидит первым.",
+    sig_desc: "Шесть уровней разведки под непрерывным наблюдением. От смены заголовка на главной до правок в условиях использования — Sledix увидит это первым.",
     signals: [
-      { icon: "🌐", title: "Изменения сайта", desc: "Цены, позиционирование, навигация — фиксируем в момент изменения." },
-      { icon: "💼", title: "Вакансии", desc: "Лучший индикатор стратегии. Расшифровываем что они строят." },
-      { icon: "⭐", title: "Сайты отзывов", desc: "G2, Trustpilot, App Store. Знай их слабости раньше клиента." },
-      { icon: "📰", title: "PR и новости", desc: "Инвестиции, партнёрства, пресса — в реальном времени." },
-      { icon: "🐦", title: "Соцсети", desc: "LinkedIn, X, Reddit. Лови разговор до того как он стал трендом." },
-      { icon: "⚖️", title: "Юридика и патенты", desc: "Изменения ToS и новые патенты — ранний сигнал о роадмапе." },
+      { icon: "🌐", title: "Изменения сайтов", desc: "Цены, месседжинг, навигация — фиксируем в момент изменения." },
+      { icon: "💼", title: "Вакансии", desc: "Лучший индикатор стратегии. Мы расшифруем, что они строят." },
+      { icon: "⭐", title: "Сайты отзывов", desc: "G2, Trustpilot, App Store. Знайте их слабые места раньше клиента." },
+      { icon: "📰", title: "PR и новости", desc: "Инвестиции, партнерства, пресса — в реальном времени." },
+      { icon: "🐦", title: "Соцсети", desc: "LinkedIn, X, Reddit. Перехватывайте инфоповоды до того, как они станут трендом." },
+      { icon: "⚖️", title: "Право и патенты", desc: "Изменения ToS и новые патенты — раннее предупреждение о роадмапе." },
     ],
-    price_badge: "Цены", price_title: "Просто. Без сюрпризов.", price_sub: "Crayon стоит $15 000 в год. Мы — нет.",
+    price_badge: "Цены", price_title: "Просто. Без сюрпризов.", price_sub: "Конкуренты берут $15,000 в год. Мы — нет.", price_period: "/мес",
     plans: [
-      { name: "Старт", desc: "Для стартапов, 1–3 конкурента", features: ["5 конкурентов","Ежедневный дайджест","Мониторинг сайтов","Email алерты"], cta: "В вайтлист" },
-      { name: "Рост",  desc: "Для команд которым важна скорость", features: ["20 конкурентов","Алерты в реальном времени","Авто battle cards","Интеграция Slack","Анализ побед"], cta: "Начать" },
-      { name: "Масштаб", desc: "Для компаний где CI — программа", features: ["Без ограничений","Кастомные источники","Интеграция CRM","API доступ","Выделенная поддержка"], cta: "В вайтлист" },
+      { name: "Starter", price: "$49", desc: "Для стартапов, отслеживающих 1–3 конкурентов", features: ["5 конкурентов","Ежедневный дайджест","Мониторинг сайтов","Почтовые уведомления"], cta: "В лист ожидания" },
+      { name: "Growth",  price: "$149", desc: "Для команд, которым важна скорость реакции",    features: ["20 конкурентов","Алерты в реальном времени","Авто-баттл-карты","Интеграция со Slack","Трекинг побед/поражений"], cta: "Начать сейчас" },
+      { name: "Scale",   price: "$499", desc: "Для корпораций с развитой культурой CI",   features: ["Безлимитные конкуренты","Кастомные источники","Интеграция с CRM","Доступ к API","Выделенная поддержка"], cta: "В лист ожидания" },
     ],
-    wait_badge: "Ранний доступ", wait_title: "Узнай первым.", wait_sub: "Бесплатно для первых 200 пользователей. Без карты. Цена фаундера — навсегда.",
-    wait_placeholder: "ты@компания.ru", wait_btn: "Войти в вайтлист", wait_fine: "Без спама · Отписка в любой момент",
+    wait_badge: "Ранний доступ", wait_title: "Узнайте первым.", wait_title_sub: "Выиграйте первыми.", wait_sub: "Бесплатно для первых 200 пользователей. Карта не нужна. Цена основателя фиксируется навсегда.",
+    wait_placeholder: "you@company.ru", wait_btn: "В лист ожидания", wait_fine: "Без спама · Отписка в один клик",
+    wait_success: "Вы в списке. Напишем перед запуском.",
     early: "Ранний доступ",
+    footer_terms: "Условия", footer_privacy: "Конфиденциальность",
+    alert_error: "Что-то пошло не так. Попробуйте ещё раз.",
+    alert_network: "Ошибка сети. Проверьте подключение.",
   },
   ZH: {
     badge: "AI竞争情报平台",
@@ -108,6 +150,18 @@ const T: Record<Lang, {
     hero_sub: "Sledix 全天候自动监控您的竞争对手——定价、招聘、评价、营销——每天为您推送结构化情报。",
     cta: "获取早期访问", cta2: "了解产品",
     live: "实时信号流",
+    feed: [
+      { co: "Notion", msg: "定价页 — 移除免费版描述", tagKey: "PRICING", tagLabel: "定价", time: "2分钟前" },
+      { co: "Linear", msg: "新职位：企业销售副总裁", tagKey: "HIRING", tagLabel: "招聘", time: "14分钟前" },
+      { co: "Figma", msg: "24 小时内 12 条 G2 差评", tagKey: "REVIEWS", tagLabel: "评价", time: "31分钟前" },
+      { co: "Vercel", msg: "博客：宣布 AI 原生基础设施", tagKey: "PRODUCT", tagLabel: "产品", time: "1小时前" },
+      { co: "Stripe", msg: "服务条款 — 第 4.2 节已修改", tagKey: "LEGAL", tagLabel: "法务", time: "2小时前" },
+    ],
+    stats: [
+      { n: "120K+", l: "每日信号" },
+      { n: "6×", l: "低于 Crayon 价格" },
+      { n: "< 5分钟", l: "获得首个洞察" },
+    ],
     nav: ["产品", "信号", "定价"],
     how_badge: "工作原理", how_title: "三个层次。", how_sub: "一个平台。",
     steps: [
@@ -125,17 +179,21 @@ const T: Record<Lang, {
       { icon: "🐦", title: "社交信号", desc: "LinkedIn、X、Reddit。在话题成为趋势前捕捉对话。" },
       { icon: "⚖️", title: "法律与专利", desc: "服务条款变更和新专利申请——产品路线图的早期预警。" },
     ],
-    price_badge: "定价", price_title: "简单透明，无隐藏费用。", price_sub: "Crayon 每年收费 $15,000。我们不是。",
+    price_badge: "定价", price_title: "简单透明，无隐藏费用。", price_sub: "Crayon 每年收费 $15,000。我们不是。", price_period: "/月",
     plans: [
-      { name: "入门版", desc: "适合追踪1–3个竞争对手的初创企业", features: ["5个竞争对手","每日摘要","网站监控","邮件提醒"], cta: "加入等待列表" },
-      { name: "成长版", desc: "适合需要实时优势的团队", features: ["20个竞争对手","实时提醒","自动战斗卡片","Slack集成","胜负追踪"], cta: "立即开始" },
-      { name: "规模版", desc: "适合将CI作为核心项目的企业", features: ["无限竞争对手","自定义来源","CRM集成","API访问","专属支持"], cta: "加入等待列表" },
+      { name: "入门版", price: "$49", desc: "适合追踪1–3个竞争对手的初创企业", features: ["5个竞争对手","每日摘要","网站监控","邮件提醒"], cta: "加入等待列表" },
+      { name: "成长版", price: "$149", desc: "适合需要实时优势的团队", features: ["20个竞争对手","实时提醒","自动战斗卡片","Slack集成","胜负追踪"], cta: "立即开始" },
+      { name: "规模版", price: "$499", desc: "适合将CI作为核心项目的企业", features: ["无限竞争对手","自定义来源","CRM集成","API访问","专属支持"], cta: "加入等待列表" },
     ],
-    wait_badge: "早期访问", wait_title: "抢先一步。", wait_sub: "前200名用户免费。无需信用卡。创始人定价永久锁定。",
+    wait_badge: "早期访问", wait_title: "抢先一步。", wait_title_sub: "领先竞品。", wait_sub: "前200名用户免费。无需信用卡。创始人定价永久锁定。",
     wait_placeholder: "您的邮箱", wait_btn: "加入等待列表", wait_fine: "无垃圾邮件 · 随时取消订阅",
+    wait_success: "已加入列表。上线前我们会联系您。",
     early: "早期访问",
+    footer_terms: "条款", footer_privacy: "隐私",
+    alert_error: "出错了，请重试。",
+    alert_network: "网络错误，请检查连接。",
   },
-} as any;
+};
 
 
 function SledixLogo({ size = 28 }: { size?: number }) {
@@ -303,29 +361,20 @@ function Reveal({ children, delay = 0, className = "" }: {
 }
 
 // ─── Live Feed ────────────────────────────────────────────────────────────────
-const SIGNALS = [
-  { co: "Notion", msg: "Pricing page — removed free tier mention", tag: "PRICING", t: "2m" },
-  { co: "Linear", msg: "New posting: VP of Enterprise Sales", tag: "HIRING", t: "14m" },
-  { co: "Figma", msg: "12 negative G2 reviews in 24 hours", tag: "REVIEWS", t: "31m" },
-  { co: "Vercel", msg: "Blog: 'Announcing AI-native infrastructure'", tag: "PRODUCT", t: "1h" },
-  { co: "Stripe", msg: "Terms of Service — section 4.2 modified", tag: "LEGAL", t: "2h" },
-];
-const TAG_COLOR: Record<string, string> = {
-  PRICING: "#f59e0b", HIRING: "#60a5fa", REVIEWS: "#f87171", PRODUCT: "#34d399", LEGAL: "#a78bfa",
-};
-
-function LiveFeed() {
+function LiveFeed({ live, items }: { live: string; items: FeedItem[] }) {
   const [idx, setIdx] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => setIdx(p => (p + 1) % SIGNALS.length), 2800);
-    return () => clearInterval(t);
-  }, []);
-  const s = SIGNALS[idx];
+    if (!items.length) return;
+    const tick = setInterval(() => setIdx((p) => (p + 1) % items.length), 2800);
+    return () => clearInterval(tick);
+  }, [items.length]);
+  const s = items[idx] ?? items[0];
+  if (!s) return null;
   return (
     <div className="border border-white/10 rounded-2xl p-5 bg-white/[0.03] backdrop-blur-sm">
       <div className="flex items-center gap-2 mb-4">
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-        <span className="text-[9px] tracking-[0.25em] uppercase text-white/25 font-mono">Live signal feed</span>
+        <span className="text-[9px] tracking-[0.25em] uppercase text-white/25 font-mono">{live}</span>
       </div>
       <div key={idx} style={{ animation: "slideIn 0.3s ease both" }}>
         <div className="flex items-start justify-between gap-6">
@@ -334,8 +383,8 @@ function LiveFeed() {
             <p className="text-white/40 text-sm font-light mt-0.5 leading-snug">{s.msg}</p>
           </div>
           <div className="shrink-0 flex flex-col items-end gap-1.5 pt-0.5">
-            <span className="text-[9px] font-mono font-bold tracking-widest" style={{ color: TAG_COLOR[s.tag] }}>{s.tag}</span>
-            <span className="text-white/20 text-[9px] font-mono">{s.t} ago</span>
+            <span className="text-[9px] font-mono font-bold tracking-widest" style={{ color: TAG_COLORS[s.tagKey] }}>{s.tagLabel}</span>
+            <span className="text-white/20 text-[9px] font-mono">{s.time}</span>
           </div>
         </div>
       </div>
@@ -358,7 +407,7 @@ export default function PeriscopeLandingV3() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [lang, setLang] = useState<Lang>("EN");
+  const [lang, setLang] = useState<Lang>("RU");
   const [langOpen, setLangOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -381,11 +430,11 @@ const handleJoinWaitlist = async (e: React.FormEvent) => {
     if (response.ok) {
       setSubmitted(true);
     } else {
-      alert("Oops! Something went wrong. Please try again.");
+      alert(T[lang].alert_error);
     }
   } catch (error) {
     console.error("Error submitting form:", error);
-    alert("Network error. Please check your connection.");
+    alert(T[lang].alert_network);
   } finally {
     setIsLoading(false);
   }
@@ -481,7 +530,7 @@ const handleJoinWaitlist = async (e: React.FormEvent) => {
               className="text-white/40 text-base font-light leading-relaxed max-w-sm mb-10"
               style={{ animation: "fadeUp 0.7s 0.14s cubic-bezier(.16,1,.3,1) both" }}
             >
-              Sledix monitors your entire competitive landscape autonomously — pricing, hiring, reviews, messaging — and delivers structured intelligence daily.
+              {t.hero_sub}
             </p>
 
             <div
@@ -489,10 +538,10 @@ const handleJoinWaitlist = async (e: React.FormEvent) => {
               style={{ animation: "fadeUp 0.7s 0.21s cubic-bezier(.16,1,.3,1) both" }}
             >
               <a href="#waitlist" className="inline-flex items-center gap-2 bg-white text-[#080809] px-6 py-3.5 rounded-xl text-[11px] tracking-[0.18em] uppercase font-bold hover:bg-white/90 transition-colors font-mono">
-                Get early access
+                {t.cta}
               </a>
               <a href="#product" className="inline-flex items-center gap-2 border border-white/10 px-6 py-3.5 rounded-xl text-[11px] tracking-[0.18em] uppercase text-white/35 hover:text-white hover:border-white/20 transition-colors font-mono">
-                How it works
+                {t.cta2}
               </a>
             </div>
           </div>
@@ -502,13 +551,9 @@ const handleJoinWaitlist = async (e: React.FormEvent) => {
             className="flex flex-col gap-3"
             style={{ animation: "fadeUp 0.7s 0.28s cubic-bezier(.16,1,.3,1) both" }}
           >
-            <LiveFeed />
+            <LiveFeed live={t.live} items={t.feed} />
             <div className="grid grid-cols-3 gap-2">
-              {[
-                { n: "120K+", l: "Signals / day" },
-                { n: "6×", l: "Cheaper than Crayon" },
-                { n: "< 5min", l: "To first insight" },
-              ].map((s, i) => (
+              {t.stats.map((s, i) => (
                 <div key={i} className="border border-white/[0.07] rounded-xl p-4 text-center">
                   <p className="font-display text-2xl font-bold text-white mb-0.5">{s.n}</p>
                   <p className="text-[9px] tracking-widest uppercase text-white/20 font-mono">{s.l}</p>
@@ -522,30 +567,14 @@ const handleJoinWaitlist = async (e: React.FormEvent) => {
       {/* ── PRODUCT ── */}
       <section id="product" className="relative z-10 border-t border-white/[0.06] px-8 md:px-14 py-28 max-w-[1320px] mx-auto">
         <Reveal>
-          <Label text="How it works" />
+          <Label text={t.how_badge} />
           <h2 className="font-display text-[clamp(2.2rem,4.5vw,4rem)] font-bold tracking-[-0.02em] leading-[1.05] mb-16">
-            Three layers.<br /><span className="text-white/20">One platform.</span>
+            {t.how_title}<br /><span className="text-white/20">{t.how_sub}</span>
           </h2>
         </Reveal>
 
         <div className="grid md:grid-cols-3 gap-4">
-          {[
-            {
-              n: "01", title: "Monitor",
-              body: "Watches competitors 24/7 — websites, job boards, review sites, social, press. Every change is captured and scored by impact.",
-              items: ["Website & pricing changes", "Job posting intelligence", "Review monitoring", "PR & news signals"],
-            },
-            {
-              n: "02", title: "Analyze",
-              body: "Raw signals become strategic insight. Spot patterns, predict moves, understand what competitor behaviour means before it hurts you.",
-              items: ["Pattern detection", "Trend forecasting", "Competitor profiling", "Win/loss correlation"],
-            },
-            {
-              n: "03", title: "Act",
-              body: "Battle cards, daily digests, Slack alerts — intelligence delivered where your team works. Sales ready before the call.",
-              items: ["Auto battle cards", "Slack & email digests", "CRM integration", "Custom alert rules"],
-            },
-          ].map((item, i) => (
+          {t.steps.map((item, i) => (
             <Reveal key={i} delay={i * 80}>
               <div className="border border-white/[0.08] rounded-2xl p-8 h-full hover:border-white/15 transition-colors">
                 <span className="font-mono text-[10px] text-white/15 tracking-widest block mb-6">{item.n}</span>
@@ -569,24 +598,17 @@ const handleJoinWaitlist = async (e: React.FormEvent) => {
       <section id="signals" className="relative z-10 border-t border-white/[0.06] px-8 md:px-14 py-28 max-w-[1320px] mx-auto">
         <div className="grid md:grid-cols-5 gap-16">
           <Reveal className="md:col-span-2">
-            <Label text="Signal sources" />
+            <Label text={t.sig_badge} />
             <h2 className="font-display text-[clamp(2.2rem,4vw,3.8rem)] font-bold tracking-tight leading-[1.05] mb-5">
-              Nothing<br /><span className="text-white/20">missed.</span>
+              {t.sig_title}<br /><span className="text-white/20">{t.sig_sub}</span>
             </h2>
             <p className="text-white/30 text-sm leading-relaxed font-light">
-              Six layers of intelligence, monitored continuously. From a homepage headline change to a buried ToS update — Sledix sees it first.
+              {t.sig_desc}
             </p>
           </Reveal>
 
           <div className="md:col-span-3 grid grid-cols-2 gap-3">
-            {[
-              { icon: "🌐", title: "Website changes", desc: "Pricing, messaging, navigation — captured the moment it changes." },
-              { icon: "💼", title: "Job postings", desc: "Best leading indicator of strategy. We decode what they're building." },
-              { icon: "⭐", title: "Review sites", desc: "G2, Trustpilot, App Store. Know their weakness before your prospect does." },
-              { icon: "📰", title: "PR & news", desc: "Funding, partnerships, press — in real time." },
-              { icon: "🐦", title: "Social signals", desc: "LinkedIn, X, Reddit. Catch the conversation before it trends." },
-              { icon: "⚖️", title: "Legal & patents", desc: "ToS changes and new patents — early warning on their roadmap." },
-            ].map((item, i) => (
+            {t.signals.map((item, i) => (
               <Reveal key={i} delay={i * 50}>
                 <div className="border border-white/[0.07] rounded-xl p-5 hover:border-white/14 hover:bg-white/[0.02] transition-all h-full">
                   <span className="text-lg block mb-3">{item.icon}</span>
@@ -602,60 +624,44 @@ const handleJoinWaitlist = async (e: React.FormEvent) => {
       {/* ── PRICING ── */}
       <section id="pricing" className="relative z-10 border-t border-white/[0.06] px-8 md:px-14 py-28 max-w-[1320px] mx-auto">
         <Reveal>
-          <Label text="Pricing" />
+          <Label text={t.price_badge} />
           <h2 className="font-display text-[clamp(2.2rem,4.5vw,4rem)] font-bold tracking-tight leading-[1.05] mb-2">
-            Simple. No surprises.
+            {t.price_title}
           </h2>
-          <p className="text-white/25 text-sm font-mono mb-14">Crayon charges $15,000/year. We don't.</p>
+          <p className="text-white/25 text-sm font-mono mb-14">{t.price_sub}</p>
         </Reveal>
 
         <div className="grid md:grid-cols-3 gap-4">
-          {[
-            {
-              name: "Starter", price: "$49",
-              desc: "For startups tracking 1–3 competitors",
-              features: ["5 competitors", "Daily digest", "Website monitoring", "Email alerts"],
-              highlight: false,
-            },
-            {
-              name: "Growth", price: "$149",
-              desc: "For teams that need real-time edge",
-              features: ["20 competitors", "Real-time alerts", "Auto battle cards", "Slack integration", "Win/loss tracking"],
-              highlight: true,
-            },
-            {
-              name: "Scale", price: "$499",
-              desc: "For companies where CI is a program",
-              features: ["Unlimited competitors", "Custom sources", "CRM integration", "API access", "Dedicated support"],
-              highlight: false,
-            },
-          ].map((plan, i) => (
+          {t.plans.map((plan, i) => {
+            const highlight = i === 1;
+            return (
             <Reveal key={i} delay={i * 70}>
-              <div className={`rounded-2xl p-8 h-full flex flex-col ${plan.highlight ? "bg-white text-[#080809]" : "border border-white/[0.08]"}`}>
+              <div className={`rounded-2xl p-8 h-full flex flex-col ${highlight ? "bg-white text-[#080809]" : "border border-white/[0.08]"}`}>
                 <div className="mb-7">
-                  <p className={`text-[10px] tracking-[0.25em] uppercase font-mono mb-4 ${plan.highlight ? "text-black/30" : "text-white/20"}`}>{plan.name}</p>
+                  <p className={`text-[10px] tracking-[0.25em] uppercase font-mono mb-4 ${highlight ? "text-black/30" : "text-white/20"}`}>{plan.name}</p>
                   <div className="flex items-end gap-1 mb-2">
                     <span className="font-display text-5xl font-bold tracking-tight">{plan.price}</span>
-                    <span className={`text-sm mb-1.5 font-light ${plan.highlight ? "text-black/35" : "text-white/25"}`}>/mo</span>
+                    <span className={`text-sm mb-1.5 font-light ${highlight ? "text-black/35" : "text-white/25"}`}>{t.price_period}</span>
                   </div>
-                  <p className={`text-xs font-light ${plan.highlight ? "text-black/40" : "text-white/25"}`}>{plan.desc}</p>
+                  <p className={`text-xs font-light ${highlight ? "text-black/40" : "text-white/25"}`}>{plan.desc}</p>
                 </div>
                 <ul className="space-y-2.5 mb-8 flex-1">
                   {plan.features.map(f => (
-                    <li key={f} className={`flex items-center gap-2.5 text-xs ${plan.highlight ? "text-black/60" : "text-white/35"}`}>
+                    <li key={f} className={`flex items-center gap-2.5 text-xs ${highlight ? "text-black/60" : "text-white/35"}`}>
                       <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                        <path d="M2.5 6.5l2.5 2.5L10.5 3.5" stroke={plan.highlight ? "#000" : "#34d399"} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M2.5 6.5l2.5 2.5L10.5 3.5" stroke={highlight ? "#000" : "#34d399"} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                       {f}
                     </li>
                   ))}
                 </ul>
-                <a href="#waitlist" className={`text-center py-3 rounded-xl text-[11px] tracking-[0.15em] uppercase font-mono font-medium transition-colors ${plan.highlight ? "bg-[#080809] text-white hover:bg-black/80" : "border border-white/10 text-white/35 hover:text-white hover:border-white/20"}`}>
-                  {plan.highlight ? "Get started" : "Join waitlist"}
+                <a href="#waitlist" className={`text-center py-3 rounded-xl text-[11px] tracking-[0.15em] uppercase font-mono font-medium transition-colors ${highlight ? "bg-[#080809] text-white hover:bg-black/80" : "border border-white/10 text-white/35 hover:text-white hover:border-white/20"}`}>
+                  {plan.cta}
                 </a>
               </div>
             </Reveal>
-          ))}
+            );
+          })}
         </div>
       </section>
 
@@ -663,12 +669,12 @@ const handleJoinWaitlist = async (e: React.FormEvent) => {
       <section id="waitlist" className="relative z-10 border-t border-white/[0.06] px-8 md:px-14 py-36 max-w-[1320px] mx-auto">
         <div className="max-w-xl">
           <Reveal>
-            <Label text="Early access" />
+            <Label text={t.wait_badge} />
             <h2 className="font-display text-[clamp(2.8rem,6vw,5.5rem)] font-bold tracking-[-0.02em] leading-[1.0] mb-4">
-              First to know.<br /><span className="text-white/20">First to win.</span>
+              {t.wait_title}<br /><span className="text-white/20">{t.wait_title_sub}</span>
             </h2>
             <p className="text-white/30 text-sm font-light mb-10 max-w-sm">
-              Free for the first 200 users. No credit card. Founder's pricing locked forever.
+              {t.wait_sub}
             </p>
           </Reveal>
 
@@ -681,17 +687,17 @@ const handleJoinWaitlist = async (e: React.FormEvent) => {
                   placeholder={t.wait_placeholder}
                   className="flex-1 bg-white/[0.04] border border-white/10 rounded-xl px-5 py-4 text-sm outline-none focus:border-white/20 transition-colors placeholder-white/15 font-mono font-light"
                 />
-                <button type="submit" className="bg-white text-[#080809] px-7 py-4 rounded-xl text-[11px] tracking-[0.18em] uppercase font-bold hover:bg-white/90 transition-colors whitespace-nowrap font-mono">
-                  Join waitlist
+                <button type="submit" disabled={isLoading} className="bg-white text-[#080809] px-7 py-4 rounded-xl text-[11px] tracking-[0.18em] uppercase font-bold hover:bg-white/90 transition-colors whitespace-nowrap font-mono disabled:opacity-60">
+                  {t.wait_btn}
                 </button>
               </form>
             ) : (
               <div className="inline-flex items-center gap-3 border border-white/10 rounded-xl px-6 py-4 text-sm text-white/45 font-light">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                You're on the list. We'll reach out before launch.
+                {t.wait_success}
               </div>
             )}
-            <p className="text-[9px] tracking-[0.25em] uppercase text-white/12 font-mono mt-4">No spam · Unsubscribe anytime</p>
+            <p className="text-[9px] tracking-[0.25em] uppercase text-white/12 font-mono mt-4">{t.wait_fine}</p>
           </Reveal>
         </div>
       </section>
@@ -703,8 +709,8 @@ const handleJoinWaitlist = async (e: React.FormEvent) => {
           <span className="font-display text-xl font-bold tracking-tight">ledix</span>
 
         </div>
-        <a href="/legal/terms" className="text-[9px] tracking-[0.25em] uppercase text-white/15 font-mono hover:text-white transition-colors">Terms</a>
-        <a href="/legal/privacy" className="text-[9px] tracking-[0.25em] uppercase text-white/15 font-mono hover:text-white transition-colors">Privacy</a>
+        <a href="/legal/terms" className="text-[9px] tracking-[0.25em] uppercase text-white/15 font-mono hover:text-white transition-colors">{t.footer_terms}</a>
+        <a href="/legal/privacy" className="text-[9px] tracking-[0.25em] uppercase text-white/15 font-mono hover:text-white transition-colors">{t.footer_privacy}</a>
         <span className="text-[9px] tracking-[0.25em] uppercase text-white/15 font-mono">© 2026</span>
       </footer>
 

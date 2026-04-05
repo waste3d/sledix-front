@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { apiRequest } from "../../../lib/api";
 import ReactDiffViewer from "react-diff-viewer-continued";
 
@@ -18,14 +18,25 @@ const TAG_STYLES: Record<string, { color: string; bg: string }> = {
   MARKETING: { color: "#ec4899", bg: "rgba(236, 72, 153, 0.1)" },
 };
 
+const TAG_LABELS_RU: Record<string, string> = {
+  PRICING: "Цены", HIRING: "Найм", REVIEWS: "Отзывы", LEGAL: "Право", PRODUCT: "Продукт", TECH: "Tech", MARKETING: "Маркетинг",
+};
+
+const PAGE_TITLE_RU: Record<string, string> = {
+  dashboard: "Обзор",
+  competitors: "Мониторы",
+  signals: "Сигналы",
+  settings: "Настройки",
+};
+
 // --- Хелперы ---
 const getRelativeTime = (dateStr: string) => {
-  if (!dateStr) return "Pending";
+  if (!dateStr) return "ожидание";
   const diff = Math.floor((new Date().getTime() - new Date(dateStr).getTime()) / 1000);
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
+  if (diff < 60) return "только что";
+  if (diff < 3600) return `${Math.floor(diff / 60)} мин назад`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} ч назад`;
+  return `${Math.floor(diff / 86400)} дн. назад`;
 };
 
 const getCompScore = (comp: any, signals: any[]) => {
@@ -53,14 +64,15 @@ function MetricAccent() {
 
 function SignalBadge({ label }: { label: string }) {
   const style = TAG_STYLES[label] || { color: "#71717a", bg: "rgba(113, 113, 122, 0.1)" };
+  const text = TAG_LABELS_RU[label] || label;
   return (
     <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider" 
-      style={{ color: style.color, backgroundColor: style.bg, borderColor: `${style.color}33` }}>{label}</span>
+      style={{ color: style.color, backgroundColor: style.bg, borderColor: `${style.color}33` }}>{text}</span>
   );
 }
 
 function ActivityChart({ data }: { data: any[] }) {
-  if (!data || data.length === 0) return <div className="h-48 w-full flex items-center justify-center border border-dashed border-white/5 rounded-3xl text-[10px] font-mono text-white/10 uppercase">Waiting for telemetry...</div>;
+  if (!data || data.length === 0) return <div className="h-48 w-full flex items-center justify-center border border-dashed border-white/5 rounded-3xl text-[10px] font-mono text-white/10 uppercase">Ждём данные…</div>;
   const maxValue = Math.max(...data.map(d => d.value), 1);
   const width = 800; const height = 200; const padding = 40;
   const points = data.map((d, i) => ({
@@ -86,6 +98,43 @@ function ActivityChart({ data }: { data: any[] }) {
   );
 }
 
+function SledixLogo({ size = 28 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 676 584"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ display: 'block' }}
+    >
+      <g 
+        transform="translate(0, 584) scale(0.1, -0.1)" 
+        fill="white" 
+        stroke="none"
+      >
+        <path d="M 2970 5165 c161 -51 273 -146 343 -292 l42 -88 0 -120 c-1 -107 -4
+          -127 -27 -182 -54 -128 -110 -190 -259 -289 -115 -77 -185 -148 -231 -235
+          l-33 -64 0 -160 c0 -156 1 -162 29 -218 41 -84 129 -173 248 -251 116 -76 184
+          -148 228 -241 51 -108 62 -214 35 -319 -50 -190 -200 -341 -385 -387 -83 -21
+          -496 -17 -613 5 -505 97 -919 440 -1102 914 -19 51 -47 141 -62 200 -23 94
+          -26 128 -26 277 0 94 5 206 12 250 86 559 531 1047 1081 1184 132 33 218 40
+          450 37 171 -3 226 -7 270 -21z m2597 11 c4 -4 -217 -230 -492 -502 l-500 -493
+          -370 0 c-413 -1 -466 5 -562 60 -75 43 -161 131 -200 204 -56 107 -67 265 -26
+          390 39 120 148 242 272 303 l75 37 170 6 c264 9 1623 5 1633 -5z m-1137 -1889
+          c186 -44 350 -117 520 -230 95 -64 300 -269 368 -369 107 -158 188 -353 229
+          -553 25 -125 25 -416 -1 -533 -72 -337 -260 -635 -533 -849 -202 -158 -452
+          -261 -710 -293 -109 -14 -421 -14 -493 0 -190 35 -376 216 -410 399 -31 165
+          23 351 132 460 27 27 88 75 134 107 197 133 284 277 284 467 0 185 -77 299
+          -312 464 -121 86 -149 114 -191 198 -43 86 -61 163 -61 260 0 78 4 99 31 162
+          61 143 135 223 273 293 94 48 109 50 380 46 228 -4 266 -7 360 -29z m-1425
+          -1858 c184 -81 300 -212 341 -385 27 -118 1 -241 -78 -362 -52 -80 -122 -142
+          -218 -191 l-75 -39 -932 -4 c-830 -3 -930 -2 -923 12 9 17 558 561 835 828
+          l180 174 410 -6 c395 -5 412 -6 460 -27z" />
+      </g>
+    </svg>
+  );
+}
+
 function ClassificationMatrix({ data }: { data: any[] }) {
   const total = data.reduce((acc, curr) => acc + curr.value, 0);
   const maxValue = Math.max(...data.map(d => d.value), 1);
@@ -94,7 +143,7 @@ function ClassificationMatrix({ data }: { data: any[] }) {
       {data.map((item, i) => (
         <div key={i}>
           <div className="flex justify-between items-end mb-2">
-            <span className="text-[10px] font-mono text-white/30 uppercase tracking-[0.2em]">{item.label}</span>
+            <span className="text-[10px] font-mono text-white/30 uppercase tracking-[0.2em]">{TAG_LABELS_RU[item.label] || item.label}</span>
             <span className="text-[10px] font-mono text-white/80">{item.value}</span>
           </div>
           <div className="h-[1px] w-full bg-white/5">
@@ -103,7 +152,7 @@ function ClassificationMatrix({ data }: { data: any[] }) {
         </div>
       ))}
       <div className="pt-6 mt-6 border-t border-white/5 flex justify-between items-center text-[9px] font-mono text-white/20 uppercase tracking-widest">
-        <span>Aggregate signals</span><span className="text-white/90 text-sm font-display font-bold">{total}</span>
+        <span>Всего сигналов</span><span className="text-white/90 text-sm font-display font-bold">{total}</span>
       </div>
     </div>
   );
@@ -112,7 +161,6 @@ function ClassificationMatrix({ data }: { data: any[] }) {
 // --- ОСНОВНОЙ КОМПОНЕНТ ---
 export default function DashboardPage() {
   const params = useParams();
-  const router = useRouter();
   const companySlug = params.company as string;
   const companyRef = useRef<HTMLDivElement>(null);
   const cityRef = useRef<HTMLDivElement>(null);
@@ -179,7 +227,7 @@ export default function DashboardPage() {
       const token = localStorage.getItem("access_token");
       const data = await apiRequest(`/api/signals/${signalId}/diff`, { headers: { Authorization: `Bearer ${token}` } });
       setDiffData(data); setShowDiffModal(true);
-    } catch (e) { alert("Visual diff not available for this event."); }
+    } catch (e) { alert("Для этого события нет визуального сравнения."); }
   };
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -198,7 +246,7 @@ export default function DashboardPage() {
 
   const handleDelete = async (e: any, id: string) => {
     if (e.stopPropagation) e.stopPropagation();
-    if (!confirm("Delete monitor?")) return;
+    if (!confirm("Удалить монитор?")) return;
     try {
       const token = localStorage.getItem("access_token");
       await apiRequest(`/api/competitors/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
@@ -207,38 +255,37 @@ export default function DashboardPage() {
     } catch (err: any) { alert(err.message); }
   };
 
-  if (isLoading) return <div className="h-screen bg-[#060608] flex items-center justify-center text-white/10 font-mono text-[10px] uppercase tracking-[0.5em]">Synchronizing...</div>;
+  if (isLoading) return <div className="h-screen bg-[#060608] flex items-center justify-center text-white/10 font-mono text-[10px] uppercase tracking-[0.5em]">Загрузка…</div>;
 
   return (
     <div className="flex h-screen bg-[#060608] text-white overflow-hidden font-sans antialiased">
       <aside className="w-56 shrink-0 flex flex-col border-r border-white/[0.06] bg-[#08080a]">
         <div className="h-14 flex items-center gap-3 px-5 border-b border-white/[0.06]">
-          <svg width="22" height="22" viewBox="0 0 120 120" fill="none"><path d="M76 32 C76 20 64 14 52 18 C40 22 36 32 42 40 C48 48 68 50 74 60 C80 70 74 84 60 88 C46 92 36 84 36 74" stroke="currentColor" strokeWidth="10" strokeLinecap="square" fill="none" /></svg>
-          <span className="font-display font-bold text-sm tracking-tight">Sledix</span>
+        <SledixLogo size={36} />
         </div>
         <div className="px-3 pt-4 pb-2">
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.05]">
             <div className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-[10px] font-bold uppercase">{companySlug[0]}</div>
-            <div className="flex-1 min-w-0"><p className="text-[11px] font-medium truncate">{companySlug}</p><p className="text-[8px] text-white/20 font-mono uppercase">{user?.plan || "Growth"} plan</p></div>
+            <div className="flex-1 min-w-0"><p className="text-[11px] font-medium truncate">{companySlug}</p><p className="text-[8px] text-white/20 font-mono uppercase">Тариф {user?.plan || "Growth"}</p></div>
           </div>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-0.5">
-          <button onClick={() => {setPage("dashboard"); setSelectedComp(null);}} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="dashboard" && !selectedComp?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.dashboard} Dashboard</button>
-          <button onClick={() => {setPage("competitors"); setSelectedComp(null);}} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="competitors"?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.competitors} Monitors <span className="ml-auto text-[9px] bg-white/5 px-1.5 rounded font-mono">{competitors.length}</span></button>
-          <button onClick={() => {setPage("signals"); setSelectedComp(null);}} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="signals"?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.signals} Signals <span className="ml-auto text-[9px] bg-white/5 px-1.5 rounded font-mono">{signals.length}</span></button>
+          <button onClick={() => {setPage("dashboard"); setSelectedComp(null);}} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="dashboard" && !selectedComp?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.dashboard} Обзор</button>
+          <button onClick={() => {setPage("competitors"); setSelectedComp(null);}} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="competitors"?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.competitors} Монитор <span className="ml-auto text-[9px] bg-white/5 px-1.5 rounded font-mono">{competitors.length}</span></button>
+          <button onClick={() => {setPage("signals"); setSelectedComp(null);}} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page==="signals"?"bg-white/[0.08] text-white":"text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.signals} Сигналы <span className="ml-auto text-[9px] bg-white/5 px-1.5 rounded font-mono">{signals.length}</span></button>
         </nav>
         <div className="px-3 pb-6 border-t border-white/[0.06] pt-4 space-y-0.5">
-          <button onClick={() => setPage("settings")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page === "settings" ? "bg-white/[0.08] text-white" : "text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.settings} Settings</button>
-          <div className="flex items-center gap-3 px-3 py-4 mt-2"><div className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-white/30">{user?.email?.[0]?.toUpperCase()}</div><div className="flex-1 min-w-0"><p className="text-[10px] text-white/50 truncate font-mono">{user?.email}</p><button onClick={() => {localStorage.clear(); window.location.href="/auth/login"}} className="text-[8px] font-mono text-red-400/40 hover:text-red-400 uppercase tracking-tighter">Sign Out</button></div></div>
+          <button onClick={() => setPage("settings")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${page === "settings" ? "bg-white/[0.08] text-white" : "text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}`}>{Icons.settings} Настройки</button>
+          <div className="flex items-center gap-3 px-3 py-4 mt-2"><div className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-white/30">{user?.email?.[0]?.toUpperCase()}</div><div className="flex-1 min-w-0"><p className="text-[10px] text-white/50 truncate font-mono">{user?.email}</p><button onClick={() => {localStorage.clear(); window.location.href="/auth/login"}} className="text-[8px] font-mono text-red-400/40 hover:text-red-400 uppercase tracking-tighter">Выйти</button></div></div>
         </div>
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden relative">
         <header className="h-14 shrink-0 flex items-center justify-between px-8 border-b border-white/[0.06] bg-[#060608]/50 backdrop-blur-xl z-20">
-          <h1 className="font-display text-base font-bold tracking-tight uppercase text-white/90">{selectedComp ? selectedComp.name : page}</h1>
+          <h1 className="font-display text-base font-bold tracking-tight uppercase text-white/90">{selectedComp ? selectedComp.name : (PAGE_TITLE_RU[page] || page)}</h1>
           <div className="flex items-center gap-6">
-             <div className="flex items-center gap-2 text-[9px] font-mono text-emerald-400/80 uppercase tracking-widest"><span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse"/> Live System</div>
-             <button onClick={() => setShowModal(true)} className="text-[10px] tracking-[0.15em] uppercase bg-white text-black px-5 py-2 rounded-lg font-bold hover:bg-white/80 transition-all">+ Add Monitor</button>
+             <div className="flex items-center gap-2 text-[9px] font-mono text-emerald-400/80 uppercase tracking-widest"><span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse"/> Онлайн</div>
+             <button onClick={() => setShowModal(true)} className="text-[10px] tracking-[0.15em] uppercase bg-white text-black px-5 py-2 rounded-lg font-bold hover:bg-white/80 transition-all">+ Мониторинг</button>
           </div>
         </header>
 
@@ -261,11 +308,11 @@ export default function DashboardPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[100] flex items-center justify-center p-6">
           <div className="bg-[#0f1012] border border-white/10 rounded-[40px] p-10 w-full max-w-md shadow-2xl relative">
-            <h3 className="font-display text-xl font-bold mb-1 uppercase tracking-tight">New Monitor</h3>
-            <p className="text-white/20 text-[10px] mb-8 font-mono uppercase tracking-[0.3em]">Identification phase</p>
+            <h3 className="font-display text-xl font-bold mb-1 uppercase tracking-tight">Новый монитор</h3>
+            <p className="text-white/20 text-[10px] mb-8 font-mono uppercase tracking-[0.3em]">Данные объекта</p>
             <form onSubmit={handleAdd} className="space-y-6">
               <div className="relative" ref={companyRef}>
-                <p className="text-[9px] font-mono text-white/30 uppercase mb-2">Target Name</p>
+                <p className="text-[9px] font-mono text-white/30 uppercase mb-2">Название / компания</p>
                 <input required value={newCompName} onChange={e => {
                    setNewCompName(e.target.value);
                    if (e.target.value.length >= 3) {
@@ -287,7 +334,7 @@ export default function DashboardPage() {
                 )}
               </div>
               <div className="relative" ref={cityRef}>
-                <p className="text-[9px] font-mono text-white/30 uppercase mb-2">Node Region</p>
+                <p className="text-[9px] font-mono text-white/30 uppercase mb-2">Город / регион</p>
                 <input required value={city} onChange={e => {
                    setCity(e.target.value);
                    if (e.target.value.length >= 2) {
@@ -305,8 +352,8 @@ export default function DashboardPage() {
                   </div>
                 )}
               </div>
-              <div><p className="text-[9px] font-mono text-white/30 uppercase mb-2">Website</p><input required value={newCompUrl} onChange={e => setNewCompUrl(e.target.value)} placeholder="www.domain.com" className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm outline-none focus:border-white/30 font-mono"/></div>
-              <div className="flex gap-4 pt-4"><button type="button" onClick={() => setShowModal(false)} className="flex-1 border border-white/10 py-4 rounded-2xl text-[10px] font-mono font-bold uppercase text-white/30 transition-all hover:text-white">Cancel</button><button type="submit" disabled={isAdding} className="flex-1 bg-white text-black py-4 rounded-2xl text-[10px] font-mono font-bold uppercase">{isAdding ? "Saving..." : "Start"}</button></div>
+              <div><p className="text-[9px] font-mono text-white/30 uppercase mb-2">Сайт</p><input required value={newCompUrl} onChange={e => setNewCompUrl(e.target.value)} placeholder="www.example.com" className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm outline-none focus:border-white/30 font-mono"/></div>
+              <div className="flex gap-4 pt-4"><button type="button" onClick={() => setShowModal(false)} className="flex-1 border border-white/10 py-4 rounded-2xl text-[10px] font-mono font-bold uppercase text-white/30 transition-all hover:text-white">Отмена</button><button type="submit" disabled={isAdding} className="flex-1 bg-white text-black py-4 rounded-2xl text-[10px] font-mono font-bold uppercase">{isAdding ? "Сохранение…" : "Запустить"}</button></div>
             </form>
           </div>
         </div>
@@ -317,10 +364,10 @@ export default function DashboardPage() {
         <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[200] flex flex-col p-10">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h3 className="font-display text-2xl font-bold uppercase tracking-tight">Intelligence Diff Viewer</h3>
-              <p className="text-[10px] font-mono text-white/20 uppercase tracking-[0.3em]">GitHub Style Comparison</p>
+              <h3 className="font-display text-2xl font-bold uppercase tracking-tight">Сравнение версий</h3>
+              <p className="text-[10px] font-mono text-white/20 uppercase tracking-[0.3em]">Две колонки, как в diff</p>
             </div>
-            <button onClick={() => setShowDiffModal(false)} className="px-8 py-3 bg-white text-black rounded-2xl text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-white/90">Close</button>
+            <button onClick={() => setShowDiffModal(false)} className="px-8 py-3 bg-white text-black rounded-2xl text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-white/90">Закрыть</button>
           </div>
           <div className="flex-1 overflow-auto rounded-[32px] border border-white/10 bg-[#08080a] custom-scrollbar">
             <ReactDiffViewer oldValue={diffData.old} newValue={diffData.new} splitView={true} useDarkTheme={true}
@@ -347,10 +394,10 @@ function DashboardView({ count, signals, stats, dist }: any) {
     <div className="space-y-10 animate-in fade-in duration-1000 max-w-[1300px]">
       <div className="grid grid-cols-4 gap-6">
         {[ 
-          { label: "Monitors", value: count}, 
-          { label: "Signal Density", value: signals.length }, 
-          { label: "Data Points", value: dataPoints }, 
-          { label: "Scan Coverage", value: `${coverage}%` }
+          { label: "Мониторы", value: count}, 
+          { label: "Сигналов", value: signals.length }, 
+          { label: "Точек данных", value: dataPoints }, 
+          { label: "Охват", value: `${coverage}%` }
         ].map((s, i) => (
           <div key={i} className="border border-white/[0.06] rounded-[24px] p-6 bg-[#08080a] relative overflow-hidden border-b-2 border-b-white/5 transition-all">
             <MetricAccent />
@@ -361,15 +408,15 @@ function DashboardView({ count, signals, stats, dist }: any) {
       </div>
       <div className="grid grid-cols-12 gap-8">
           <div className="col-span-8 border border-white/[0.06] rounded-[40px] p-10 bg-[#08080a] flex flex-col justify-between h-[500px]">
-             <p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40 mb-10 text-center">Intelligence Activity (7 Days)</p>
-             <ActivityChart data={stats} />
+             <p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40 mb-10 text-center">Активность за 7 дней</p>
+нги             <ActivityChart data={stats} />
           </div>
           <div className="col-span-4 border border-white/[0.06] rounded-[32px] p-10 bg-[#08080a] h-[500px] flex flex-col relative overflow-hidden">
-             <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/20 mb-10 w-full text-left">Signal Matrix</p>
+             <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/20 mb-10 w-full text-left">Матрица сигналов</p>
              <ClassificationMatrix data={dist} />
           </div>
           <div className="col-span-4 border border-white/[0.06] rounded-[32px] bg-[#08080a] p-8 h-[450px] flex flex-col shadow-2xl">
-             <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30 mb-8 border-b border-white/5 pb-4">Master Feed</p>
+             <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30 mb-8 border-b border-white/5 pb-4">Лента</p>
              <div className="space-y-6 flex-1 overflow-auto pr-2 custom-scrollbar text-white/50 font-light">
                {signals.slice(0, 10).map((sig: any) => (
                  <div key={sig.id} className="border-l-2 border-white/5 pl-5 py-0.5">
@@ -383,8 +430,8 @@ function DashboardView({ count, signals, stats, dist }: any) {
           <div className="col-span-8 border border-white/[0.06] rounded-[40px] bg-[#08080a] h-[450px] relative overflow-hidden flex flex-col items-center justify-center border-b-4 border-b-white/5 border-dashed">
                 <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
                 <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center mb-6 bg-white/[0.01] animate-pulse">📡</div>
-                <h2 className="font-display text-xl font-bold mb-2 tracking-tight uppercase">Strategic Matrix</h2>
-                <p className="text-white/20 text-[10px] font-mono uppercase tracking-widest max-w-sm text-center leading-relaxed">System is performing autonomous deep scans. Data synchronization optimal.</p>
+                <h2 className="font-display text-xl font-bold mb-2 tracking-tight uppercase">Стратегическая матрица</h2>
+                <p className="text-white/20 text-[10px] font-mono uppercase tracking-widest max-w-sm text-center leading-relaxed">Фоновое сканирование и синхронизация данных.</p>
           </div>
       </div>
     </div>
@@ -399,13 +446,13 @@ function CompetitorsView({ competitors, signals, onDelete, onSelect }: any) {
           <div className="flex items-center gap-4 mb-8">
             <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-2xl font-bold text-white/10 uppercase font-mono group-hover:text-white/30 transition-colors">{c.name[0]}</div>
             <div className="min-w-0 flex-1"><h4 className="font-display font-bold text-base truncate">{c.name}</h4><p className="text-[10px] text-white/20 font-mono truncate">{c.website_url}</p></div>
-            <div className="text-right"><p className="font-display text-2xl font-bold tracking-tighter text-white/90">{getCompScore(c, signals)}</p><p className="text-[8px] font-mono text-white/20 uppercase">Threat</p></div>
+            <div className="text-right"><p className="font-display text-2xl font-bold tracking-tighter text-white/90">{getCompScore(c, signals)}</p><p className="text-[8px] font-mono text-white/20 uppercase">риск</p></div>
           </div>
           <div className="flex justify-between items-center bg-white/[0.02] p-4 rounded-2xl mb-8">
-            <p className="text-[10px] font-mono uppercase text-white/30 tracking-widest">{c.city || 'Global Node'}</p>
+            <p className="text-[10px] font-mono uppercase text-white/30 tracking-widest">{c.city || "Не указан"}</p>
             <button onClick={(e) => onDelete(e, c.id)} className="p-2 text-white/40 hover:text-red-500 transition-all hover:scale-110">{Icons.trash}</button>
           </div>
-          <div className="flex items-center justify-between"><span className="text-[9px] font-mono uppercase text-emerald-400/60 border border-emerald-400/20 bg-emerald-400/5 px-3 py-1 rounded-full">Tracking Active</span><div className="text-[9px] font-mono uppercase text-white/20 group-hover:text-white transition-colors flex items-center gap-1.5">Dossier {Icons.chevron}</div></div>
+          <div className="flex items-center justify-between"><span className="text-[9px] font-mono uppercase text-emerald-400/60 border border-emerald-400/20 bg-emerald-400/5 px-3 py-1 rounded-full">Отслеживается</span><div className="text-[9px] font-mono uppercase text-white/20 group-hover:text-white transition-colors flex items-center gap-1.5">Карточка {Icons.chevron}</div></div>
         </div>
       ))}
     </div>
@@ -436,7 +483,7 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack, onViewDiff }: 
   };
   return (
     <div className="animate-in slide-in-from-bottom-2 duration-700 space-y-10 max-w-[1200px]">
-      <div className="flex justify-between items-center"><button onClick={onBack} className="text-[10px] font-mono text-white/30 hover:text-white flex items-center gap-3 uppercase tracking-widest transition-all"><span className="text-lg">←</span> Hub</button><button onClick={(e) => onDelete(e, comp.id)} className="text-[10px] font-mono text-red-500/40 hover:text-red-400 uppercase px-5 py-2 rounded-xl border border-red-500/10 hover:bg-red-500/5 transition-all">Archive Monitor</button></div>
+      <div className="flex justify-between items-center"><button onClick={onBack} className="text-[10px] font-mono text-white/30 hover:text-white flex items-center gap-3 uppercase tracking-widest transition-all"><span className="text-lg">←</span> К обзору</button><button onClick={(e) => onDelete(e, comp.id)} className="text-[10px] font-mono text-red-500/40 hover:text-red-400 uppercase px-5 py-2 rounded-xl border border-red-500/10 hover:bg-red-500/5 transition-all">Удалить монитор</button></div>
       <div className="grid grid-cols-3 gap-10">
         <div className="col-span-1 space-y-8">
            <div className="border border-white/[0.07] rounded-[40px] p-10 bg-[#08080a]">
@@ -444,30 +491,30 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack, onViewDiff }: 
               <h2 className="font-display text-3xl font-bold mb-2">{comp.name}</h2>
               <p className="text-sm text-white/30 font-mono mb-10 pb-10 border-b border-white/5">{comp.website_url}</p>
               <div className="space-y-6 pt-2">
-                 <div><p className="text-[10px] font-mono text-white/20 uppercase mb-2 tracking-widest">Tax Identity</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-4 rounded-2xl border border-white/5">{comp.inn || 'UNIDENTIFIED'}</p></div>
-                 <div><p className="text-[10px] font-mono text-white/20 uppercase mb-2 tracking-widest">Company Region</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-4 rounded-2xl border border-white/5">{comp.city || 'GLOBAL'}</p></div>
+                 <div><p className="text-[10px] font-mono text-white/20 uppercase mb-2 tracking-widest">ИНН</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-4 rounded-2xl border border-white/5">{comp.inn || "—"}</p></div>
+                 <div><p className="text-[10px] font-mono text-white/20 uppercase mb-2 tracking-widest">Регион</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-4 rounded-2xl border border-white/5">{comp.city || "—"}</p></div>
               </div>
            </div>
            <div className="border border-white/[0.06] rounded-[40px] p-10 bg-[#08080a]">
-              <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-8">Observers</p>
+              <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-8">Наблюдатели</p>
               <div className="space-y-4 mb-10">
                  {socials.map((s: any) => (<div key={s.id} className="p-5 border border-white/5 rounded-3xl bg-white/[0.01] flex justify-between items-center"><p className="text-[11px] text-white/60 font-mono uppercase">{s.platform}</p><div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 animate-pulse"/></div>))}
               </div>
               <div className="space-y-4 pt-8 border-t border-white/5">
                  <select value={platform} onChange={e => setPlatform(e.target.value)} className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-xs text-white outline-none"><option value="telegram">Telegram</option><option value="vk">VK.com</option></select>
-                 <input value={socialUrl} onChange={e => setSocialUrl(e.target.value)} placeholder="Observer URL..." className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-xs text-white outline-none font-mono focus:border-white/30 transition-all"/><button onClick={handleLink} disabled={isLinking} className="w-full bg-white text-black py-5 rounded-2xl font-mono text-[11px] font-bold uppercase hover:bg-white/90 transition-all">Link Observer</button>
+                 <input value={socialUrl} onChange={e => setSocialUrl(e.target.value)} placeholder="Ссылка на канал или страницу…" className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-xs text-white outline-none font-mono focus:border-white/30 transition-all"/><button onClick={handleLink} disabled={isLinking} className="w-full bg-white text-black py-5 rounded-2xl font-mono text-[11px] font-bold uppercase hover:bg-white/90 transition-all">{isLinking ? "Подключаем…" : "Подключить"}</button>
               </div>
            </div>
         </div>
         <div className="col-span-2 border border-white/[0.07] rounded-[40px] bg-[#08080a] overflow-hidden flex flex-col h-[850px]">
-           <div className="px-10 py-8 border-b border-white/[0.06] flex justify-between items-center bg-white/[0.01]"><p className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/40">Intelligence Data</p></div>
+           <div className="px-10 py-8 border-b border-white/[0.06] flex justify-between items-center bg-white/[0.01]"><p className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/40">Данные по объекту</p></div>
            <div className="divide-y divide-white/[0.04] overflow-auto custom-scrollbar">
               {signals.map((s: any) => (
                 <div key={s.id} className="p-10 hover:bg-white/[0.01] transition-all">
                   <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-3">
                       <SignalBadge label={s.tag} />
-                      {s.tag === 'PRODUCT' && <button onClick={() => onViewDiff(s.id)} className="text-[9px] font-mono text-emerald-400 hover:underline uppercase">View Changes</button>}
+                      {s.tag === 'PRODUCT' && <button onClick={() => onViewDiff(s.id)} className="text-[9px] font-mono text-emerald-400 hover:underline uppercase">Изменения</button>}
                     </div>
                     <span className="text-[10px] font-mono text-white/10 uppercase">{getRelativeTime(s.created_at)}</span>
                   </div>
@@ -484,7 +531,7 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack, onViewDiff }: 
 function SignalsView({ signals, onViewDiff }: any) {
   return (
     <div className="border border-white/[0.06] rounded-[40px] bg-[#08080a] overflow-hidden max-w-[1200px] animate-in fade-in duration-700">
-        <div className="px-10 py-8 border-b border-white/[0.06] bg-white/[0.01] flex justify-between items-center"><p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40">Master Intelligence Stream</p><span className="text-[10px] font-mono text-white/20 uppercase tracking-widest">{signals.length} Signals Captured</span></div>
+        <div className="px-10 py-8 border-b border-white/[0.06] bg-white/[0.01] flex justify-between items-center"><p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40">Все сигналы</p><span className="text-[10px] font-mono text-white/20 uppercase tracking-widest">{signals.length} записей</span></div>
         <div className="divide-y divide-white/[0.04]">
           {signals.map((s: any) => (
             <div key={s.id} className="flex items-center gap-12 px-10 py-8 hover:bg-white/[0.01] transition-all">
@@ -492,7 +539,7 @@ function SignalsView({ signals, onViewDiff }: any) {
               <p className="flex-1 text-[13px] text-white/40 font-light leading-relaxed">{s.msg}</p>
               <div className="flex flex-col items-end gap-2">
                 <SignalBadge label={s.tag} />
-                {s.tag === 'PRODUCT' && <button onClick={() => onViewDiff(s.id)} className="text-[9px] font-mono text-emerald-400 hover:underline uppercase">Visual Diff</button>}
+                {s.tag === 'PRODUCT' && <button onClick={() => onViewDiff(s.id)} className="text-[9px] font-mono text-emerald-400 hover:underline uppercase">Сравнить</button>}
               </div>
               <span className="text-[11px] font-mono text-white/20 w-24 text-right shrink-0 font-mono">{getRelativeTime(s.created_at)}</span>
             </div>
@@ -513,18 +560,18 @@ function SettingsView({ user }: any) {
     try {
       const token = localStorage.getItem("access_token");
       await apiRequest("/api/auth/me", { method: "PATCH", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ email, password: showPass ? password : "" }) });
-      setMessage("Success: Configuration Synchronized");
+      setMessage("Настройки сохранены");
       setShowPass(false); setPassword("");
-    } catch (err: any) { setMessage(`Error: ${err.message}`); } finally { setIsSaving(false); }
+    } catch (err: any) { setMessage(`Ошибка: ${err.message}`); } finally { setIsSaving(false); }
   };
   return (
     <div className="max-w-2xl space-y-10 animate-in fade-in duration-700">
       <div className="border border-white/[0.06] rounded-[40px] bg-[#08080a] p-12 space-y-10 shadow-2xl">
-        <p className="text-[11px] font-mono text-white/30 uppercase tracking-[0.4em] mb-10">Command Center</p>
-        <div className="space-y-4"><p className="text-[10px] font-mono text-white/20 uppercase tracking-widest ml-1">Identity Endpoint</p><input value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-6 py-5 text-[13px] text-white font-mono outline-none focus:border-white/30 transition-all"/></div>
-        <div className="space-y-6"><p className="text-[10px] font-mono text-white/20 uppercase tracking-widest ml-1">Security Cipher</p>{showPass ? (<div className="space-y-6 animate-in slide-in-from-top-2 duration-300"><input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="New Cipher..." className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-6 py-5 text-[13px] text-white font-mono outline-none focus:border-white/30"/><button onClick={() => setShowPass(false)} className="text-[10px] font-mono text-white/20 hover:text-white uppercase tracking-widest transition-colors ml-1">Abort Update</button></div>) : (<button onClick={() => setShowPass(true)} className="text-[10px] font-mono text-white/40 border border-white/10 px-8 py-4 rounded-2xl hover:bg-white/5 transition-all uppercase tracking-widest">Update Access Cipher</button>)}</div>
-        {message && <p className={`text-[10px] font-mono uppercase tracking-widest ${message.includes('Error') ? 'text-red-400' : 'text-emerald-400'}`}>{message}</p>}
-        <div className="pt-10 border-t border-white/5"><button onClick={handleSave} disabled={isSaving} className="w-full bg-white text-black py-6 rounded-[24px] font-mono text-[11px] font-bold uppercase tracking-[0.3em] hover:bg-white/90 disabled:opacity-50 transition-all">Synchronize Configuration</button></div>
+        <p className="text-[11px] font-mono text-white/30 uppercase tracking-[0.4em] mb-10">Аккаунт</p>
+        <div className="space-y-4"><p className="text-[10px] font-mono text-white/20 uppercase tracking-widest ml-1">Электронная почта</p><input value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-6 py-5 text-[13px] text-white font-mono outline-none focus:border-white/30 transition-all"/></div>
+        <div className="space-y-6"><p className="text-[10px] font-mono text-white/20 uppercase tracking-widest ml-1">Пароль</p>{showPass ? (<div className="space-y-6 animate-in slide-in-from-top-2 duration-300"><input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Новый пароль…" className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-6 py-5 text-[13px] text-white font-mono outline-none focus:border-white/30"/><button onClick={() => setShowPass(false)} className="text-[10px] font-mono text-white/20 hover:text-white uppercase tracking-widest transition-colors ml-1">Отмена</button></div>) : (<button onClick={() => setShowPass(true)} className="text-[10px] font-mono text-white/40 border border-white/10 px-8 py-4 rounded-2xl hover:bg-white/5 transition-all uppercase tracking-widest">Сменить пароль</button>)}</div>
+        {message && <p className={`text-[11px] font-mono leading-relaxed ${message.startsWith("Ошибка") ? 'text-red-400' : 'text-emerald-400'}`}>{message}</p>}
+        <div className="pt-10 border-t border-white/5"><button onClick={handleSave} disabled={isSaving} className="w-full bg-white text-black py-6 rounded-[24px] font-mono text-[11px] font-bold uppercase tracking-[0.3em] hover:bg-white/90 disabled:opacity-50 transition-all">{isSaving ? "Сохранение…" : "Сохранить"}</button></div>
       </div>
     </div>
   );
@@ -544,7 +591,7 @@ function VerificationBanner({ email }: { email: string }) {
       });
       setSent(true);
     } catch (e) {
-      alert("Error sending email");
+      alert("Не удалось отправить письмо");
     } finally {
       setLoading(false);
     }
@@ -562,10 +609,10 @@ function VerificationBanner({ email }: { email: string }) {
           
           <div className="flex flex-col">
             <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">
-              Identity Verification Required
+              Подтвердите почту
             </span>
             <span className="text-[11px] font-mono text-white/20 mt-0.5">
-              Waiting for confirmation from <span className="text-white/60">{email}</span>
+              Ожидаем письмо на <span className="text-white/60">{email}</span>
             </span>
           </div>
         </div>
@@ -573,7 +620,7 @@ function VerificationBanner({ email }: { email: string }) {
         <div className="flex items-center gap-6">
           {sent ? (
             <span className="text-[9px] font-mono uppercase tracking-widest text-emerald-400/60 bg-emerald-400/5 px-3 py-1 rounded-full border border-emerald-400/10">
-              Check Inbox
+              Проверьте почту
             </span>
           ) : (
             <button 
@@ -581,7 +628,7 @@ function VerificationBanner({ email }: { email: string }) {
               disabled={loading}
               className="text-[10px] font-mono uppercase tracking-[0.15em] text-white/30 hover:text-white transition-colors border-b border-white/10 hover:border-white/40 pb-0.5 disabled:opacity-20"
             >
-              {loading ? "Transmitting..." : "Resend Link"}
+              {loading ? "Отправка…" : "Выслать снова"}
             </button>
           )}
         </div>

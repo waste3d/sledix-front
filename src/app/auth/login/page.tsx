@@ -65,7 +65,7 @@ export default function LoginPage() {
       });
 
       if (!data || !data.user) {
-        throw new Error("User data not found in response");
+        throw new Error("Не удалось получить данные пользователя");
       }
 
       localStorage.setItem("access_token", data.access_token);
@@ -117,14 +117,14 @@ export default function LoginPage() {
               <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-emerald-400">System Online</span>
+            <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-emerald-400">Система готова</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-display font-medium tracking-tight leading-[1.1] mb-6">
-            Competitive <br />
-            <span className="text-white/40">Intelligence Hub</span>
+            Панель <br />
+            <span className="text-white/40">конкурентной разведки</span>
           </h2>
           <p className="text-white/30 text-sm font-light max-w-sm leading-relaxed">
-            Monitor competitors, analyze pricing changes, and track structural shifts in real-time.
+            Следите за конкурентами, ценами и изменениями на рынке в реальном времени.
           </p>
         </div>
       </div>
@@ -137,15 +137,15 @@ export default function LoginPage() {
             <SledixLogo size={24} />
           </Link>
           <Link href="/auth/register" className="text-[10px] font-mono uppercase tracking-widest text-white/40 hover:text-white transition-colors">
-            Register
+            Регистрация
           </Link>
         </div>
 
         <div className="absolute top-10 right-12 hidden lg:block">
           <p className="text-xs text-white/40 font-light">
-            Don't have an account?{" "}
+            Нет аккаунта?{" "}
             <Link href="/auth/register" className="text-white hover:text-indigo-400 transition-colors font-medium">
-              Create workspace
+              Создать
             </Link>
           </p>
         </div>
@@ -153,15 +153,15 @@ export default function LoginPage() {
         <div className="w-full max-w-[420px] mx-auto" style={{ animation: "fadeUp 0.6s cubic-bezier(.16,1,.3,1) both" }}>
           
           <div className="mb-10">
-            <h1 className="font-display text-3xl font-medium tracking-tight mb-2">Welcome back</h1>
-            <p className="text-white/40 text-sm font-light">Enter your credentials to access the hub.</p>
+            <h1 className="font-display text-3xl font-medium tracking-tight mb-2">С возвращением</h1>
+            <p className="text-white/40 text-sm font-light">Введите почту и пароль, чтобы войти в панель.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             
             <div className="space-y-2 group">
               <label className="text-[10px] uppercase tracking-widest text-white/40 font-mono transition-colors group-focus-within:text-white/80">
-                Email Address
+                Электронная почта
               </label>
               <input
                 required
@@ -175,10 +175,10 @@ export default function LoginPage() {
             <div className="space-y-2 group relative">
               <div className="flex justify-between items-end">
                 <label className="text-[10px] uppercase tracking-widest text-white/40 font-mono transition-colors group-focus-within:text-white/80">
-                  Password
+                  Пароль
                 </label>
                 <Link href="/auth/reset" className="text-[10px] text-white/30 hover:text-white transition-colors">
-                  Forgot?
+                  Забыли пароль?
                 </Link>
               </div>
               <input
@@ -207,11 +207,11 @@ export default function LoginPage() {
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <span className="w-1.5 h-1.5 bg-black rounded-full animate-pulse" />
-                  Authenticating
+                  Вход…
                 </span>
               ) : (
                 <span className="relative z-10 flex items-center justify-center gap-2">
-                  Sign In
+                  Войти
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="transform group-hover:translate-x-1 transition-transform">
                     <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
