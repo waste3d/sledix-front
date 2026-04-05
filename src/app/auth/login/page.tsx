@@ -16,16 +16,6 @@ function SledixLogo({ size = 32 }: { size?: number }) {
   );
 }
 
-// Декоративный лейбл в стиле лендинга
-function Label({ text }: { text: string }) {
-  return (
-    <div className="flex items-center gap-3 mb-6">
-      <div className="h-px w-5 bg-white/20" />
-      <span className="text-[10px] tracking-[0.28em] uppercase text-white/30 font-mono">{text}</span>
-    </div>
-  );
-}
-
 export default function LoginPage() {
   const router = useRouter();
   const [form, setForm] = useState({ email: "", password: "" });
@@ -62,58 +52,108 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#080809] text-white font-sans antialiased selection:bg-white/10 flex flex-col">
+    <main className="flex min-h-screen bg-[#050505] text-white font-sans antialiased selection:bg-indigo-500/30">
       
-      {/* Навигация (как на лендинге) */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 md:px-14 h-16">
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="text-white group-hover:text-white/80 transition-colors">
-            <SledixLogo size={32} />
-          </div>
-          <span className="font-display text-base font-bold tracking-tight">Sledix</span>
-        </Link>
+      {/* ================= ЛЕВАЯ ЧАСТЬ (ВИЗУАЛ - ЕДИНЫЙ С РЕГИСТРАЦИЕЙ СТИЛЬ) ================= */}
+      <div className="relative hidden lg:flex lg:w-[45%] flex-col justify-between overflow-hidden bg-[#020205] border-r border-white/5 p-14">
         
-        <Link href="/auth/register" className="text-[11px] tracking-[0.15em] uppercase text-white/40 hover:text-white transition-colors font-mono">
-          Create account
-        </Link>
-      </nav>
-
-      {/* Основной контент */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-20">
-        <div 
-          className="w-full max-w-[400px]"
-          style={{ animation: "fadeUp 0.7s cubic-bezier(.16,1,.3,1) both" }}
-        >
-          <Label text="Workspace access" />
+        {/* Абстрактный технологичный фон: Матрица развертывания */}
+        <div className="absolute inset-0 pointer-events-none z-0">
+          <div 
+            className="absolute inset-0 opacity-[0.2]"
+            style={{ 
+              backgroundImage: 'radial-gradient(rgba(255,255,255,0.25) 1px, transparent 1px)', 
+              backgroundSize: '32px 32px',
+              backgroundPosition: '0 0'
+            }}
+          />
+          <div 
+            className="absolute inset-0 opacity-[0.03]" 
+            style={{ backgroundImage: 'repeating-linear-gradient(45deg, #fff 0, #fff 1px, transparent 1px, transparent 10px)' }} 
+          />
+          {/* Свечения: Индиго и Фуксия */}
+          <div className="absolute top-[-10%] right-[-20%] w-[600px] h-[600px] bg-indigo-600/15 blur-[120px] rounded-full" />
+          <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-fuchsia-600/10 blur-[130px] rounded-full" />
           
-          <h1 className="font-display text-[clamp(2.2rem,4vw,3rem)] font-bold tracking-[-0.02em] leading-[1.05] mb-3">
-            Welcome back.
-          </h1>
-          <p className="text-white/30 text-sm font-light mb-12">
-            Sign in to continue to your competitive intelligence dashboard.
+          <div className="absolute inset-0 bg-gradient-to-t from-[#020205] via-transparent to-transparent opacity-90" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#020205] via-transparent to-transparent opacity-80" />
+        </div>
+
+        <div className="relative z-10">
+          <Link href="/" className="inline-flex items-center gap-3">
+            <SledixLogo size={36} />
+            <span className="font-display text-xl font-bold tracking-tight">Sledix</span>
+          </Link>
+        </div>
+
+        <div className="relative z-10 mb-8" style={{ animation: "fadeUp 1s ease-out both" }}>
+          <div className="flex items-center gap-3 mb-6">
+            <span className="flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-emerald-400">System Online</span>
+          </div>
+          <h2 className="text-4xl md:text-5xl font-display font-medium tracking-tight leading-[1.1] mb-6">
+            Competitive <br />
+            <span className="text-white/40">Intelligence Hub</span>
+          </h2>
+          <p className="text-white/30 text-sm font-light max-w-sm leading-relaxed">
+            Monitor competitors, analyze pricing changes, and track structural shifts in real-time.
           </p>
+        </div>
+      </div>
+
+      {/* ================= ПРАВАЯ ЧАСТЬ (ФОРМА) ================= */}
+      <div className="flex-1 flex flex-col justify-center px-6 sm:px-16 md:px-24 lg:px-32 relative bg-[#060608]">
+        
+        <div className="absolute top-8 left-6 right-6 flex items-center justify-between lg:hidden">
+          <Link href="/" className="flex items-center gap-2">
+            <SledixLogo size={24} />
+            <span className="font-display font-bold text-sm tracking-tight">Sledix</span>
+          </Link>
+          <Link href="/auth/register" className="text-[10px] font-mono uppercase tracking-widest text-white/40 hover:text-white transition-colors">
+            Register
+          </Link>
+        </div>
+
+        <div className="absolute top-10 right-12 hidden lg:block">
+          <p className="text-xs text-white/40 font-light">
+            Don't have an account?{" "}
+            <Link href="/auth/register" className="text-white hover:text-indigo-400 transition-colors font-medium">
+              Create workspace
+            </Link>
+          </p>
+        </div>
+
+        <div className="w-full max-w-[420px] mx-auto" style={{ animation: "fadeUp 0.6s cubic-bezier(.16,1,.3,1) both" }}>
+          
+          <div className="mb-10">
+            <h1 className="font-display text-3xl font-medium tracking-tight mb-2">Welcome back</h1>
+            <p className="text-white/40 text-sm font-light">Enter your credentials to access the hub.</p>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             
-            <div className="space-y-3">
-              <label className="text-[10px] tracking-[0.25em] uppercase text-white/40 font-mono block">
-                Email address
+            <div className="space-y-2 group">
+              <label className="text-[10px] uppercase tracking-widest text-white/40 font-mono transition-colors group-focus-within:text-white/80">
+                Email Address
               </label>
               <input
                 required
                 type="email"
-                placeholder="you@company.com"
-                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-5 py-4 text-sm outline-none focus:border-white/20 transition-colors placeholder-white/15 font-mono font-light"
+                placeholder="name@company.com"
+                className="w-full bg-transparent border-b border-white/10 px-0 py-3 text-base text-white outline-none placeholder-white/20 focus:border-white transition-colors font-light"
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
               />
             </div>
 
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <label className="text-[10px] tracking-[0.25em] uppercase text-white/40 font-mono block">
+            <div className="space-y-2 group relative">
+              <div className="flex justify-between items-end">
+                <label className="text-[10px] uppercase tracking-widest text-white/40 font-mono transition-colors group-focus-within:text-white/80">
                   Password
                 </label>
-                <Link href="/auth/reset" className="text-[9px] tracking-widest uppercase text-white/20 hover:text-white transition-colors font-mono">
+                <Link href="/auth/reset" className="text-[10px] text-white/30 hover:text-white transition-colors">
                   Forgot?
                 </Link>
               </div>
@@ -121,32 +161,37 @@ export default function LoginPage() {
                 required
                 type="password"
                 placeholder="••••••••"
-                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-5 py-4 text-sm outline-none focus:border-white/20 transition-colors placeholder-white/15 font-mono font-light tracking-widest"
+                className="w-full bg-transparent border-b border-white/10 px-0 py-3 text-base text-white outline-none placeholder-white/20 focus:border-white transition-colors font-light tracking-widest"
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
               />
             </div>
 
             {error && (
               <div 
-                className="flex items-center gap-3 border border-[#f87171]/20 bg-[#f87171]/5 rounded-xl px-5 py-4 text-sm text-[#f87171] font-light"
+                className="flex items-center gap-3 bg-red-500/5 border border-red-500/10 rounded-lg p-3 text-red-400"
                 style={{ animation: "slideIn 0.3s ease both" }}
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-[#f87171] shrink-0" />
-                <span className="font-mono text-xs">{error}</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                <span className="text-xs font-mono">{error}</span>
               </div>
             )}
 
             <button
               disabled={loading}
-              className="w-full mt-4 bg-white text-[#080809] px-7 py-4 rounded-xl text-[11px] tracking-[0.18em] uppercase font-bold hover:bg-white/90 transition-colors font-mono disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-3"
+              className="w-full relative group overflow-hidden bg-white text-black py-4 rounded-xl text-xs uppercase tracking-[0.15em] font-bold mt-4 disabled:opacity-50 transition-all"
             >
               {loading ? (
-                <>
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#080809] animate-pulse" />
-                  Authenticating...
-                </>
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-black rounded-full animate-pulse" />
+                  Authenticating
+                </span>
               ) : (
-                "Sign In"
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  Sign In
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="transform group-hover:translate-x-1 transition-transform">
+                    <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </span>
               )}
             </button>
           </form>
@@ -159,7 +204,7 @@ export default function LoginPage() {
           to   { opacity: 1; transform: translateY(0); }
         }
         @keyframes slideIn {
-          from { opacity: 0; transform: translateX(-5px); }
+          from { opacity: 0; transform: translateX(-10px); }
           to   { opacity: 1; transform: translateX(0); }
         }
       `}</style>
