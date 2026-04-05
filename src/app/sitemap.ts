@@ -3,7 +3,7 @@ import { MetadataRoute } from 'next'
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
-      url: 'https://sledix.com',
+      url: 'https://sledix.tech',
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 1,
