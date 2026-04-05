@@ -21,8 +21,32 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sledix — AI Competitive Intelligence",
-  description: "Know every move your competitors make.",
+  title: "Sledix — Мониторинг конкурентов в реальном времени",
+  description: "Автономно отслеживайте цены, найм, отзывы и месседжинг ваших конкурентов. Получайте структурированные инсайты ежедневно.",
+  keywords: ["мониторинг конкурентов", "анализ рынка", "SaaS аналитика", "Sledix"],
+  authors: [{ name: "Sledix Team" }],
+  openGraph: {
+    title: "Sledix — Узнайте всё о своих конкурентах",
+    description: "Автономная платформа для конкурентной разведки.",
+    url: "https://sledix.com",
+    siteName: "Sledix",
+    images: [
+      {
+        url: "/og-image.png", // Сделай картинку 1200x630 и положи в public
+        width: 1200,
+        height: 630,
+      },
+    ],
+    locale: "ru_RU",
+    type: "website",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  icons: {
+    icon: "/icon.svg"
+  },
 };
 
 export default function RootLayout({
