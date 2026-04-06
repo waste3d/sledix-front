@@ -56,29 +56,44 @@ const Icons = {
   chevron:     <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 12l4-4-4-4" strokeLinecap="round" strokeLinejoin="round"/></svg>
 };
 
-// --- Компоненты UI ---
+// --- AI Insight Component ---
+function AIInsight({ text, defaultMsg }: { text?: string; defaultMsg: string }) {
+  const isFailed = !text || text.includes("Не удалось") || text.includes("временно недоступен");
 
-function MetricAccent() {
-  return <div className="absolute top-0 left-0 w-full h-[1.5px] opacity-60" style={{ clipPath: 'polygon(0 0, 60% 0, 70% 100%, 0 100%)' }} />;
-}
+  if (isFailed) {
+    return <p className="text-[13px] text-white/40 font-light leading-relaxed italic">{defaultMsg}</p>;
+  }
 
-function SignalBadge({ label }: { label: string }) {
-  const style = TAG_STYLES[label] || { color: "#71717a", bg: "rgba(113, 113, 122, 0.1)" };
-  const text = TAG_LABELS_RU[label] || label;
   return (
-    <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider" 
-      style={{ color: style.color, backgroundColor: style.bg, borderColor: `${style.color}33` }}>{text}</span>
+    <div className="relative group">
+      <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/10 to-blue-500/10 rounded-lg blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+      <div className="relative flex gap-3 bg-white/[0.01] border border-white/5 rounded-2xl p-4">
+        <div className="mt-1 shrink-0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="animate-pulse">
+            <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="#10b981" />
+          </svg>
+        </div>
+        <div>
+          <span className="text-[9px] font-mono text-emerald-400 font-bold uppercase tracking-[0.2em] block mb-1">AI Insight</span>
+          <p className="text-[13px] text-white/90 leading-relaxed font-normal tracking-wide">{text}</p>
+        </div>
+      </div>
+    </div>
   );
 }
 
+// --- Другие компоненты UI ---
+function MetricAccent() { return <div className="absolute top-0 left-0 w-full h-[1.5px] opacity-60" style={{ clipPath: 'polygon(0 0, 60% 0, 70% 100%, 0 100%)' }} />; }
+function SignalBadge({ label }: { label: string }) {
+  const style = TAG_STYLES[label] || { color: "#71717a", bg: "rgba(113, 113, 122, 0.1)" };
+  const text = TAG_LABELS_RU[label] || label;
+  return ( <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider" style={{ color: style.color, backgroundColor: style.bg, borderColor: `${style.color}33` }}>{text}</span> );
+}
 function ActivityChart({ data }: { data: any[] }) {
   if (!data || data.length === 0) return <div className="h-48 w-full flex items-center justify-center border border-dashed border-white/5 rounded-3xl text-[10px] font-mono text-white/10 uppercase">Ждём данные…</div>;
   const maxValue = Math.max(...data.map(d => d.value), 1);
   const width = 800; const height = 200; const padding = 40;
-  const points = data.map((d, i) => ({
-    x: (i / (data.length - 1)) * (width - padding * 2) + padding,
-    y: height - ((d.value / maxValue) * (height - padding * 2) + padding)
-  }));
+  const points = data.map((d, i) => ({ x: (i / (data.length - 1)) * (width - padding * 2) + padding, y: height - ((d.value / maxValue) * (height - padding * 2) + padding) }));
   const d = `M ${points[0].x} ${points[0].y} ` + points.slice(1).map(p => `L ${p.x} ${p.y}`).join(" ");
   const areaD = `${d} L ${points[points.length - 1].x} ${height} L ${points[0].x} ${height} Z`;
   return (
@@ -87,54 +102,11 @@ function ActivityChart({ data }: { data: any[] }) {
         <defs><linearGradient id="areaG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10b981" stopOpacity="0.2" /><stop offset="100%" stopColor="#10b981" stopOpacity="0" /></linearGradient></defs>
         <path d={areaD} fill="url(#areaG)" className="transition-all duration-1000" />
         <path d={d} fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        {points.map((p, i) => (
-          <g key={i}>
-            <circle cx={p.x} cy={p.y} r="3" fill="#060608" stroke="#10b981" strokeWidth="2" />
-            <text x={p.x} y={height - 10} textAnchor="middle" fill="white" fillOpacity="0.2" fontSize="10" className="font-mono uppercase">{data[i].label}</text>
-          </g>
-        ))}
       </svg>
     </div>
   );
 }
-
-function SledixLogo({ size = 28 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 676 584"
-      xmlns="http://www.w3.org/2000/svg"
-      style={{ display: 'block' }}
-    >
-      <g 
-        transform="translate(0, 584) scale(0.1, -0.1)" 
-        fill="white" 
-        stroke="none"
-      >
-        <path d="M 2970 5165 c161 -51 273 -146 343 -292 l42 -88 0 -120 c-1 -107 -4
-          -127 -27 -182 -54 -128 -110 -190 -259 -289 -115 -77 -185 -148 -231 -235
-          l-33 -64 0 -160 c0 -156 1 -162 29 -218 41 -84 129 -173 248 -251 116 -76 184
-          -148 228 -241 51 -108 62 -214 35 -319 -50 -190 -200 -341 -385 -387 -83 -21
-          -496 -17 -613 5 -505 97 -919 440 -1102 914 -19 51 -47 141 -62 200 -23 94
-          -26 128 -26 277 0 94 5 206 12 250 86 559 531 1047 1081 1184 132 33 218 40
-          450 37 171 -3 226 -7 270 -21z m2597 11 c4 -4 -217 -230 -492 -502 l-500 -493
-          -370 0 c-413 -1 -466 5 -562 60 -75 43 -161 131 -200 204 -56 107 -67 265 -26
-          390 39 120 148 242 272 303 l75 37 170 6 c264 9 1623 5 1633 -5z m-1137 -1889
-          c186 -44 350 -117 520 -230 95 -64 300 -269 368 -369 107 -158 188 -353 229
-          -553 25 -125 25 -416 -1 -533 -72 -337 -260 -635 -533 -849 -202 -158 -452
-          -261 -710 -293 -109 -14 -421 -14 -493 0 -190 35 -376 216 -410 399 -31 165
-          23 351 132 460 27 27 88 75 134 107 197 133 284 277 284 467 0 185 -77 299
-          -312 464 -121 86 -149 114 -191 198 -43 86 -61 163 -61 260 0 78 4 99 31 162
-          61 143 135 223 273 293 94 48 109 50 380 46 228 -4 266 -7 360 -29z m-1425
-          -1858 c184 -81 300 -212 341 -385 27 -118 1 -241 -78 -362 -52 -80 -122 -142
-          -218 -191 l-75 -39 -932 -4 c-830 -3 -930 -2 -923 12 9 17 558 561 835 828
-          l180 174 410 -6 c395 -5 412 -6 460 -27z" />
-      </g>
-    </svg>
-  );
-}
-
+function SledixLogo({ size = 28 }: { size?: number }) { return ( <svg width={size} height={size} viewBox="0 0 676 584" fill="white"><g transform="translate(0, 584) scale(0.1, -0.1)"><path d="M 2970 5165 c161 -51 273 -146 343 -292 l42 -88 0 -120 c-1 -107 -4 -127 -27 -182 -54 -128 -110 -190 -259 -289 -115 -77 -185 -148 -231 -235 l-33 -64 0 -160 c0 -156 1 -162 29 -218 41 -84 129 -173 248 -251 116 -76 184 -148 228 -241 51 -108 62 -214 35 -319 -50 -190 -200 -341 -385 -387 -83 -21 -496 -17 -613 5 -505 97 -919 440 -1102 914 -19 51 -47 141 -62 200 -23 94 -26 128 -26 277 0 94 5 206 12 250 86 559 531 1047 1081 1184 132 33 218 40 450 37 171 -3 226 -7 270 -21z m2597 11 c4 -4 -217 -230 -492 -502 l-500 -493 -370 0 c-413 -1 -466 5 -562 60 -75 43 -161 131 -200 204 -56 107 -67 265 -26 390 39 120 148 242 272 303 l75 37 170 6 c264 9 1623 5 1633 -5z m-1137 -1889 c186 -44 350 -117 520 -230 95 -64 300 -269 368 -369 107 -158 188 -353 229 -553 25 -125 25 -416 -1 -533 -72 -337 -260 -635 -533 -849 -202 -158 -452 -261 -710 -293 -109 -14 -421 -14 -493 0 -190 35 -376 216 -410 399 -31 165 23 351 132 460 27 27 88 75 134 107 197 133 284 277 284 467 0 185 -77 299 -312 464 -121 86 -149 114 -191 198 -43 86 -61 163 -61 260 0 78 4 99 31 162 61 143 135 223 273 293 94 48 109 50 380 46 228 -4 266 -7 360 -29z m-1425 -1858 c184 -81 300 -212 341 -385 27 -118 1 -241 -78 -362 -52 -80 -122 -142 -218 -191 l-75 -39 -932 -4 c-830 -3 -930 -2 -923 12 9 17 558 561 835 828 l180 174 410 -6 c395 -5 412 -6 460 -27z" /></g></svg> ); }
 function ClassificationMatrix({ data }: { data: any[] }) {
   const total = data.reduce((acc, curr) => acc + curr.value, 0);
   const maxValue = Math.max(...data.map(d => d.value), 1);
@@ -146,9 +118,7 @@ function ClassificationMatrix({ data }: { data: any[] }) {
             <span className="text-[10px] font-mono text-white/30 uppercase tracking-[0.2em]">{TAG_LABELS_RU[item.label] || item.label}</span>
             <span className="text-[10px] font-mono text-white/80">{item.value}</span>
           </div>
-          <div className="h-[1px] w-full bg-white/5">
-            <div className="h-full transition-all duration-1000" style={{ width: `${(item.value / maxValue) * 100}%`, backgroundColor: TAG_STYLES[item.label]?.color || "#fff" }} />
-          </div>
+          <div className="h-[1px] w-full bg-white/5"><div className="h-full transition-all duration-1000" style={{ width: `${(item.value / maxValue) * 100}%`, backgroundColor: TAG_STYLES[item.label]?.color || "#fff" }} /></div>
         </div>
       ))}
       <div className="pt-6 mt-6 border-t border-white/5 flex justify-between items-center text-[9px] font-mono text-white/20 uppercase tracking-widest">
@@ -184,13 +154,10 @@ export default function DashboardPage() {
   const [partySuggestions, setPartySuggestions] = useState<any[]>([]);
   const [citySuggestions, setCitySuggestions] = useState<any[]>([]);
 
-  const [diffData, setDiffData] = useState<{old: string, new: string} | null>(null);
+  const [diffData, setDiffData] = useState<{old: string, new: string, ai_analysis: string, msg: string} | null>(null);
   const [showDiffModal, setShowDiffModal] = useState(false);
 
-  if (typeof window !== "undefined" && !localStorage.getItem("access_token")) {
-    window.location.href = "/auth/login";
-    return null;
-  }
+  if (typeof window !== "undefined" && !localStorage.getItem("access_token")) { window.location.href = "/auth/login"; return null; }
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -222,25 +189,21 @@ export default function DashboardPage() {
 
   useEffect(() => { if (companySlug) fetchData(); }, [companySlug]);
 
-  const openDiff = async (signalId: string) => {
+  const openDiff = async (signal: any) => {
     try {
       const token = localStorage.getItem("access_token");
-      const data = await apiRequest(`/api/signals/${signalId}/diff`, { headers: { Authorization: `Bearer ${token}` } });
-      setDiffData(data); setShowDiffModal(true);
+      const data = await apiRequest(`/api/signals/${signal.id}/diff`, { headers: { Authorization: `Bearer ${token}` } });
+      setDiffData({ ...data, ai_analysis: signal.ai_analysis, msg: signal.msg }); 
+      setShowDiffModal(true);
     } catch (e) { alert("Для этого события нет визуального сравнения."); }
   };
 
   const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsAdding(true);
+    e.preventDefault(); setIsAdding(true);
     try {
       const token = localStorage.getItem("access_token");
-      await apiRequest("/api/competitors", {
-        method: "POST", headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name: newCompName, website_url: newCompUrl, city, inn })
-      });
-      setNewCompName(""); setNewCompUrl(""); setCity(""); setInn("");
-      setShowModal(false); fetchData();
+      await apiRequest("/api/competitors", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ name: newCompName, website_url: newCompUrl, city, inn }) });
+      setNewCompName(""); setNewCompUrl(""); setCity(""); setInn(""); setShowModal(false); fetchData();
     } catch (err: any) { alert(err.message); } finally { setIsAdding(false); }
   };
 
@@ -260,9 +223,7 @@ export default function DashboardPage() {
   return (
     <div className="flex h-screen bg-[#060608] text-white overflow-hidden font-sans antialiased">
       <aside className="w-56 shrink-0 flex flex-col border-r border-white/[0.06] bg-[#08080a]">
-        <div className="h-14 flex items-center gap-3 px-5 border-b border-white/[0.06]">
-        <SledixLogo size={36} />
-        </div>
+        <div className="h-14 flex items-center gap-3 px-5 border-b border-white/[0.06]"><SledixLogo size={36} /></div>
         <div className="px-3 pt-4 pb-2">
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.05]">
             <div className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-[10px] font-bold uppercase">{companySlug[0]}</div>
@@ -316,19 +277,13 @@ export default function DashboardPage() {
                 <input required value={newCompName} onChange={e => {
                    setNewCompName(e.target.value);
                    if (e.target.value.length >= 3) {
-                    fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/party", {
-                      method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Token ${DADATA_KEY}` },
-                      body: JSON.stringify({ query: e.target.value })
-                    }).then(r => r.json()).then(d => setPartySuggestions(d.suggestions || []));
+                    fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/party", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Token ${DADATA_KEY}` }, body: JSON.stringify({ query: e.target.value }) }).then(r => r.json()).then(d => setPartySuggestions(d.suggestions || []));
                    } else setPartySuggestions([]);
                 }} className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm outline-none focus:border-white/30 transition-all font-mono"/>
                 {partySuggestions.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-[#16171a] border border-white/10 rounded-2xl overflow-hidden z-[110] shadow-2xl">
                     {partySuggestions.map((s, i) => (
-                      <button key={i} type="button" onClick={() => { setNewCompName(s.value); setInn(s.data.inn || ""); if(s.data.address?.data?.city) setCity(s.data.address.data.city); setPartySuggestions([]); }} className="w-full px-5 py-4 hover:bg-white/5 border-b border-white/5 last:border-0 text-left">
-                        <p className="text-xs text-white font-medium">{s.value}</p>
-                        <p className="text-[9px] text-white/20 uppercase mt-1">{s.data.address.value}</p>
-                      </button>
+                      <button key={i} type="button" onClick={() => { setNewCompName(s.value); setInn(s.data.inn || ""); if(s.data.address?.data?.city) setCity(s.data.address.data.city); setPartySuggestions([]); }} className="w-full px-5 py-4 hover:bg-white/5 border-b border-white/5 last:border-0 text-left"><p className="text-xs text-white font-medium">{s.value}</p><p className="text-[9px] text-white/20 uppercase mt-1">{s.data.address.value}</p></button>
                     ))}
                   </div>
                 )}
@@ -338,10 +293,7 @@ export default function DashboardPage() {
                 <input required value={city} onChange={e => {
                    setCity(e.target.value);
                    if (e.target.value.length >= 2) {
-                    fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", {
-                      method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Token ${DADATA_KEY}` },
-                      body: JSON.stringify({ query: e.target.value, from_bound: { value: "city" }, to_bound: { value: "city" } })
-                    }).then(r => r.json()).then(d => setCitySuggestions(d.suggestions || []));
+                    fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Token ${DADATA_KEY}` }, body: JSON.stringify({ query: e.target.value, from_bound: { value: "city" }, to_bound: { value: "city" } }) }).then(r => r.json()).then(d => setCitySuggestions(d.suggestions || []));
                    } else setCitySuggestions([]);
                 }} className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-sm outline-none focus:border-white/30 transition-all font-mono"/>
                 {citySuggestions.length > 0 && (
@@ -362,10 +314,10 @@ export default function DashboardPage() {
       {/* --- DIFF MODAL --- */}
       {showDiffModal && diffData && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[200] flex flex-col p-10">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h3 className="font-display text-2xl font-bold uppercase tracking-tight">Сравнение версий</h3>
-              <p className="text-[10px] font-mono text-white/20 uppercase tracking-[0.3em]">Две колонки, как в diff</p>
+          <div className="flex justify-between items-start mb-8">
+            <div className="max-w-2xl">
+              <h3 className="font-display text-2xl font-bold uppercase tracking-tight mb-4">Анализ изменений</h3>
+              <AIInsight text={diffData.ai_analysis} defaultMsg={diffData.msg} />
             </div>
             <button onClick={() => setShowDiffModal(false)} className="px-8 py-3 bg-white text-black rounded-2xl text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-white/90">Закрыть</button>
           </div>
@@ -373,7 +325,7 @@ export default function DashboardPage() {
             <ReactDiffViewer oldValue={diffData.old} newValue={diffData.new} splitView={true} useDarkTheme={true}
               styles={{
                 variables: { dark: { diffViewerBackground: '#08080a', addedBackground: 'rgba(16, 185, 129, 0.08)', addedColor: '#10b981', removedBackground: 'rgba(239, 68, 68, 0.08)', removedColor: '#ef4444' } },
-                contentText: { fontSize: '11px', fontFamily: 'var(--font-mono)', lineHeight: '1.6' }
+                contentText: { fontSize: '11px', fontFamily: 'monospace', lineHeight: '1.6' }
               }}
             />
           </div>
@@ -389,49 +341,26 @@ function DashboardView({ count, signals, stats, dist }: any) {
   const dataPoints = count + signals.length;
   const compWithSignals = new Set(signals.map((s: any) => s.company)).size;
   const coverage = count > 0 ? Math.round((compWithSignals / count) * 100) : 0;
-
   return (
     <div className="space-y-10 animate-in fade-in duration-1000 max-w-[1300px]">
       <div className="grid grid-cols-4 gap-6">
-        {[ 
-          { label: "Мониторы", value: count}, 
-          { label: "Сигналов", value: signals.length }, 
-          { label: "Точек данных", value: dataPoints }, 
-          { label: "Охват", value: `${coverage}%` }
-        ].map((s, i) => (
-          <div key={i} className="border border-white/[0.06] rounded-[24px] p-6 bg-[#08080a] relative overflow-hidden border-b-2 border-b-white/5 transition-all">
-            <MetricAccent />
-            <p className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/20 mb-3">{s.label}</p>
-            <p className="font-display text-4xl font-bold tracking-tighter text-white/90">{s.value}</p>
-          </div>
+        {[ { label: "Мониторы", value: count}, { label: "Сигналов", value: signals.length }, { label: "Точек данных", value: dataPoints }, { label: "Охват", value: `${coverage}%` } ].map((s, i) => (
+          <div key={i} className="border border-white/[0.06] rounded-[24px] p-6 bg-[#08080a] relative overflow-hidden border-b-2 border-b-white/5 transition-all"><MetricAccent /><p className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/20 mb-3">{s.label}</p><p className="font-display text-4xl font-bold tracking-tighter text-white/90">{s.value}</p></div>
         ))}
       </div>
       <div className="grid grid-cols-12 gap-8">
-          <div className="col-span-8 border border-white/[0.06] rounded-[40px] p-10 bg-[#08080a] flex flex-col justify-between h-[500px]">
-             <p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40 mb-10 text-center">Активность за 7 дней</p>
-нги             <ActivityChart data={stats} />
-          </div>
-          <div className="col-span-4 border border-white/[0.06] rounded-[32px] p-10 bg-[#08080a] h-[500px] flex flex-col relative overflow-hidden">
-             <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/20 mb-10 w-full text-left">Матрица сигналов</p>
-             <ClassificationMatrix data={dist} />
-          </div>
+          <div className="col-span-8 border border-white/[0.06] rounded-[40px] p-10 bg-[#08080a] flex flex-col justify-between h-[500px]"><p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40 mb-10 text-center">Активность за 7 дней</p><ActivityChart data={stats} /></div>
+          <div className="col-span-4 border border-white/[0.06] rounded-[32px] p-10 bg-[#08080a] h-[500px] flex flex-col relative overflow-hidden"><p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/20 mb-10 w-full text-left">Матрица сигналов</p><ClassificationMatrix data={dist} /></div>
           <div className="col-span-4 border border-white/[0.06] rounded-[32px] bg-[#08080a] p-8 h-[450px] flex flex-col shadow-2xl">
              <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30 mb-8 border-b border-white/5 pb-4">Лента</p>
              <div className="space-y-6 flex-1 overflow-auto pr-2 custom-scrollbar text-white/50 font-light">
                {signals.slice(0, 10).map((sig: any) => (
-                 <div key={sig.id} className="border-l-2 border-white/5 pl-5 py-0.5">
-                    <div className="flex justify-between items-center mb-1.5"><SignalBadge label={sig.tag} /><p className="text-[9px] font-mono text-white/10 uppercase">{getRelativeTime(sig.created_at)}</p></div>
-                    <p className="text-[11px] leading-relaxed line-clamp-2">{sig.msg}</p>
-                    <p className="text-[9px] font-mono text-white/30 uppercase mt-2 font-bold">{sig.company}</p>
-                 </div>
+                 <div key={sig.id} className="border-l-2 border-white/5 pl-5 py-0.5"><div className="flex justify-between items-center mb-1.5"><SignalBadge label={sig.tag} /><p className="text-[9px] font-mono text-white/10 uppercase">{getRelativeTime(sig.created_at)}</p></div><p className="text-[11px] leading-relaxed line-clamp-2">{sig.ai_analysis || sig.msg}</p><p className="text-[9px] font-mono text-white/30 uppercase mt-2 font-bold">{sig.company}</p></div>
                ))}
              </div>
           </div>
           <div className="col-span-8 border border-white/[0.06] rounded-[40px] bg-[#08080a] h-[450px] relative overflow-hidden flex flex-col items-center justify-center border-b-4 border-b-white/5 border-dashed">
-                <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
-                <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center mb-6 bg-white/[0.01] animate-pulse">📡</div>
-                <h2 className="font-display text-xl font-bold mb-2 tracking-tight uppercase">Стратегическая матрица</h2>
-                <p className="text-white/20 text-[10px] font-mono uppercase tracking-widest max-w-sm text-center leading-relaxed">Фоновое сканирование и синхронизация данных.</p>
+                <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '32px 32px' }} /><div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center mb-6 bg-white/[0.01] animate-pulse">📡</div><h2 className="font-display text-xl font-bold mb-2 tracking-tight uppercase">Стратегическая матрица</h2><p className="text-white/20 text-[10px] font-mono uppercase tracking-widest max-w-sm text-center leading-relaxed">Фоновое сканирование и синхронизация данных.</p>
           </div>
       </div>
     </div>
@@ -448,10 +377,7 @@ function CompetitorsView({ competitors, signals, onDelete, onSelect }: any) {
             <div className="min-w-0 flex-1"><h4 className="font-display font-bold text-base truncate">{c.name}</h4><p className="text-[10px] text-white/20 font-mono truncate">{c.website_url}</p></div>
             <div className="text-right"><p className="font-display text-2xl font-bold tracking-tighter text-white/90">{getCompScore(c, signals)}</p><p className="text-[8px] font-mono text-white/20 uppercase">риск</p></div>
           </div>
-          <div className="flex justify-between items-center bg-white/[0.02] p-4 rounded-2xl mb-8">
-            <p className="text-[10px] font-mono uppercase text-white/30 tracking-widest">{c.city || "Не указан"}</p>
-            <button onClick={(e) => onDelete(e, c.id)} className="p-2 text-white/40 hover:text-red-500 transition-all hover:scale-110">{Icons.trash}</button>
-          </div>
+          <div className="flex justify-between items-center bg-white/[0.02] p-4 rounded-2xl mb-8"><p className="text-[10px] font-mono uppercase text-white/30 tracking-widest">{c.city || "Не указан"}</p><button onClick={(e) => onDelete(e, c.id)} className="p-2 text-white/40 hover:text-red-500 transition-all hover:scale-110">{Icons.trash}</button></div>
           <div className="flex items-center justify-between"><span className="text-[9px] font-mono uppercase text-emerald-400/60 border border-emerald-400/20 bg-emerald-400/5 px-3 py-1 rounded-full">Отслеживается</span><div className="text-[9px] font-mono uppercase text-white/20 group-hover:text-white transition-colors flex items-center gap-1.5">Карточка {Icons.chevron}</div></div>
         </div>
       ))}
@@ -464,61 +390,29 @@ function CompetitorDetailsView({ comp, signals, onDelete, onBack, onViewDiff }: 
   const [platform, setPlatform] = useState("telegram");
   const [socials, setSocials] = useState<any[]>([]);
   const [isLinking, setIsLinking] = useState(false);
-  const fetchSocials = async () => {
-    try {
-      const token = localStorage.getItem("access_token");
-      const data = await apiRequest(`/api/competitors/${comp.id}/socials`, { headers: { Authorization: `Bearer ${token}` } });
-      setSocials(data || []);
-    } catch (e) {}
-  };
+  const fetchSocials = async () => { try { const token = localStorage.getItem("access_token"); const data = await apiRequest(`/api/competitors/${comp.id}/socials`, { headers: { Authorization: `Bearer ${token}` } }); setSocials(data || []); } catch (e) {} };
   useEffect(() => { fetchSocials(); }, [comp.id]);
-  const handleLink = async () => {
-    if (!socialUrl) return;
-    setIsLinking(true);
-    try {
-      const token = localStorage.getItem("access_token");
-      await apiRequest(`/api/competitors/${comp.id}/socials`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ platform, url: socialUrl, interval: 60 }) });
-      setSocialUrl(""); fetchSocials();
-    } catch (e) {} finally { setIsLinking(false); }
-  };
+  const handleLink = async () => { if (!socialUrl) return; setIsLinking(true); try { const token = localStorage.getItem("access_token"); await apiRequest(`/api/competitors/${comp.id}/socials`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ platform, url: socialUrl, interval: 60 }) }); setSocialUrl(""); fetchSocials(); } catch (e) {} finally { setIsLinking(false); } };
   return (
     <div className="animate-in slide-in-from-bottom-2 duration-700 space-y-10 max-w-[1200px]">
       <div className="flex justify-between items-center"><button onClick={onBack} className="text-[10px] font-mono text-white/30 hover:text-white flex items-center gap-3 uppercase tracking-widest transition-all"><span className="text-lg">←</span> К обзору</button><button onClick={(e) => onDelete(e, comp.id)} className="text-[10px] font-mono text-red-500/40 hover:text-red-400 uppercase px-5 py-2 rounded-xl border border-red-500/10 hover:bg-red-500/5 transition-all">Удалить монитор</button></div>
       <div className="grid grid-cols-3 gap-10">
         <div className="col-span-1 space-y-8">
-           <div className="border border-white/[0.07] rounded-[40px] p-10 bg-[#08080a]">
-              <div className="w-20 h-20 bg-white/5 rounded-[24px] flex items-center justify-center text-4xl font-bold text-white/10 uppercase font-mono mb-10">{comp.name[0]}</div>
-              <h2 className="font-display text-3xl font-bold mb-2">{comp.name}</h2>
-              <p className="text-sm text-white/30 font-mono mb-10 pb-10 border-b border-white/5">{comp.website_url}</p>
-              <div className="space-y-6 pt-2">
-                 <div><p className="text-[10px] font-mono text-white/20 uppercase mb-2 tracking-widest">ИНН</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-4 rounded-2xl border border-white/5">{comp.inn || "—"}</p></div>
-                 <div><p className="text-[10px] font-mono text-white/20 uppercase mb-2 tracking-widest">Регион</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-4 rounded-2xl border border-white/5">{comp.city || "—"}</p></div>
-              </div>
-           </div>
-           <div className="border border-white/[0.06] rounded-[40px] p-10 bg-[#08080a]">
-              <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-8">Наблюдатели</p>
-              <div className="space-y-4 mb-10">
-                 {socials.map((s: any) => (<div key={s.id} className="p-5 border border-white/5 rounded-3xl bg-white/[0.01] flex justify-between items-center"><p className="text-[11px] text-white/60 font-mono uppercase">{s.platform}</p><div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 animate-pulse"/></div>))}
-              </div>
-              <div className="space-y-4 pt-8 border-t border-white/5">
-                 <select value={platform} onChange={e => setPlatform(e.target.value)} className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-xs text-white outline-none"><option value="telegram">Telegram</option><option value="vk">VK.com</option></select>
-                 <input value={socialUrl} onChange={e => setSocialUrl(e.target.value)} placeholder="Ссылка на канал или страницу…" className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-xs text-white outline-none font-mono focus:border-white/30 transition-all"/><button onClick={handleLink} disabled={isLinking} className="w-full bg-white text-black py-5 rounded-2xl font-mono text-[11px] font-bold uppercase hover:bg-white/90 transition-all">{isLinking ? "Подключаем…" : "Подключить"}</button>
-              </div>
-           </div>
+           <div className="border border-white/[0.07] rounded-[40px] p-10 bg-[#08080a]"><div className="w-20 h-20 bg-white/5 rounded-[24px] flex items-center justify-center text-4xl font-bold text-white/10 uppercase font-mono mb-10">{comp.name[0]}</div><h2 className="font-display text-3xl font-bold mb-2">{comp.name}</h2><p className="text-sm text-white/30 font-mono mb-10 pb-10 border-b border-white/5">{comp.website_url}</p><div className="space-y-6 pt-2"><div><p className="text-[10px] font-mono text-white/20 uppercase mb-2 tracking-widest">ИНН</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-4 rounded-2xl border border-white/5">{comp.inn || "—"}</p></div><div><p className="text-[10px] font-mono text-white/20 uppercase mb-2 tracking-widest">Регион</p><p className="text-sm font-mono text-white/60 bg-white/[0.02] p-4 rounded-2xl border border-white/5">{comp.city || "—"}</p></div></div></div>
+           <div className="border border-white/[0.06] rounded-[40px] p-10 bg-[#08080a]"><p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-8">Наблюдатели</p><div className="space-y-4 mb-10">{socials.map((s: any) => (<div key={s.id} className="p-5 border border-white/5 rounded-3xl bg-white/[0.01] flex justify-between items-center"><p className="text-[11px] text-white/60 font-mono uppercase">{s.platform}</p><div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 animate-pulse"/></div>))}</div><div className="space-y-4 pt-8 border-t border-white/5"><select value={platform} onChange={e => setPlatform(e.target.value)} className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-xs text-white outline-none"><option value="telegram">Telegram</option><option value="vk">VK.com</option></select><input value={socialUrl} onChange={e => setSocialUrl(e.target.value)} placeholder="Ссылка на канал или страницу…" className="w-full bg-white/[0.02] border border-white/10 rounded-2xl px-5 py-4 text-xs text-white outline-none font-mono focus:border-white/30 transition-all"/><button onClick={handleLink} disabled={isLinking} className="w-full bg-white text-black py-5 rounded-2xl font-mono text-[11px] font-bold uppercase hover:bg-white/90 transition-all">{isLinking ? "Подключаем…" : "Подключить"}</button></div></div>
         </div>
         <div className="col-span-2 border border-white/[0.07] rounded-[40px] bg-[#08080a] overflow-hidden flex flex-col h-[850px]">
-           <div className="px-10 py-8 border-b border-white/[0.06] flex justify-between items-center bg-white/[0.01]"><p className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/40">Данные по объекту</p></div>
            <div className="divide-y divide-white/[0.04] overflow-auto custom-scrollbar">
               {signals.map((s: any) => (
                 <div key={s.id} className="p-10 hover:bg-white/[0.01] transition-all">
                   <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-3">
                       <SignalBadge label={s.tag} />
-                      {s.tag === 'PRODUCT' && <button onClick={() => onViewDiff(s.id)} className="text-[9px] font-mono text-emerald-400 hover:underline uppercase">Изменения</button>}
+                      {s.tag === 'PRODUCT' && <button onClick={() => onViewDiff(s)} className="text-[9px] font-mono text-emerald-400 hover:underline uppercase">Изменения</button>}
                     </div>
                     <span className="text-[10px] font-mono text-white/10 uppercase">{getRelativeTime(s.created_at)}</span>
                   </div>
-                  <p className="text-[13px] text-white/50 leading-relaxed font-light">{s.msg}</p>
+                  <AIInsight text={s.ai_analysis} defaultMsg={s.msg} />
                 </div>
               ))}
            </div>
@@ -534,14 +428,14 @@ function SignalsView({ signals, onViewDiff }: any) {
         <div className="px-10 py-8 border-b border-white/[0.06] bg-white/[0.01] flex justify-between items-center"><p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40">Все сигналы</p><span className="text-[10px] font-mono text-white/20 uppercase tracking-widest">{signals.length} записей</span></div>
         <div className="divide-y divide-white/[0.04]">
           {signals.map((s: any) => (
-            <div key={s.id} className="flex items-center gap-12 px-10 py-8 hover:bg-white/[0.01] transition-all">
+            <div key={s.id} className="flex items-start gap-12 px-10 py-8 hover:bg-white/[0.01] transition-all">
               <div className="w-32 shrink-0"><p className="text-[11px] font-bold text-white/70 uppercase font-mono truncate tracking-tighter">{s.company}</p></div>
-              <p className="flex-1 text-[13px] text-white/40 font-light leading-relaxed">{s.msg}</p>
+              <div className="flex-1"><AIInsight text={s.ai_analysis} defaultMsg={s.msg} /></div>
               <div className="flex flex-col items-end gap-2">
                 <SignalBadge label={s.tag} />
-                {s.tag === 'PRODUCT' && <button onClick={() => onViewDiff(s.id)} className="text-[9px] font-mono text-emerald-400 hover:underline uppercase">Сравнить</button>}
+                {s.tag === 'PRODUCT' && <button onClick={() => onViewDiff(s)} className="text-[9px] font-mono text-emerald-400 hover:underline uppercase">Сравнить</button>}
               </div>
-              <span className="text-[11px] font-mono text-white/20 w-24 text-right shrink-0 font-mono">{getRelativeTime(s.created_at)}</span>
+              <span className="text-[11px] font-mono text-white/20 w-24 text-right shrink-0">{getRelativeTime(s.created_at)}</span>
             </div>
           ))}
         </div>
@@ -555,15 +449,7 @@ function SettingsView({ user }: any) {
   const [showPass, setShowPass] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState("");
-  const handleSave = async () => {
-    setIsSaving(true); setMessage("");
-    try {
-      const token = localStorage.getItem("access_token");
-      await apiRequest("/api/auth/me", { method: "PATCH", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ email, password: showPass ? password : "" }) });
-      setMessage("Настройки сохранены");
-      setShowPass(false); setPassword("");
-    } catch (err: any) { setMessage(`Ошибка: ${err.message}`); } finally { setIsSaving(false); }
-  };
+  const handleSave = async () => { setIsSaving(true); setMessage(""); try { const token = localStorage.getItem("access_token"); await apiRequest("/api/auth/me", { method: "PATCH", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ email, password: showPass ? password : "" }) }); setMessage("Настройки сохранены"); setShowPass(false); setPassword(""); } catch (err: any) { setMessage(`Ошибка: ${err.message}`); } finally { setIsSaving(false); } };
   return (
     <div className="max-w-2xl space-y-10 animate-in fade-in duration-700">
       <div className="border border-white/[0.06] rounded-[40px] bg-[#08080a] p-12 space-y-10 shadow-2xl">
@@ -580,59 +466,10 @@ function SettingsView({ user }: any) {
 function VerificationBanner({ email }: { email: string }) {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  
-  const handleResend = async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("access_token");
-      await apiRequest("/api/auth/resend-verification", { 
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setSent(true);
-    } catch (e) {
-      alert("Не удалось отправить письмо");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  const handleResend = async () => { setLoading(true); try { const token = localStorage.getItem("access_token"); await apiRequest("/api/auth/resend-verification", { method: "POST", headers: { Authorization: `Bearer ${token}` } }); setSent(true); } catch (e) { alert("Не удалось отправить письмо"); } finally { setLoading(false); } };
   return (
     <div className="mb-12 animate-in fade-in slide-in-from-top-2 duration-700">
-      <div className="border border-white/5 bg-white/[0.01] rounded-2xl p-5 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          {/* Пульсирующая точка вместо иконки */}
-          <div className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500/40 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500/80"></span>
-          </div>
-          
-          <div className="flex flex-col">
-            <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">
-              Подтвердите почту
-            </span>
-            <span className="text-[11px] font-mono text-white/20 mt-0.5">
-              Ожидаем письмо на <span className="text-white/60">{email}</span>
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-6">
-          {sent ? (
-            <span className="text-[9px] font-mono uppercase tracking-widest text-emerald-400/60 bg-emerald-400/5 px-3 py-1 rounded-full border border-emerald-400/10">
-              Проверьте почту
-            </span>
-          ) : (
-            <button 
-              onClick={handleResend}
-              disabled={loading}
-              className="text-[10px] font-mono uppercase tracking-[0.15em] text-white/30 hover:text-white transition-colors border-b border-white/10 hover:border-white/40 pb-0.5 disabled:opacity-20"
-            >
-              {loading ? "Отправка…" : "Выслать снова"}
-            </button>
-          )}
-        </div>
-      </div>
+      <div className="border border-white/5 bg-white/[0.01] rounded-2xl p-5 flex flex-col md:flex-row items-center justify-between gap-4"><div className="flex items-center gap-4"><div className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500/40 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500/80"></span></div><div className="flex flex-col"><span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">Подтвердите почту</span><span className="text-[11px] font-mono text-white/20 mt-0.5">Ожидаем письмо на <span className="text-white/60">{email}</span></span></div></div><div className="flex items-center gap-6">{sent ? ( <span className="text-[9px] font-mono uppercase tracking-widest text-emerald-400/60 bg-emerald-400/5 px-3 py-1 rounded-full border border-emerald-400/10">Проверьте почту</span> ) : ( <button onClick={handleResend} disabled={loading} className="text-[10px] font-mono uppercase tracking-[0.15em] text-white/30 hover:text-white transition-colors border-b border-white/10 hover:border-white/40 pb-0.5 disabled:opacity-20">{loading ? "Отправка…" : "Выслать снова"}</button> )}</div></div>
     </div>
   );
 }
