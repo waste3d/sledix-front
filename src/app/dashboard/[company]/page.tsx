@@ -178,13 +178,30 @@ export default function DashboardPage() {
         apiRequest(`/api/stats/activity`, { headers: { Authorization: `Bearer ${token}` } }),
         apiRequest(`/api/stats/distribution`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
+      const results = [uRes, cRes, sRes, stRes, dsRes];
+      const isUnauthorized = results.some(r => r.status === 'rejected' && r.reason.message.includes('401'));
+
+      if(isUnauthorized) {
+        handleLogout();
+        return;
+      }
       if (uRes.status === 'fulfilled') setUser(uRes.value);
       if (cRes.status === 'fulfilled') setCompetitors(cRes.value || []);
       if (sRes.status === 'fulfilled') setSignals(sRes.value || []);
       if (stRes.status === 'fulfilled') setStats(stRes.value || []);
       if (dsRes.status === 'fulfilled') setDist(dsRes.value || []);
       setIsLoading(false);
-    } catch (err) { setIsLoading(false); }
+    } catch (err: unknown) { 
+      setIsLoading(false);
+      if (err instanceof Error && (err.message.includes('401') || err.message.includes('UNAUTHORIZED'))) {
+        handleLogout();
+      }
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.clear();
+    window.location.href = "/auth/login";
   };
 
   useEffect(() => { if (companySlug) fetchData(); }, [companySlug]);
