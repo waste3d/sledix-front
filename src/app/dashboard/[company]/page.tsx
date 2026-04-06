@@ -193,7 +193,7 @@ export default function DashboardPage() {
       setIsLoading(false);
     } catch (err: unknown) { 
       setIsLoading(false);
-      if (err instanceof Error && (err.message.includes('401') || err.message.includes('UNAUTHORIZED'))) {
+      if (err instanceof Error && (err.message.includes('401') || err.message.includes('EXPIRED'))) {
         handleLogout();
       }
     }
