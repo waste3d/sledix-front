@@ -475,7 +475,9 @@ function VerificationBanner({ email }: { email: string }) {
   );
 }
 
-// --- Вспомогательный компонент для карточки ---
+
+
+
 type CompetitorCardProps = {
   c: any;
   signals: any[];
@@ -490,82 +492,75 @@ function CompetitorCard({ c, signals, onDelete, onSelect }: CompetitorCardProps)
     .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
 
   return (
-    <div 
+    <div
       onClick={() => onSelect(c)}
-      className="group relative flex flex-col bg-[#0c0c0e] border border-white/[0.04] rounded-[24px] p-5 hover:border-white/20 transition-all duration-500 cursor-pointer overflow-hidden"
+      className="group relative flex flex-col justify-between p-6 bg-transparent border-b border-white/5 hover:bg-white/[0.02] transition-all duration-300 cursor-pointer"
     >
-      {/* Фоновый градиент при наведении */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-      
-      {/* Верхняя часть: Лого и Скоринг */}
-      <div className="flex justify-between items-start mb-6 relative z-10">
-        <div className="flex gap-4">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-white/[0.08] to-transparent border border-white/[0.05] flex items-center justify-center text-lg font-bold text-white/40 group-hover:text-white/80 transition-colors">
+      {/* Верхняя строка: Название и Индекс */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="w-8 h-8 rounded bg-white/5 flex items-center justify-center text-[11px] font-medium text-white/40 border border-white/10">
             {c.name[0]}
           </div>
-          <div className="flex flex-col">
-            <h4 className="text-[15px] font-bold text-white/90 group-hover:text-white transition-colors tracking-tight">
+          <div className="flex flex-col min-w-0">
+            <h4 className="text-[14px] font-medium text-white/90 truncate tracking-tight">
               {c.name}
             </h4>
-            <span className="text-[10px] font-mono text-white/20 truncate max-w-[120px]">
-              {c.website_url.replace(/^https?:\/\//, '')}
+            <span className="text-[10px] text-white/30 font-mono truncate">
+              {c.website_url.replace(/^https?:\/\//, "")}
             </span>
           </div>
         </div>
-        
-        <div className="flex flex-col items-end">
-          <div className="text-[18px] font-display font-black tracking-tighter text-white/80 group-hover:text-emerald-400 transition-colors">
-            {score}<span className="text-[10px] text-white/20 ml-0.5">%</span>
-          </div>
-          <div className="text-[7px] font-mono uppercase tracking-[0.2em] text-white/20">Index</div>
+
+        <div className="flex flex-col items-end shrink-0">
+          <span className="text-[14px] font-mono font-medium text-white/80">
+            {score}%
+          </span>
+          <span className="text-[8px] uppercase tracking-[0.1em] text-white/20">Index</span>
         </div>
       </div>
 
-      {/* Средняя часть: Последняя активность (если есть) */}
-      <div className="flex-1 mb-6 relative z-10">
+      {/* Контент: Только текст последнего сигнала, без лишних плашек */}
+      <div className="mb-4">
         {lastSignal ? (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-               <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-               <span className="text-[8px] font-mono uppercase text-white/40 tracking-wider">Live Activity</span>
-            </div>
-            <p className="text-[11px] text-white/50 line-clamp-2 leading-relaxed font-light italic">
-              «{lastSignal.ai_analysis || lastSignal.msg}»
-            </p>
-          </div>
+          <p className="text-[12px] text-white/40 leading-relaxed line-clamp-2 font-light">
+            {lastSignal.ai_analysis || lastSignal.msg}
+          </p>
         ) : (
-          <div className="h-[40px] flex items-center border border-dashed border-white/5 rounded-xl px-4">
-            <span className="text-[9px] font-mono text-white/10 uppercase tracking-widest">Scanning for signals...</span>
-          </div>
+          <p className="text-[11px] text-white/10 font-mono uppercase tracking-widest">
+            Idle
+          </p>
         )}
       </div>
 
-      {/* Нижняя часть: Мета-данные и управление */}
-      <div className="flex items-center justify-between pt-4 border-t border-white/[0.04] relative z-10">
+      {/* Нижняя строка: Мета и удаление (появляется при ховере) */}
+      <div className="flex items-center justify-between h-4">
         <div className="flex items-center gap-3">
-          <div className="flex flex-col">
-            <span className="text-[8px] font-mono uppercase text-white/20 tracking-tighter">Region</span>
-            <span className="text-[10px] text-white/50">{c.city || "Global"}</span>
-          </div>
+            <span className="text-[9px] text-white/20 font-mono uppercase tracking-wider">
+                {c.city || "Global"}
+            </span>
+            {lastSignal && (
+                <div className="flex items-center gap-1.5">
+                    <div className="w-1 h-1 rounded-full bg-emerald-500/50" />
+                    <span className="text-[9px] text-emerald-500/50 font-mono uppercase">Live</span>
+                </div>
+            )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={(e) => { e.stopPropagation(); onDelete(e, c.id); }}
-            className="p-2 rounded-lg bg-white/0 hover:bg-red-500/10 text-white/10 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
-          >
-            {Icons.trash}
-          </button>
-          <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white group-hover:text-black transition-all duration-300">
-            {Icons.chevron}
-          </div>
-        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(e, c.id);
+          }}
+          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-white/20 hover:text-red-400"
+        >
+          {Icons.trash}
+        </button>
       </div>
     </div>
   );
 }
 
-// --- ОСНОВНОЙ КОМПОНЕНТ СПИСКА ---
 type CompetitorsViewProps = {
   competitors: any[];
   signals: any[];
@@ -574,25 +569,19 @@ type CompetitorsViewProps = {
 };
 
 function CompetitorsView({ competitors, signals, onDelete, onSelect }: CompetitorsViewProps) {
-  if (competitors.length === 0) {
-    return (
-      <div className="h-[400px] border-2 border-dashed border-white/5 rounded-[40px] flex flex-col items-center justify-center opacity-40">
-        <p className="font-mono text-[11px] uppercase tracking-widest">Нет активных мониторов</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 animate-in fade-in slide-in-from-bottom-4 duration-1000 max-w-[1300px]">
-      {competitors.map((c: any) => (
-        <CompetitorCard 
-          key={c.id} 
-          c={c} 
-          signals={signals} 
-          onDelete={onDelete} 
-          onSelect={onSelect} 
-        />
-      ))}
+    <div className="max-w-[1100px] border-t border-white/5 animate-in fade-in duration-700">
+      <div className="grid grid-cols-1 md:grid-cols-2">
+        {competitors.map((c: any) => (
+          <CompetitorCard
+            key={c.id}
+            c={c}
+            signals={signals}
+            onDelete={onDelete}
+            onSelect={onSelect}
+          />
+        ))}
+      </div>
     </div>
   );
 }
