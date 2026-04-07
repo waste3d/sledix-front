@@ -384,23 +384,7 @@ function DashboardView({ count, signals, stats, dist }: any) {
   );
 }
 
-function CompetitorsView({ competitors, signals, onDelete, onSelect }: any) {
-  return (
-    <div className="grid grid-cols-3 gap-8 animate-in fade-in duration-700 max-w-[1300px]">
-      {competitors.map((c: any) => (
-        <div key={c.id} onClick={() => onSelect(c)} className="border border-white/[0.07] rounded-[32px] p-8 bg-[#08080a] hover:bg-[#0a0a0c] transition-all group relative cursor-pointer border-b-2 border-b-white/5">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-2xl font-bold text-white/10 uppercase font-mono group-hover:text-white/30 transition-colors">{c.name[0]}</div>
-            <div className="min-w-0 flex-1"><h4 className="font-display font-bold text-base truncate">{c.name}</h4><p className="text-[10px] text-white/20 font-mono truncate">{c.website_url}</p></div>
-            <div className="text-right"><p className="font-display text-2xl font-bold tracking-tighter text-white/90">{getCompScore(c, signals)}</p><p className="text-[8px] font-mono text-white/20 uppercase">риск</p></div>
-          </div>
-          <div className="flex justify-between items-center bg-white/[0.02] p-4 rounded-2xl mb-8"><p className="text-[10px] font-mono uppercase text-white/30 tracking-widest">{c.city || "Не указан"}</p><button onClick={(e) => onDelete(e, c.id)} className="p-2 text-white/40 hover:text-red-500 transition-all hover:scale-110">{Icons.trash}</button></div>
-          <div className="flex items-center justify-between"><span className="text-[9px] font-mono uppercase text-emerald-400/60 border border-emerald-400/20 bg-emerald-400/5 px-3 py-1 rounded-full">Отслеживается</span><div className="text-[9px] font-mono uppercase text-white/20 group-hover:text-white transition-colors flex items-center gap-1.5">Карточка {Icons.chevron}</div></div>
-        </div>
-      ))}
-    </div>
-  );
-}
+
 
 function CompetitorDetailsView({ comp, signals, onDelete, onBack, onViewDiff }: any) {
   const [socialUrl, setSocialUrl] = useState("");
@@ -487,6 +471,128 @@ function VerificationBanner({ email }: { email: string }) {
   return (
     <div className="mb-12 animate-in fade-in slide-in-from-top-2 duration-700">
       <div className="border border-white/5 bg-white/[0.01] rounded-2xl p-5 flex flex-col md:flex-row items-center justify-between gap-4"><div className="flex items-center gap-4"><div className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500/40 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500/80"></span></div><div className="flex flex-col"><span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">Подтвердите почту</span><span className="text-[11px] font-mono text-white/20 mt-0.5">Ожидаем письмо на <span className="text-white/60">{email}</span></span></div></div><div className="flex items-center gap-6">{sent ? ( <span className="text-[9px] font-mono uppercase tracking-widest text-emerald-400/60 bg-emerald-400/5 px-3 py-1 rounded-full border border-emerald-400/10">Проверьте почту</span> ) : ( <button onClick={handleResend} disabled={loading} className="text-[10px] font-mono uppercase tracking-[0.15em] text-white/30 hover:text-white transition-colors border-b border-white/10 hover:border-white/40 pb-0.5 disabled:opacity-20">{loading ? "Отправка…" : "Выслать снова"}</button> )}</div></div>
+    </div>
+  );
+}
+
+// --- Вспомогательный компонент для карточки ---
+type CompetitorCardProps = {
+  c: any;
+  signals: any[];
+  onDelete: (e: React.MouseEvent, id: string) => void;
+  onSelect: (comp: any) => void;
+};
+
+function CompetitorCard({ c, signals, onDelete, onSelect }: CompetitorCardProps) {
+  const score = getCompScore(c, signals);
+  const lastSignal = signals
+    .filter((s: any) => s.company === c.name)
+    .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+
+  return (
+    <div 
+      onClick={() => onSelect(c)}
+      className="group relative flex flex-col bg-[#0c0c0e] border border-white/[0.04] rounded-[24px] p-5 hover:border-white/20 transition-all duration-500 cursor-pointer overflow-hidden"
+    >
+      {/* Фоновый градиент при наведении */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      
+      {/* Верхняя часть: Лого и Скоринг */}
+      <div className="flex justify-between items-start mb-6 relative z-10">
+        <div className="flex gap-4">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-white/[0.08] to-transparent border border-white/[0.05] flex items-center justify-center text-lg font-bold text-white/40 group-hover:text-white/80 transition-colors">
+            {c.name[0]}
+          </div>
+          <div className="flex flex-col">
+            <h4 className="text-[15px] font-bold text-white/90 group-hover:text-white transition-colors tracking-tight">
+              {c.name}
+            </h4>
+            <span className="text-[10px] font-mono text-white/20 truncate max-w-[120px]">
+              {c.website_url.replace(/^https?:\/\//, '')}
+            </span>
+          </div>
+        </div>
+        
+        <div className="flex flex-col items-end">
+          <div className="text-[18px] font-display font-black tracking-tighter text-white/80 group-hover:text-emerald-400 transition-colors">
+            {score}<span className="text-[10px] text-white/20 ml-0.5">%</span>
+          </div>
+          <div className="text-[7px] font-mono uppercase tracking-[0.2em] text-white/20">Index</div>
+        </div>
+      </div>
+
+      {/* Средняя часть: Последняя активность (если есть) */}
+      <div className="flex-1 mb-6 relative z-10">
+        {lastSignal ? (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+               <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+               <span className="text-[8px] font-mono uppercase text-white/40 tracking-wider">Live Activity</span>
+            </div>
+            <p className="text-[11px] text-white/50 line-clamp-2 leading-relaxed font-light italic">
+              «{lastSignal.ai_analysis || lastSignal.msg}»
+            </p>
+          </div>
+        ) : (
+          <div className="h-[40px] flex items-center border border-dashed border-white/5 rounded-xl px-4">
+            <span className="text-[9px] font-mono text-white/10 uppercase tracking-widest">Scanning for signals...</span>
+          </div>
+        )}
+      </div>
+
+      {/* Нижняя часть: Мета-данные и управление */}
+      <div className="flex items-center justify-between pt-4 border-t border-white/[0.04] relative z-10">
+        <div className="flex items-center gap-3">
+          <div className="flex flex-col">
+            <span className="text-[8px] font-mono uppercase text-white/20 tracking-tighter">Region</span>
+            <span className="text-[10px] text-white/50">{c.city || "Global"}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={(e) => { e.stopPropagation(); onDelete(e, c.id); }}
+            className="p-2 rounded-lg bg-white/0 hover:bg-red-500/10 text-white/10 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
+          >
+            {Icons.trash}
+          </button>
+          <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white group-hover:text-black transition-all duration-300">
+            {Icons.chevron}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- ОСНОВНОЙ КОМПОНЕНТ СПИСКА ---
+type CompetitorsViewProps = {
+  competitors: any[];
+  signals: any[];
+  onDelete: (e: React.MouseEvent, id: string) => void;
+  onSelect: (comp: any) => void;
+};
+
+function CompetitorsView({ competitors, signals, onDelete, onSelect }: CompetitorsViewProps) {
+  if (competitors.length === 0) {
+    return (
+      <div className="h-[400px] border-2 border-dashed border-white/5 rounded-[40px] flex flex-col items-center justify-center opacity-40">
+        <p className="font-mono text-[11px] uppercase tracking-widest">Нет активных мониторов</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 animate-in fade-in slide-in-from-bottom-4 duration-1000 max-w-[1300px]">
+      {competitors.map((c: any) => (
+        <CompetitorCard 
+          key={c.id} 
+          c={c} 
+          signals={signals} 
+          onDelete={onDelete} 
+          onSelect={onSelect} 
+        />
+      ))}
     </div>
   );
 }
