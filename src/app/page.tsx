@@ -99,7 +99,7 @@ const T: Record<Lang, {
     badge: "AI-мониторинг конкурентов нового поколения",
     hero_title: ["Узнайте о каждом", "шаге ваших", "конкурентов."],
     hero_sub: "Sledix автономно мониторит всё ваше конкурентное поле — цены, найм, отзывы, позиционирование — и доставляет структурированную аналитику ежедневно.",
-    cta: "Получить ранний доступ", cta2: "Как это работает",
+    cta: "Получить ранний доступ", cta2: "Узнать о нас",
     live: "Живой поток сигналов",
     feed: [
       { co: "Notion", msg: "Страница с ценами — убрали упоминание бесплатного тарифа", tagKey: "PRICING", tagLabel: "ЦЕНЫ", time: "2 мин назад" },
@@ -540,7 +540,7 @@ const handleJoinWaitlist = async (e: React.FormEvent) => {
               <a href="#waitlist" className="inline-flex items-center gap-2 bg-white text-[#080809] px-6 py-3.5 rounded-xl text-[11px] tracking-[0.18em] uppercase font-bold hover:bg-white/90 transition-colors font-mono">
                 {t.cta}
               </a>
-              <a href="#product" className="inline-flex items-center gap-2 border border-white/10 px-6 py-3.5 rounded-xl text-[11px] tracking-[0.18em] uppercase text-white/35 hover:text-white hover:border-white/20 transition-colors font-mono">
+              <a href="/about" className="inline-flex items-center gap-2 border border-white/10 px-6 py-3.5 rounded-xl text-[11px] tracking-[0.18em] uppercase text-white/35 hover:text-white hover:border-white/20 transition-colors font-mono">
                 {t.cta2}
               </a>
             </div>
