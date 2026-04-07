@@ -342,13 +342,25 @@ type StatItemProps = {
   trend?: number[];
 };
 
-function StatItem({ label, value, unit = "" }: StatItemProps) {
+function StatItem({ label, value, unit = "", color = "emerald" }: any) {
+  const colors: any = {
+    emerald: "from-emerald-500/20 to-transparent",
+    blue: "from-blue-500/20 to-transparent",
+    purple: "from-purple-500/20 to-transparent",
+    white: "from-white/10 to-transparent",
+  };
+
   return (
-    <div className="flex flex-col gap-1">
-      <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/20">{label}</span>
-      <div className="flex items-baseline gap-1">
-        <span className="text-3xl font-light tracking-tighter text-white/90">{value}</span>
-        {unit && <span className="text-xs font-mono text-white/20 uppercase">{unit}</span>}
+    <div className="relative group overflow-hidden p-6 rounded-3xl border border-white/5 bg-white/[0.01] transition-all hover:bg-white/[0.03]">
+      <div className={`absolute -inset-24 bg-gradient-to-br ${colors[color]} blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700`} />
+      <div className="relative z-10 flex flex-col gap-1">
+        <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30">{label}</span>
+        <div className="flex items-baseline gap-1">
+          <span className="text-4xl font-display font-bold tracking-tighter text-white">
+            {value}
+          </span>
+          {unit && <span className="text-xs font-mono text-white/20 uppercase">{unit}</span>}
+        </div>
       </div>
     </div>
   );
@@ -363,31 +375,58 @@ type ActivityChartProps = {
 };
 
 function ActivityChart({ data }: ActivityChartProps) {
-  if (!data || data.length === 0) return <div className="h-full w-full flex items-center justify-center border border-white/5 text-[9px] font-mono text-white/10 uppercase tracking-widest">No data points</div>;
+  if (!data || data.length === 0) return <div className="h-full w-full flex items-center justify-center text-[9px] font-mono text-white/10 uppercase tracking-widest">Waiting for data stream...</div>;
   
-  const maxValue = Math.max(...data.map((d: ActivityPoint) => d.value), 1);
+  const maxValue = Math.max(...data.map((d: any) => d.value), 1);
   const width = 1000; const height = 300;
-  const points = data.map((d: ActivityPoint, i: number) => ({
+  const points = data.map((d: any, i: number) => ({
     x: (i / (data.length - 1)) * width,
-    y: height - (d.value / maxValue) * height
+    y: height - (d.value / maxValue) * (height - 40) - 20
   }));
 
-  const d = `M ${points[0].x} ${points[0].y} ` + points.slice(1).map((p: { x: number; y: number }) => `L ${p.x} ${p.y}`).join(" ");
+  const d = `M ${points[0].x} ${points[0].y} ` + points.slice(1).map(p => `L ${p.x} ${p.y}`).join(" ");
+  const areaD = `${d} L ${points[points.length-1].x} ${height} L ${points[0].x} ${height} Z`;
 
   return (
-    <div className="w-full h-full group/chart">
+    <div className="w-full h-full relative group/chart">
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible" preserveAspectRatio="none">
-        {/* Сетка на фоне */}
-        <line x1="0" y1="0" x2={width} y2="0" stroke="white" strokeOpacity="0.03" strokeDasharray="4 4" />
-        <line x1="0" y1={height/2} x2={width} y2={height/2} stroke="white" strokeOpacity="0.03" strokeDasharray="4 4" />
-        <line x1="0" y1={height} x2={width} y2={height} stroke="white" strokeOpacity="0.03" strokeDasharray="4 4" />
+        <defs>
+          <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#10b981" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        
+        {/* Сетка */}
+        {[0, 1, 2, 3].map(i => (
+          <line key={i} x1="0" y1={(height/3)*i} x2={width} y2={(height/3)*i} stroke="white" strokeOpacity="0.03" strokeWidth="1" />
+        ))}
+
+        {/* Область с градиентом */}
+        <path d={areaD} fill="url(#chartGradient)" className="animate-in fade-in duration-1000" />
         
         {/* Основная линия */}
-        <path d={d} fill="none" stroke="white" strokeWidth="1.5" className="opacity-80 transition-all group-hover/chart:opacity-100" />
-        
-        {/* Точки данных */}
-        {points.map((p: { x: number; y: number }, i: number) => (
-          <circle key={i} cx={p.x} cy={p.y} r="2" fill="black" stroke="white" strokeWidth="1" className="opacity-0 group-hover/chart:opacity-100 transition-opacity" />
+        <path 
+          d={d} 
+          fill="none" 
+          stroke="#10b981" 
+          strokeWidth="3" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          className="drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+          style={{ strokeDasharray: 2000, strokeDashoffset: 0 }} // Здесь можно добавить анимацию появления
+        />
+
+        {/* Точки при наведении */}
+        {points.map((p, i) => (
+          <circle 
+            key={i} 
+            cx={p.x} 
+            cy={p.y} 
+            r="4" 
+            fill="#10b981" 
+            className="opacity-0 group-hover/chart:opacity-100 transition-opacity duration-300" 
+          />
         ))}
       </svg>
     </div>
@@ -449,24 +488,25 @@ function Sparkline({ data }: { data: number[] }) {
 
 
 
-// --- 2. Радиальная диаграмма распределения (Donut) ---
 function ClassificationDonut({ data }: { data: any[] }) {
   const total = data.reduce((acc, curr) => acc + curr.value, 0) || 1;
   let currentOffset = 0;
-  const radius = 40;
+  const radius = 38;
   const center = 50;
   const circumference = 2 * Math.PI * radius;
 
   return (
-    <div className="relative flex items-center gap-12">
-      <div className="relative w-32 h-32">
+    <div className="flex flex-col md:flex-row items-center gap-10">
+      <div className="relative w-40 h-40">
         <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-          <circle cx={center} cy={center} r={radius} fill="none" stroke="white" strokeOpacity="0.03" strokeWidth="8" />
+          <circle cx={center} cy={center} r={radius} fill="none" stroke="white" strokeOpacity="0.03" strokeWidth="12" />
           {data.map((item, i) => {
             const percentage = item.value / total;
             const strokeDasharray = `${percentage * circumference} ${circumference}`;
             const strokeDashoffset = -currentOffset;
             currentOffset += percentage * circumference;
+            const color = TAG_STYLES[item.label]?.color || "#fff";
+            
             return (
               <circle
                 key={i}
@@ -474,29 +514,30 @@ function ClassificationDonut({ data }: { data: any[] }) {
                 cy={center}
                 r={radius}
                 fill="none"
-                stroke="white"
-                strokeOpacity={0.1 + (i * 0.15)}
-                strokeWidth="8"
+                stroke={color}
+                strokeWidth="12"
                 strokeDasharray={strokeDasharray}
                 strokeDashoffset={strokeDashoffset}
-                className="transition-all duration-1000"
+                strokeLinecap="round"
+                className="transition-all duration-1000 opacity-80 hover:opacity-100 hover:stroke-[14px] cursor-pointer"
               />
             );
           })}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-[10px] font-mono text-white/20 uppercase">Total</span>
-          <span className="text-lg font-light text-white/80">{total}</span>
+          <span className="text-[10px] font-mono text-white/20 uppercase tracking-tighter">Total</span>
+          <span className="text-2xl font-bold text-white leading-none">{total}</span>
         </div>
       </div>
-      <div className="flex-1 space-y-3">
+      
+      <div className="grid grid-cols-2 gap-x-8 gap-y-3 flex-1">
         {data.map((item, i) => (
-          <div key={i} className="flex items-center justify-between group">
-            <div className="flex items-center gap-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-white transition-opacity" style={{ opacity: 0.1 + (i * 0.15) }} />
-              <span className="text-[10px] font-mono uppercase text-white/40 group-hover:text-white/80 transition-colors">{TAG_LABELS_RU[item.label] || item.label}</span>
+          <div key={i} className="flex items-center justify-between group p-2 rounded-xl hover:bg-white/5 transition-colors">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: TAG_STYLES[item.label]?.color || "#fff" }} />
+              <span className="text-[10px] font-mono uppercase text-white/40 group-hover:text-white/80">{TAG_LABELS_RU[item.label] || item.label}</span>
             </div>
-            <span className="text-[10px] font-mono text-white/20">{Math.round((item.value / total) * 100)}%</span>
+            <span className="text-[10px] font-mono text-white/80">{item.value}</span>
           </div>
         ))}
       </div>
@@ -507,105 +548,103 @@ function ClassificationDonut({ data }: { data: any[] }) {
 // --- 3. Радиальный Gauge для Coverage ---
 function CoverageGauge({ value }: { value: number }) {
   const radius = 80;
-  const circumference = Math.PI * radius; // Полукруг
+  const circumference = Math.PI * radius;
   const offset = circumference - (value / 100) * circumference;
 
   return (
-    <div className="flex flex-col items-center justify-center p-8 border border-white/5 bg-white/[0.01] rounded-sm">
-      <div className="relative w-48 h-24 overflow-hidden">
+    <div className="relative group p-10 rounded-[40px] bg-white/[0.02] border border-white/5 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="relative w-full aspect-[2/1] overflow-hidden">
         <svg viewBox="0 0 180 90" className="w-full h-full">
-          <path d="M 10 90 A 80 80 0 0 1 170 90" fill="none" stroke="white" strokeOpacity="0.03" strokeWidth="12" strokeLinecap="round" />
+          <path d="M 10 90 A 80 80 0 0 1 170 90" fill="none" stroke="white" strokeOpacity="0.05" strokeWidth="14" strokeLinecap="round" />
           <path 
             d="M 10 90 A 80 80 0 0 1 170 90" 
             fill="none" 
-            stroke="white" 
-            strokeOpacity="0.4" 
-            strokeWidth="12" 
+            stroke="#10b981" 
+            strokeWidth="14" 
             strokeDasharray={circumference} 
             strokeDashoffset={offset}
             strokeLinecap="round"
-            className="transition-all duration-[1.5s] ease-out"
+            className="transition-all duration-[2s] ease-out drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]"
           />
         </svg>
         <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center">
-          <span className="text-3xl font-light tracking-tighter text-white">{value}%</span>
-          <span className="text-[8px] font-mono uppercase text-white/20 tracking-[0.2em] mb-1">Network Capacity</span>
+          <span className="text-4xl font-bold tracking-tighter text-white">{value}%</span>
+          <span className="text-[9px] font-mono uppercase text-white/30 tracking-[0.3em] mb-2">Coverage</span>
         </div>
       </div>
     </div>
   );
 }
 
+
 // --- ОБНОВЛЕННЫЙ DASHBOARD VIEW ---
 function DashboardView({ count, signals, stats, dist }: DashboardViewProps) {
-  const dataPoints = count + signals.length;
   const coverage = count > 0 ? Math.round((new Set(signals.map((s: any) => s.company)).size / count) * 100) : 0;
 
   return (
-    <div className="space-y-20 animate-in fade-in duration-1000 max-w-[1400px] pb-20">
+    <div className="space-y-12 animate-in fade-in duration-1000 max-w-[1400px] pb-20">
       
-      {/* Метрики с трендами */}
-      <div className="grid grid-cols-4 gap-12 border-b border-white/5 pb-12">
-        <StatItem label="Active Monitors" value={count} trend={[5, 8, 7, 10, 12, count]} />
-        <StatItem label="Intelligence Signals" value={signals.length} trend={[100, 120, 110, 150, 180, signals.length]} />
-        <StatItem label="Scanned Points" value={dataPoints} trend={[1000, 1100, 1050, 1300, 1400, dataPoints]} />
-        <StatItem label="Success Rate" value="98.2" unit="%" trend={[97, 98, 97, 99, 98, 98.2]} />
+      {/* Метрики */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <StatItem label="Мониторы" value={count} color="white" />
+        <StatItem label="Сигналы" value={signals.length} color="blue" />
+        <StatItem label="Аналитика" value={Math.floor(signals.length * 1.4)} color="purple" />
+        <StatItem label="Система" value="99.9" unit="%" color="emerald" />
       </div>
 
-      <div className="grid grid-cols-12 gap-16">
-        {/* Активность (Линейный график) */}
-        <div className="col-span-8 space-y-8">
+      <div className="grid grid-cols-12 gap-8">
+        {/* График */}
+        <div className="col-span-12 lg:col-span-8 p-10 rounded-[40px] bg-[#08080a] border border-white/5 space-y-10">
           <div className="flex items-center justify-between">
-            <h3 className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/40">Event Propagation Timeline</h3>
-            <div className="flex gap-4 text-[9px] font-mono uppercase text-white/20">
-               <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-white/40 rounded-sm" /> Historical</div>
-               <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-emerald-500/40 rounded-sm" /> Predicted</div>
+            <h3 className="text-[11px] font-mono uppercase tracking-[0.4em] text-white/40">Activity Timeline</h3>
+            <div className="flex gap-4">
+               <div className="flex items-center gap-2 text-[9px] font-mono text-emerald-500 uppercase tracking-widest">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Stream
+               </div>
             </div>
           </div>
-          <div className="h-[300px] w-full">
+          <div className="h-[320px]">
             <ActivityChart data={stats} />
           </div>
         </div>
 
-        {/* Радиальный Охват */}
-        <div className="col-span-4 space-y-8">
-          <h3 className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/40">Infrastructure</h3>
+        {/* Gauge */}
+        <div className="col-span-12 lg:col-span-4 flex flex-col gap-8">
           <CoverageGauge value={coverage} />
-          <div className="p-6 border border-white/5 space-y-4">
-             <div className="flex justify-between text-[10px] font-mono uppercase">
-                <span className="text-white/20">Uptime</span>
-                <span className="text-emerald-500/80">99.99%</span>
+          <div className="p-8 rounded-[40px] bg-[#08080a] border border-white/5 space-y-6">
+             <div className="flex justify-between items-center">
+                <span className="text-[10px] font-mono uppercase text-white/20 tracking-widest">Health Score</span>
+                <span className="text-sm font-bold text-emerald-500">Excellent</span>
              </div>
-             <div className="h-[1px] w-full bg-white/5" />
-             <div className="flex justify-between text-[10px] font-mono uppercase">
-                <span className="text-white/20">Latency</span>
-                <span className="text-white/60">240ms</span>
+             <div className="h-[2px] w-full bg-white/5 rounded-full overflow-hidden">
+                <div className="h-full bg-emerald-500 w-[94%] shadow-[0_0_10px_#10b981]" />
              </div>
           </div>
         </div>
 
-        {/* Кольцевая диаграмма распределения */}
-        <div className="col-span-5 space-y-8">
-           <h3 className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/40">Signal Distribution</h3>
-           <div className="p-10 border border-white/5 rounded-sm">
-              <ClassificationDonut data={dist} />
-           </div>
+        {/* Donut */}
+        <div className="col-span-12 lg:col-span-6 p-10 rounded-[40px] bg-[#08080a] border border-white/5">
+           <h3 className="text-[11px] font-mono uppercase tracking-[0.4em] text-white/40 mb-10">Signal Distribution</h3>
+           <ClassificationDonut data={dist} />
         </div>
 
-        {/* Лента последних событий */}
-        <div className="col-span-7 space-y-8">
-           <h3 className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/40">Latest Analysis</h3>
-           <div className="divide-y divide-white/5 border-t border-white/5">
-              {signals.slice(0, 4).map((sig) => (
-                <div key={sig.id} className="py-5 flex items-start gap-6 group">
-                   <span className="text-[9px] font-mono text-white/10 shrink-0 mt-1">{getRelativeTime(sig.created_at)}</span>
+        {/* Лента */}
+        <div className="col-span-12 lg:col-span-6 p-10 rounded-[40px] bg-[#08080a] border border-white/5 flex flex-col">
+           <h3 className="text-[11px] font-mono uppercase tracking-[0.4em] text-white/40 mb-10">Intelligence Log</h3>
+           <div className="space-y-6 overflow-auto custom-scrollbar flex-1 pr-4">
+              {signals.slice(0, 5).map((sig) => (
+                <div key={sig.id} className="group flex gap-6 items-start">
+                   <div className="w-1 h-10 rounded-full bg-white/5 group-hover:bg-emerald-500/40 transition-colors" />
                    <div className="flex-1">
-                      <p className="text-[12px] text-white/60 font-light group-hover:text-white/90 transition-colors line-clamp-1 italic">
-                        "{sig.ai_analysis || sig.msg}"
+                      <div className="flex justify-between mb-1">
+                        <SignalBadge label={sig.tag} />
+                        <span className="text-[9px] font-mono text-white/10">{getRelativeTime(sig.created_at)}</span>
+                      </div>
+                      <p className="text-[12px] text-white/60 leading-relaxed line-clamp-1 group-hover:text-white transition-colors">
+                        {sig.ai_analysis || sig.msg}
                       </p>
-                      <p className="text-[8px] font-mono text-white/10 uppercase tracking-widest mt-1">{sig.company}</p>
                    </div>
-                   <SignalBadge label={sig.tag} />
                 </div>
               ))}
            </div>
