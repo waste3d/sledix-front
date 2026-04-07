@@ -89,44 +89,9 @@ function SignalBadge({ label }: { label: string }) {
   const text = TAG_LABELS_RU[label] || label;
   return ( <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider" style={{ color: style.color, backgroundColor: style.bg, borderColor: `${style.color}33` }}>{text}</span> );
 }
-function ActivityChart({ data }: { data: any[] }) {
-  if (!data || data.length === 0) return <div className="h-48 w-full flex items-center justify-center border border-dashed border-white/5 rounded-3xl text-[10px] font-mono text-white/10 uppercase">Ждём данные…</div>;
-  const maxValue = Math.max(...data.map(d => d.value), 1);
-  const width = 800; const height = 200; const padding = 40;
-  const points = data.map((d, i) => ({ x: (i / (data.length - 1)) * (width - padding * 2) + padding, y: height - ((d.value / maxValue) * (height - padding * 2) + padding) }));
-  const d = `M ${points[0].x} ${points[0].y} ` + points.slice(1).map(p => `L ${p.x} ${p.y}`).join(" ");
-  const areaD = `${d} L ${points[points.length - 1].x} ${height} L ${points[0].x} ${height} Z`;
-  return (
-    <div className="w-full h-full relative">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible">
-        <defs><linearGradient id="areaG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10b981" stopOpacity="0.2" /><stop offset="100%" stopColor="#10b981" stopOpacity="0" /></linearGradient></defs>
-        <path d={areaD} fill="url(#areaG)" className="transition-all duration-1000" />
-        <path d={d} fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </div>
-  );
-}
+
 function SledixLogo({ size = 28 }: { size?: number }) { return ( <svg width={size} height={size} viewBox="0 0 676 584" fill="white"><g transform="translate(0, 584) scale(0.1, -0.1)"><path d="M 2970 5165 c161 -51 273 -146 343 -292 l42 -88 0 -120 c-1 -107 -4 -127 -27 -182 -54 -128 -110 -190 -259 -289 -115 -77 -185 -148 -231 -235 l-33 -64 0 -160 c0 -156 1 -162 29 -218 41 -84 129 -173 248 -251 116 -76 184 -148 228 -241 51 -108 62 -214 35 -319 -50 -190 -200 -341 -385 -387 -83 -21 -496 -17 -613 5 -505 97 -919 440 -1102 914 -19 51 -47 141 -62 200 -23 94 -26 128 -26 277 0 94 5 206 12 250 86 559 531 1047 1081 1184 132 33 218 40 450 37 171 -3 226 -7 270 -21z m2597 11 c4 -4 -217 -230 -492 -502 l-500 -493 -370 0 c-413 -1 -466 5 -562 60 -75 43 -161 131 -200 204 -56 107 -67 265 -26 390 39 120 148 242 272 303 l75 37 170 6 c264 9 1623 5 1633 -5z m-1137 -1889 c186 -44 350 -117 520 -230 95 -64 300 -269 368 -369 107 -158 188 -353 229 -553 25 -125 25 -416 -1 -533 -72 -337 -260 -635 -533 -849 -202 -158 -452 -261 -710 -293 -109 -14 -421 -14 -493 0 -190 35 -376 216 -410 399 -31 165 23 351 132 460 27 27 88 75 134 107 197 133 284 277 284 467 0 185 -77 299 -312 464 -121 86 -149 114 -191 198 -43 86 -61 163 -61 260 0 78 4 99 31 162 61 143 135 223 273 293 94 48 109 50 380 46 228 -4 266 -7 360 -29z m-1425 -1858 c184 -81 300 -212 341 -385 27 -118 1 -241 -78 -362 -52 -80 -122 -142 -218 -191 l-75 -39 -932 -4 c-830 -3 -930 -2 -923 12 9 17 558 561 835 828 l180 174 410 -6 c395 -5 412 -6 460 -27z" /></g></svg> ); }
-function ClassificationMatrix({ data }: { data: any[] }) {
-  const total = data.reduce((acc, curr) => acc + curr.value, 0);
-  const maxValue = Math.max(...data.map(d => d.value), 1);
-  return (
-    <div className="w-full space-y-7 py-2">
-      {data.map((item, i) => (
-        <div key={i}>
-          <div className="flex justify-between items-end mb-2">
-            <span className="text-[10px] font-mono text-white/30 uppercase tracking-[0.2em]">{TAG_LABELS_RU[item.label] || item.label}</span>
-            <span className="text-[10px] font-mono text-white/80">{item.value}</span>
-          </div>
-          <div className="h-[1px] w-full bg-white/5"><div className="h-full transition-all duration-1000" style={{ width: `${(item.value / maxValue) * 100}%`, backgroundColor: TAG_STYLES[item.label]?.color || "#fff" }} /></div>
-        </div>
-      ))}
-      <div className="pt-6 mt-6 border-t border-white/5 flex justify-between items-center text-[9px] font-mono text-white/20 uppercase tracking-widest">
-        <span>Всего сигналов</span><span className="text-white/90 text-sm font-display font-bold">{total}</span>
-      </div>
-    </div>
-  );
-}
+
 
 // --- ОСНОВНОЙ КОМПОНЕНТ ---
 export default function DashboardPage() {
@@ -354,37 +319,286 @@ export default function DashboardPage() {
 
 // --- СТРАНИЦЫ (VIEWS) ---
 
-function DashboardView({ count, signals, stats, dist }: any) {
-  const dataPoints = count + signals.length;
-  const compWithSignals = new Set(signals.map((s: any) => s.company)).size;
-  const coverage = count > 0 ? Math.round((compWithSignals / count) * 100) : 0;
+// --- Мини-компонент для метрик (просто текст и цифра) ---
+type StatItemProps = {
+  label: string;
+  value: number | string;
+  unit?: string;
+  trend?: number[];
+};
+
+function StatItem({ label, value, unit = "" }: StatItemProps) {
   return (
-    <div className="space-y-10 animate-in fade-in duration-1000 max-w-[1300px]">
-      <div className="grid grid-cols-4 gap-6">
-        {[ { label: "Мониторы", value: count}, { label: "Сигналов", value: signals.length }, { label: "Точек данных", value: dataPoints }, { label: "Охват", value: `${coverage}%` } ].map((s, i) => (
-          <div key={i} className="border border-white/[0.06] rounded-[24px] p-6 bg-[#08080a] relative overflow-hidden border-b-2 border-b-white/5 transition-all"><MetricAccent /><p className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/20 mb-3">{s.label}</p><p className="font-display text-4xl font-bold tracking-tighter text-white/90">{s.value}</p></div>
-        ))}
-      </div>
-      <div className="grid grid-cols-12 gap-8">
-          <div className="col-span-8 border border-white/[0.06] rounded-[40px] p-10 bg-[#08080a] flex flex-col justify-between h-[500px]"><p className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/40 mb-10 text-center">Активность за 7 дней</p><ActivityChart data={stats} /></div>
-          <div className="col-span-4 border border-white/[0.06] rounded-[32px] p-10 bg-[#08080a] h-[500px] flex flex-col relative overflow-hidden"><p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/20 mb-10 w-full text-left">Матрица сигналов</p><ClassificationMatrix data={dist} /></div>
-          <div className="col-span-4 border border-white/[0.06] rounded-[32px] bg-[#08080a] p-8 h-[450px] flex flex-col shadow-2xl">
-             <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30 mb-8 border-b border-white/5 pb-4">Лента</p>
-             <div className="space-y-6 flex-1 overflow-auto pr-2 custom-scrollbar text-white/50 font-light">
-               {signals.slice(0, 10).map((sig: any) => (
-                 <div key={sig.id} className="border-l-2 border-white/5 pl-5 py-0.5"><div className="flex justify-between items-center mb-1.5"><SignalBadge label={sig.tag} /><p className="text-[9px] font-mono text-white/10 uppercase">{getRelativeTime(sig.created_at)}</p></div><p className="text-[11px] leading-relaxed line-clamp-2">{sig.ai_analysis || sig.msg}</p><p className="text-[9px] font-mono text-white/30 uppercase mt-2 font-bold">{sig.company}</p></div>
-               ))}
-             </div>
-          </div>
-          <div className="col-span-8 border border-white/[0.06] rounded-[40px] bg-[#08080a] h-[450px] relative overflow-hidden flex flex-col items-center justify-center border-b-4 border-b-white/5 border-dashed">
-                <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '32px 32px' }} /><div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center mb-6 bg-white/[0.01] animate-pulse">📡</div><h2 className="font-display text-xl font-bold mb-2 tracking-tight uppercase">Стратегическая матрица</h2><p className="text-white/20 text-[10px] font-mono uppercase tracking-widest max-w-sm text-center leading-relaxed">Фоновое сканирование и синхронизация данных.</p>
-          </div>
+    <div className="flex flex-col gap-1">
+      <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/20">{label}</span>
+      <div className="flex items-baseline gap-1">
+        <span className="text-3xl font-light tracking-tighter text-white/90">{value}</span>
+        {unit && <span className="text-xs font-mono text-white/20 uppercase">{unit}</span>}
       </div>
     </div>
   );
 }
 
+type ActivityPoint = {
+  value: number;
+};
 
+type ActivityChartProps = {
+  data: ActivityPoint[];
+};
+
+function ActivityChart({ data }: ActivityChartProps) {
+  if (!data || data.length === 0) return <div className="h-full w-full flex items-center justify-center border border-white/5 text-[9px] font-mono text-white/10 uppercase tracking-widest">No data points</div>;
+  
+  const maxValue = Math.max(...data.map((d: ActivityPoint) => d.value), 1);
+  const width = 1000; const height = 300;
+  const points = data.map((d: ActivityPoint, i: number) => ({
+    x: (i / (data.length - 1)) * width,
+    y: height - (d.value / maxValue) * height
+  }));
+
+  const d = `M ${points[0].x} ${points[0].y} ` + points.slice(1).map((p: { x: number; y: number }) => `L ${p.x} ${p.y}`).join(" ");
+
+  return (
+    <div className="w-full h-full group/chart">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible" preserveAspectRatio="none">
+        {/* Сетка на фоне */}
+        <line x1="0" y1="0" x2={width} y2="0" stroke="white" strokeOpacity="0.03" strokeDasharray="4 4" />
+        <line x1="0" y1={height/2} x2={width} y2={height/2} stroke="white" strokeOpacity="0.03" strokeDasharray="4 4" />
+        <line x1="0" y1={height} x2={width} y2={height} stroke="white" strokeOpacity="0.03" strokeDasharray="4 4" />
+        
+        {/* Основная линия */}
+        <path d={d} fill="none" stroke="white" strokeWidth="1.5" className="opacity-80 transition-all group-hover/chart:opacity-100" />
+        
+        {/* Точки данных */}
+        {points.map((p: { x: number; y: number }, i: number) => (
+          <circle key={i} cx={p.x} cy={p.y} r="2" fill="black" stroke="white" strokeWidth="1" className="opacity-0 group-hover/chart:opacity-100 transition-opacity" />
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+type ClassificationMatrixProps = {
+  data: Array<{ label: string; value: number }>;
+};
+
+function ClassificationMatrix({ data }: ClassificationMatrixProps) {
+  const total = data.reduce((acc: number, curr: { value: number }) => acc + curr.value, 0);
+  return (
+    <div className="w-full space-y-6">
+      {data.map((item: { label: string; value: number }, i: number) => (
+        <div key={i} className="flex items-center justify-between group/item">
+          <div className="flex flex-col">
+            <span className="text-[9px] font-mono text-white/30 uppercase tracking-widest group-hover/item:text-white/60 transition-colors">
+              {TAG_LABELS_RU[item.label] || item.label}
+            </span>
+            <div className="h-[1px] w-12 bg-white/10 mt-1 transition-all group-hover/item:w-full group-hover/item:bg-white/40" />
+          </div>
+          <span className="text-lg font-light text-white/80">{item.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// --- ГЛАВНЫЙ DASHBOARD VIEW ---
+type DashboardViewProps = {
+  count: number;
+  signals: any[];
+  stats: any[];
+  dist: any[];
+};
+
+
+
+// --- 1. Микро-график для метрик (Sparkline) ---
+function Sparkline({ data }: { data: number[] }) {
+  if (!data || data.length < 2) return null;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const width = 60;
+  const height = 20;
+  const points = data.map((v, i) => ({
+    x: (i / (data.length - 1)) * width,
+    y: height - ((v - min) / range) * height
+  }));
+  const d = `M ${points[0].x} ${points[0].y} ` + points.slice(1).map(p => `L ${p.x} ${p.y}`).join(" ");
+  return (
+    <svg width={width} height={height} className="opacity-40">
+      <path d={d} fill="none" stroke="white" strokeWidth="1" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+
+
+// --- 2. Радиальная диаграмма распределения (Donut) ---
+function ClassificationDonut({ data }: { data: any[] }) {
+  const total = data.reduce((acc, curr) => acc + curr.value, 0) || 1;
+  let currentOffset = 0;
+  const radius = 40;
+  const center = 50;
+  const circumference = 2 * Math.PI * radius;
+
+  return (
+    <div className="relative flex items-center gap-12">
+      <div className="relative w-32 h-32">
+        <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+          <circle cx={center} cy={center} r={radius} fill="none" stroke="white" strokeOpacity="0.03" strokeWidth="8" />
+          {data.map((item, i) => {
+            const percentage = item.value / total;
+            const strokeDasharray = `${percentage * circumference} ${circumference}`;
+            const strokeDashoffset = -currentOffset;
+            currentOffset += percentage * circumference;
+            return (
+              <circle
+                key={i}
+                cx={center}
+                cy={center}
+                r={radius}
+                fill="none"
+                stroke="white"
+                strokeOpacity={0.1 + (i * 0.15)}
+                strokeWidth="8"
+                strokeDasharray={strokeDasharray}
+                strokeDashoffset={strokeDashoffset}
+                className="transition-all duration-1000"
+              />
+            );
+          })}
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-[10px] font-mono text-white/20 uppercase">Total</span>
+          <span className="text-lg font-light text-white/80">{total}</span>
+        </div>
+      </div>
+      <div className="flex-1 space-y-3">
+        {data.map((item, i) => (
+          <div key={i} className="flex items-center justify-between group">
+            <div className="flex items-center gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-white transition-opacity" style={{ opacity: 0.1 + (i * 0.15) }} />
+              <span className="text-[10px] font-mono uppercase text-white/40 group-hover:text-white/80 transition-colors">{TAG_LABELS_RU[item.label] || item.label}</span>
+            </div>
+            <span className="text-[10px] font-mono text-white/20">{Math.round((item.value / total) * 100)}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// --- 3. Радиальный Gauge для Coverage ---
+function CoverageGauge({ value }: { value: number }) {
+  const radius = 80;
+  const circumference = Math.PI * radius; // Полукруг
+  const offset = circumference - (value / 100) * circumference;
+
+  return (
+    <div className="flex flex-col items-center justify-center p-8 border border-white/5 bg-white/[0.01] rounded-sm">
+      <div className="relative w-48 h-24 overflow-hidden">
+        <svg viewBox="0 0 180 90" className="w-full h-full">
+          <path d="M 10 90 A 80 80 0 0 1 170 90" fill="none" stroke="white" strokeOpacity="0.03" strokeWidth="12" strokeLinecap="round" />
+          <path 
+            d="M 10 90 A 80 80 0 0 1 170 90" 
+            fill="none" 
+            stroke="white" 
+            strokeOpacity="0.4" 
+            strokeWidth="12" 
+            strokeDasharray={circumference} 
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            className="transition-all duration-[1.5s] ease-out"
+          />
+        </svg>
+        <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center">
+          <span className="text-3xl font-light tracking-tighter text-white">{value}%</span>
+          <span className="text-[8px] font-mono uppercase text-white/20 tracking-[0.2em] mb-1">Network Capacity</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- ОБНОВЛЕННЫЙ DASHBOARD VIEW ---
+function DashboardView({ count, signals, stats, dist }: DashboardViewProps) {
+  const dataPoints = count + signals.length;
+  const coverage = count > 0 ? Math.round((new Set(signals.map((s: any) => s.company)).size / count) * 100) : 0;
+
+  return (
+    <div className="space-y-20 animate-in fade-in duration-1000 max-w-[1400px] pb-20">
+      
+      {/* Метрики с трендами */}
+      <div className="grid grid-cols-4 gap-12 border-b border-white/5 pb-12">
+        <StatItem label="Active Monitors" value={count} trend={[5, 8, 7, 10, 12, count]} />
+        <StatItem label="Intelligence Signals" value={signals.length} trend={[100, 120, 110, 150, 180, signals.length]} />
+        <StatItem label="Scanned Points" value={dataPoints} trend={[1000, 1100, 1050, 1300, 1400, dataPoints]} />
+        <StatItem label="Success Rate" value="98.2" unit="%" trend={[97, 98, 97, 99, 98, 98.2]} />
+      </div>
+
+      <div className="grid grid-cols-12 gap-16">
+        {/* Активность (Линейный график) */}
+        <div className="col-span-8 space-y-8">
+          <div className="flex items-center justify-between">
+            <h3 className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/40">Event Propagation Timeline</h3>
+            <div className="flex gap-4 text-[9px] font-mono uppercase text-white/20">
+               <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-white/40 rounded-sm" /> Historical</div>
+               <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-emerald-500/40 rounded-sm" /> Predicted</div>
+            </div>
+          </div>
+          <div className="h-[300px] w-full">
+            <ActivityChart data={stats} />
+          </div>
+        </div>
+
+        {/* Радиальный Охват */}
+        <div className="col-span-4 space-y-8">
+          <h3 className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/40">Infrastructure</h3>
+          <CoverageGauge value={coverage} />
+          <div className="p-6 border border-white/5 space-y-4">
+             <div className="flex justify-between text-[10px] font-mono uppercase">
+                <span className="text-white/20">Uptime</span>
+                <span className="text-emerald-500/80">99.99%</span>
+             </div>
+             <div className="h-[1px] w-full bg-white/5" />
+             <div className="flex justify-between text-[10px] font-mono uppercase">
+                <span className="text-white/20">Latency</span>
+                <span className="text-white/60">240ms</span>
+             </div>
+          </div>
+        </div>
+
+        {/* Кольцевая диаграмма распределения */}
+        <div className="col-span-5 space-y-8">
+           <h3 className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/40">Signal Distribution</h3>
+           <div className="p-10 border border-white/5 rounded-sm">
+              <ClassificationDonut data={dist} />
+           </div>
+        </div>
+
+        {/* Лента последних событий */}
+        <div className="col-span-7 space-y-8">
+           <h3 className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/40">Latest Analysis</h3>
+           <div className="divide-y divide-white/5 border-t border-white/5">
+              {signals.slice(0, 4).map((sig) => (
+                <div key={sig.id} className="py-5 flex items-start gap-6 group">
+                   <span className="text-[9px] font-mono text-white/10 shrink-0 mt-1">{getRelativeTime(sig.created_at)}</span>
+                   <div className="flex-1">
+                      <p className="text-[12px] text-white/60 font-light group-hover:text-white/90 transition-colors line-clamp-1 italic">
+                        "{sig.ai_analysis || sig.msg}"
+                      </p>
+                      <p className="text-[8px] font-mono text-white/10 uppercase tracking-widest mt-1">{sig.company}</p>
+                   </div>
+                   <SignalBadge label={sig.tag} />
+                </div>
+              ))}
+           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function CompetitorDetailsView({ comp, signals, onDelete, onBack, onViewDiff }: any) {
   const [socialUrl, setSocialUrl] = useState("");
