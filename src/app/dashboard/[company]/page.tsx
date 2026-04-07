@@ -143,24 +143,39 @@ export default function DashboardPage() {
         apiRequest(`/api/stats/activity`, { headers: { Authorization: `Bearer ${token}` } }),
         apiRequest(`/api/stats/distribution`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
-      const results = [uRes, cRes, sRes, stRes, dsRes];
-      const isUnauthorized = results.some(r => r.status === 'rejected' && r.reason.message.includes('401'));
 
-      if(isUnauthorized) {
+      // 1. Проверка на 401 (разлогин)
+      const isUnauthorized = [uRes, cRes, sRes, stRes, dsRes].some(
+        r => r.status === 'rejected' && r.reason.message.includes('401')
+      );
+      if (isUnauthorized) {
         handleLogout();
         return;
       }
-      if (uRes.status === 'fulfilled') setUser(uRes.value);
+
+      // 2. Логика проверки тенанта (своего дашборда)
+      if (uRes.status === 'fulfilled') {
+        const currentUser = uRes.value; // Берем данные из успешного ответа
+        setUser(currentUser);
+
+        // Если slug в URL не совпадает со slug пользователя в базе — принудительный редирект
+        if (companySlug && companySlug !== currentUser.tenant_slug) {
+          console.warn("Mismatched tenant. Redirecting...");
+          window.location.href = `/dashboard/${currentUser.tenant_slug}`;
+          return;
+        }
+      }
+
+      // 3. Заполняем остальные данные
       if (cRes.status === 'fulfilled') setCompetitors(cRes.value || []);
       if (sRes.status === 'fulfilled') setSignals(sRes.value || []);
       if (stRes.status === 'fulfilled') setStats(stRes.value || []);
       if (dsRes.status === 'fulfilled') setDist(dsRes.value || []);
+      
       setIsLoading(false);
     } catch (err: unknown) { 
       setIsLoading(false);
-      if (err instanceof Error && (err.message.includes('401') || err.message.includes('EXPIRED'))) {
-        handleLogout();
-      }
+      console.error("Fetch error:", err);
     }
   };
 
