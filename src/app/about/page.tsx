@@ -121,20 +121,28 @@ export default function AboutPage() {
           </div>
           <div className="md:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-8" style={{ animation: "fadeUp 0.8s cubic-bezier(.16,1,.3,1) both 0.2s" }}>
             <div className="group">
-              <div className="aspect-[4/5] bg-white/[0.03] border border-white/[0.08] rounded-2xl mb-4 overflow-hidden grayscale transition-all duration-500 group-hover:grayscale-0">
-                {/* Здесь может быть фото */}
-                <div className="w-full h-full flex items-center justify-center text-white font-mono text-xs uppercase tracking-widest">Founder / CTO</div>
+              <div className="aspect-[4/5] bg-transparent border border-white/[0.1] rounded-2xl mb-4 overflow-hidden transition-colors duration-500 group-hover:border-white/25">
+                <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-white/65">
+                  <div className="w-14 h-14 rounded-full border border-white/20 flex items-center justify-center font-mono text-sm tracking-widest">
+                    NS
+                  </div>
+                  <div className="font-mono text-[10px] uppercase tracking-[0.2em]">Founder / CTO</div>
+                </div>
               </div>
-              <h4 className="font-bold text-lg">Николай С.</h4>
-              <p className="text-white/30 text-xs font-mono uppercase tracking-widest">Co-founder & CTO</p>
+              <h4 className="font-bold text-lg leading-snug">Сороколетов Николай Артемович</h4>
+              <p className="mt-2 text-white/35 text-xs font-mono uppercase tracking-widest">Co-founder & CTO</p>
             </div>
             <div className="group">
-              <div className="aspect-[4/5] bg-white/[0.03] border border-white/[0.08] rounded-2xl mb-4 overflow-hidden grayscale transition-all duration-500 group-hover:grayscale-0">
-                {/* Здесь может быть фото */}
-                <div className="w-full h-full flex items-center justify-center text-white font-mono text-xs uppercase tracking-widest">Product / Marketing</div>
+              <div className="aspect-[4/5] bg-transparent border border-white/[0.1] rounded-2xl mb-4 overflow-hidden transition-colors duration-500 group-hover:border-white/25">
+                <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-white/65">
+                  <div className="w-14 h-14 rounded-full border border-white/20 flex items-center justify-center font-mono text-sm tracking-widest">
+                    NK
+                  </div>
+                  <div className="font-mono text-[10px] uppercase tracking-[0.2em]">Product / Marketing</div>
+                </div>
               </div>
-              <h4 className="font-bold text-lg">Никита К.</h4>
-              <p className="text-white/30 text-xs font-mono uppercase tracking-widest">Co-founder & CPO</p>
+              <h4 className="font-bold text-lg leading-snug">Кочетков Никита Юрьевич</h4>
+              <p className="mt-2 text-white/35 text-xs font-mono uppercase tracking-widest">Co-founder & CPO</p>
             </div>
           </div>
         </div>
