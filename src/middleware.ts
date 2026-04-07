@@ -15,9 +15,9 @@ export function middleware(request: NextRequest) {
   }
 
   return NextResponse.next()
+  
 }
 
 export const config = {
-  // Указываем, на какие пути вешать проверку
   matcher: ['/dashboard/:path*'],
 }
