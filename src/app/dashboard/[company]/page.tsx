@@ -590,7 +590,7 @@ function DashboardView({ count, signals, stats, dist }: DashboardViewProps) {
         <StatItem label="Мониторы" value={count} color="white" />
         <StatItem label="Сигналы" value={signals.length} color="blue" />
         <StatItem label="Аналитика" value={Math.floor(signals.length * 1.4)} color="purple" />
-        <StatItem label="Система" value="99.9" unit="%" color="emerald" />
+        <StatItem label="Система" value="Enabled" color="emerald" />
       </div>
 
       <div className="grid grid-cols-12 gap-8">
