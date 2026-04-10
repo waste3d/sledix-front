@@ -1,83 +1,33 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  ArrowUpRight, Activity, Search, ShieldCheck, 
+  Trash2, Globe, Settings, Plus, LayoutDashboard, 
+  Rss, ChevronRight, X, ExternalLink
+} from "lucide-react";
 import { apiRequest } from "../../../lib/api";
 import ReactDiffViewer from "react-diff-viewer-continued";
 
 const DADATA_KEY = "4affb62ba89180ef3405454f9a047fa680d957ed";
 
-// --- Цветовая схема и константы ---
-const TAG_STYLES: Record<string, { color: string; bg: string }> = {
-  PRICING: { color: "#f59e0b", bg: "rgba(245, 158, 11, 0.1)" },
-  HIRING: { color: "#3b82f6", bg: "rgba(59, 130, 246, 0.1)" },
-  REVIEWS: { color: "#ef4444", bg: "rgba(239, 68, 68, 0.1)" },
-  LEGAL: { color: "#a855f7", bg: "rgba(168, 85, 247, 0.1)" },
-  PRODUCT: { color: "#10b981", bg: "rgba(16, 185, 129, 0.1)" },
-  TECH: { color: "#6366f1", bg: "rgba(99, 102, 241, 0.1)" },
-  MARKETING: { color: "#ec4899", bg: "rgba(236, 72, 153, 0.1)" },
-};
+// --- Логотип из вашего дизайна ---
+const SledixLogo = () => (
+  <svg width="20" height="20" viewBox="0 0 676 584" fill="white">
+    <path d="M 2970 5165 c161 -51 273 -146 343 -292 l42 -88 0 -120 c-1 -107 -4 -127 -27 -182 -54 -128 -110 -190 -259 -289 -115 -77 -185 -148 -231 -235 l-33 -64 0 -160 c0 -156 1 -162 29 -218 41 -84 129 -173 248 -251 116 -76 184 -148 228 -241 51 -108 62 -214 35 -319 -50 -190 -200 -341 -385 -387 -83 -21 -496 -17 -613 5 -505 97 -919 440 -1102 914 -19 51 -47 141 -62 200 -23 94 -26 128 -26 277 0 94 5 206 12 250 86 559 531 1047 1081 1184 132 33 218 40 450 37 171 -3 226 -7 270 -21z m2597 11 c4 -4 -217 -230 -492 -502 l-500 -493 -370 0 c-413 -1 -466 5 -562 60 -75 43 -161 131 -200 204 -56 107 -67 265 -26 390 39 120 148 242 272 303 l75 37 170 6 c264 9 1623 5 1633 -5z m-1137 -1889 c186 -44 350 -117 520 -230 95 -64 300 -269 368 -369 107 -158 -188 -353 229 -553 25 -125 25 -416 -1 -533 -72 -337 -260 -635 -533 -849 -202 -158 -452 -261 -710 -293 -109 -14 -421 -14 -493 0 -190 35 -376 216 -410 399 -31 165 23 351 132 460 27 27 88 75 134 107 197 133 284 277 284 467 0 185 -77 299 -312 464 -121 86 -149 114 -191 198 -43 86 -61 163 -61 260 0 78 4 99 31 162 61 143 135 223 273 293 94 48 109 50 380 46 228 -4 266 -7 360 -29z m-1425 -1858 c184 -81 300 -212 341 -385 27 -118 1 -241 -78 -362 -52 -80 -122 -142 -218 -191 l-75 -39 -932 -4 c-830 -3 -930 -2 -923 12 9 17 558 561 835 828 l180 174 410 -6 c395 -5 412 -6 460 -27z" transform="translate(0, 584) scale(0.1, -0.1)" />
+  </svg>
+);
 
 const TAG_LABELS_RU: Record<string, string> = {
   PRICING: "Цены", HIRING: "Найм", REVIEWS: "Отзывы", LEGAL: "Право", PRODUCT: "Продукт", TECH: "Tech", MARKETING: "Маркетинг",
 };
 
-const Icons = {
-  dashboard:   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>,
-  competitors: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>,
-  signals:     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>,
-  settings:    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
-  trash:       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>,
-  plus:        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
-  globe:       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
-};
-
-const getRelativeTime = (dateStr: string) => {
-  if (!dateStr) return "ожидание";
-  const diff = Math.floor((new Date().getTime() - new Date(dateStr).getTime()) / 1000);
-  if (diff < 60) return "только что";
-  if (diff < 3600) return `${Math.floor(diff / 60)}м`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}ч`;
-  return `${Math.floor(diff / 86400)}д`;
-};
-
-// --- Мини-компоненты ---
-
-function SignalBadge({ label }: { label: string }) {
-  const style = TAG_STYLES[label] || { color: "#71717a", bg: "rgba(113, 113, 122, 0.1)" };
-  return (
-    <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider" 
-          style={{ color: style.color, backgroundColor: style.bg, borderColor: `${style.color}33` }}>
-      {TAG_LABELS_RU[label] || label}
-    </span>
-  );
-}
-
-function AIInsightMinimal({ text, date, tag, onViewDiff, hasDiff }: any) {
-  return (
-    <div className="group relative py-3 border-b border-white/[0.03] last:border-0 hover:bg-white/[0.01] transition-colors">
-      <div className="flex items-start gap-4">
-        <div className="mt-1.5"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" /></div>
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <SignalBadge label={tag} />
-            <span className="text-[10px] font-mono text-white/20">{getRelativeTime(date)}</span>
-            {hasDiff && (
-              <button onClick={onViewDiff} className="text-[9px] font-mono text-emerald-400 hover:text-emerald-300 underline underline-offset-2">Diff</button>
-            )}
-          </div>
-          <p className="text-[13px] text-white/70 leading-relaxed font-light">{text}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// --- Основной компонент ---
-
 export default function DashboardPage() {
   const params = useParams();
   const companySlug = params.company as string;
+  const router = useRouter();
   
   const [page, setPage] = useState("dashboard");
   const [selectedComp, setSelectedComp] = useState<any>(null);
@@ -97,15 +47,11 @@ export default function DashboardPage() {
   const [diffData, setDiffData] = useState<{old: string, new: string, ai_analysis: string, msg: string} | null>(null);
   const [showDiffModal, setShowDiffModal] = useState(false);
 
-  // Рефы для Dadata
-  const companyRef = useRef<HTMLDivElement>(null);
-  const cityRef = useRef<HTMLDivElement>(null);
   const [partySuggestions, setPartySuggestions] = useState<any[]>([]);
-  const [citySuggestions, setCitySuggestions] = useState<any[]>([]);
 
   const fetchData = async () => {
     const token = localStorage.getItem("access_token");
-    if (!token) return;
+    if (!token) { router.push("/auth/login"); return; }
     try {
       const [uRes, cRes, sRes, stRes, dsRes] = await Promise.allSettled([
         apiRequest(`/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } }),
@@ -118,7 +64,7 @@ export default function DashboardPage() {
       if (uRes.status === 'fulfilled') {
         setUser(uRes.value);
         if (companySlug && companySlug !== uRes.value.tenant_slug) {
-          window.location.href = `/dashboard/${uRes.value.tenant_slug}`;
+          router.push(`/dashboard/${uRes.value.tenant_slug}`);
           return;
         }
       }
@@ -156,142 +102,158 @@ export default function DashboardPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Удалить объект мониторинга?")) return;
+    if (!confirm("Удалить монитор?")) return;
     try {
       const token = localStorage.getItem("access_token");
       await apiRequest(`/api/competitors/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
-      if (selectedComp?.id === id) setSelectedComp(null);
       fetchData();
     } catch (err: any) { alert(err.message); }
   };
 
-  if (isLoading) return <div className="h-screen bg-[#060608] flex items-center justify-center text-white/10 font-mono text-[10px] uppercase tracking-[0.5em]">System Booting…</div>;
+  if (isLoading) return (
+    <div className="h-screen bg-black flex flex-col items-center justify-center space-y-4">
+      <SledixLogo />
+      <span className="text-[10px] text-zinc-600 uppercase tracking-[0.5em] animate-pulse">Initializing System</span>
+    </div>
+  );
 
   return (
-    <div className="flex h-screen bg-[#060608] text-white overflow-hidden font-sans antialiased">
+    <div className="flex h-screen bg-black text-white overflow-hidden font-sans selection:bg-white selection:text-black antialiased">
       {/* --- Sidebar --- */}
-      <aside className="w-64 shrink-0 flex flex-col border-r border-white/[0.04] bg-[#08080a]">
-        <div className="h-16 flex items-center px-6 border-b border-white/[0.04]">
-          <span className="text-sm font-bold tracking-widest uppercase">Sledix <span className="text-emerald-500">.</span></span>
+      <aside className="w-64 shrink-0 flex flex-col border-r border-white/10 bg-black">
+        <div className="h-16 flex items-center px-6 border-b border-white/10 gap-3">
+          <SledixLogo />
+          <span className="text-sm font-bold tracking-tighter uppercase">Sledix</span>
         </div>
         
-        <nav className="flex-1 px-4 py-6 space-y-1">
-          <NavItem active={page==="dashboard" && !selectedComp} onClick={() => {setPage("dashboard"); setSelectedComp(null)}} icon={Icons.dashboard} label="Дашборд" />
-          <NavItem active={page==="competitors"} onClick={() => {setPage("competitors"); setSelectedComp(null)}} icon={Icons.competitors} label="Мониторы" count={competitors.length} />
-          <NavItem active={page==="signals"} onClick={() => {setPage("signals"); setSelectedComp(null)}} icon={Icons.signals} label="Лента" count={signals.length} />
+        <nav className="flex-1 px-4 py-8 space-y-2">
+          <NavItem active={page==="dashboard" && !selectedComp} onClick={() => {setPage("dashboard"); setSelectedComp(null)}} icon={<LayoutDashboard size={16}/>} label="Обзор" />
+          <NavItem active={page==="competitors"} onClick={() => {setPage("competitors"); setSelectedComp(null)}} icon={<Globe size={16}/>} label="Объекты" count={competitors.length} />
+          <NavItem active={page==="signals"} onClick={() => {setPage("signals"); setSelectedComp(null)}} icon={<Rss size={16}/>} label="Живой поток" count={signals.length} />
         </nav>
 
-        <div className="p-4 border-t border-white/[0.04]">
-           <button onClick={() => setPage("settings")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${page === "settings" ? "text-white bg-white/5" : "text-white/40 hover:text-white"}`}>
-             {Icons.settings} Настройки
+        <div className="p-4 border-t border-white/10">
+           <button onClick={() => setPage("settings")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${page === "settings" ? "bg-white text-black" : "text-zinc-500 hover:text-white"}`}>
+             <Settings size={14} /> Настройки
            </button>
         </div>
       </aside>
 
-      {/* --- Main Content --- */}
+      {/* --- Main --- */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        <header className="h-16 flex items-center justify-between px-8 border-b border-white/[0.04] bg-[#060608]/80 backdrop-blur-md z-20">
+        <header className="h-16 flex items-center justify-between px-8 border-b border-white/10 bg-black/50 backdrop-blur-xl z-20">
           <div className="flex items-center gap-4">
-             <h1 className="text-sm font-medium text-white/90 uppercase tracking-widest">
-               {selectedComp ? selectedComp.name : (page === "dashboard" ? "Обзор системы" : page === "competitors" ? "Объекты" : "События")}
+             <h1 className="text-[11px] font-black text-white uppercase tracking-[0.3em] italic">
+               {selectedComp ? selectedComp.name : (page === "dashboard" ? "Intelligence Center" : page === "competitors" ? "Objects" : "Signals")}
              </h1>
           </div>
-          <button onClick={() => setShowModal(true)} className="bg-white text-black text-[10px] font-bold uppercase px-4 py-2 rounded hover:bg-zinc-200 transition-all flex items-center gap-2">
-            {Icons.plus} Добавить монитор
+          <button onClick={() => setShowModal(true)} className="bg-white text-black text-[10px] font-black uppercase tracking-widest px-6 py-2 rounded-full hover:bg-zinc-200 transition-all flex items-center gap-2">
+            <Plus size={14} /> Add monitor
           </button>
         </header>
 
-        <div className="flex-1 overflow-auto p-8 custom-scrollbar">
-          {selectedComp ? (
-            <CompetitorDetailsView comp={selectedComp} signals={signals.filter(s => s.company === selectedComp.name)} onBack={() => setSelectedComp(null)} onViewDiff={openDiff} />
-          ) : (
-            <>
-              {page === "dashboard" && <DashboardView count={competitors.length} signals={signals} stats={stats} dist={dist} />}
-              {page === "competitors" && <CompetitorsList competitors={competitors} onSelect={setSelectedComp} onDelete={handleDelete} />}
-              {page === "signals" && <SignalsView signals={signals} onViewDiff={openDiff} />}
-              {page === "settings" && <SettingsView user={user} />}
-            </>
-          )}
+        <div className="flex-1 overflow-auto custom-scrollbar bg-black">
+          <div className="max-w-6xl mx-auto p-8">
+            {selectedComp ? (
+              <CompetitorDetailsView comp={selectedComp} signals={signals.filter(s => s.company === selectedComp.name)} onBack={() => setSelectedComp(null)} onViewDiff={openDiff} />
+            ) : (
+              <>
+                {page === "dashboard" && <DashboardView count={competitors.length} signals={signals} stats={stats} dist={dist} />}
+                {page === "competitors" && <CompetitorsList competitors={competitors} onSelect={setSelectedComp} onDelete={handleDelete} />}
+                {page === "signals" && <SignalsView signals={signals} onViewDiff={openDiff} />}
+                {page === "settings" && <SettingsView user={user} />}
+              </>
+            )}
+          </div>
         </div>
       </main>
 
-      {/* --- Modals (Add & Diff) --- */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-           <div className="bg-[#0f1012] border border-white/10 rounded-2xl p-8 w-full max-w-md">
-              <h3 className="text-lg font-bold mb-6 uppercase tracking-tight">Новый объект</h3>
-              <form onSubmit={handleAdd} className="space-y-5">
-                <div ref={companyRef}>
-                  <label className="text-[10px] font-mono text-white/30 uppercase block mb-2">Название</label>
+      {/* --- Modals --- */}
+      <AnimatePresence>
+        {showModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowModal(false)} className="absolute inset-0 bg-black/90 backdrop-blur-md" />
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-black border border-white/10 rounded-3xl p-10 w-full max-w-[400px]">
+              <h3 className="text-4xl font-bold uppercase tracking-tighter italic mb-8">New Monitor</h3>
+              <form onSubmit={handleAdd} className="space-y-8">
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-700">Company Name</label>
                   <input required value={newCompName} onChange={e => {
                     setNewCompName(e.target.value);
                     if (e.target.value.length >= 3) {
                       fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/party", { 
-                        method: "POST", 
-                        headers: { "Content-Type": "application/json", "Authorization": `Token ${DADATA_KEY}` }, 
+                        method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Token ${DADATA_KEY}` }, 
                         body: JSON.stringify({ query: e.target.value }) 
                       }).then(r => r.json()).then(d => setPartySuggestions(d.suggestions || []));
                     } else setPartySuggestions([]);
-                  }} className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-4 py-3 text-sm focus:border-white/30 outline-none" />
+                  }} className="w-full bg-transparent border-b border-white/10 py-3 text-sm font-bold uppercase tracking-widest focus:border-white outline-none transition-all placeholder:text-zinc-900" />
                   {partySuggestions.length > 0 && (
-                    <div className="absolute bg-[#16171a] border border-white/10 rounded-lg mt-1 w-[384px] z-[110] max-h-40 overflow-auto">
+                    <div className="absolute bg-zinc-950 border border-white/10 rounded-xl mt-1 w-full z-[110] max-h-40 overflow-auto shadow-2xl">
                       {partySuggestions.map((s, i) => (
-                        <button key={i} type="button" onClick={() => { setNewCompName(s.value); setCity(s.data.address?.data?.city || ""); setPartySuggestions([]); }} className="w-full px-4 py-2 hover:bg-white/5 text-left text-[11px] text-white/60 border-b border-white/5">{s.value}</button>
+                        <button key={i} type="button" onClick={() => { setNewCompName(s.value); setCity(s.data.address?.data?.city || ""); setPartySuggestions([]); }} className="w-full px-4 py-3 hover:bg-white hover:text-black text-left text-[10px] font-bold uppercase border-b border-white/5">{s.value}</button>
                       ))}
                     </div>
                   )}
                 </div>
-                <div>
-                  <label className="text-[10px] font-mono text-white/30 uppercase block mb-2">Сайт (URL)</label>
-                  <input required value={newCompUrl} onChange={e => setNewCompUrl(e.target.value)} placeholder="example.com" className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-4 py-3 text-sm focus:border-white/30 outline-none" />
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-700">Website URL</label>
+                  <input required value={newCompUrl} onChange={e => setNewCompUrl(e.target.value)} placeholder="example.com" className="w-full bg-transparent border-b border-white/10 py-3 text-sm font-bold uppercase tracking-widest focus:border-white outline-none transition-all placeholder:text-zinc-900" />
                 </div>
-                <div ref={cityRef}>
-                  <label className="text-[10px] font-mono text-white/30 uppercase block mb-2">Город</label>
-                  <input required value={city} onChange={e => {
-                    setCity(e.target.value);
-                    if (e.target.value.length >= 2) {
-                      fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", { 
-                        method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Token ${DADATA_KEY}` }, 
-                        body: JSON.stringify({ query: e.target.value, from_bound: { value: "city" }, to_bound: { value: "city" } }) 
-                      }).then(r => r.json()).then(d => setCitySuggestions(d.suggestions || []));
-                    } else setCitySuggestions([]);
-                  }} className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-4 py-3 text-sm focus:border-white/30 outline-none" />
-                </div>
-                <div className="flex gap-3 pt-4">
-                  <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-3 border border-white/10 rounded-lg text-xs font-bold uppercase text-white/40 hover:text-white transition-all">Отмена</button>
-                  <button type="submit" disabled={isAdding} className="flex-1 px-4 py-3 bg-white text-black rounded-lg text-xs font-bold uppercase hover:bg-zinc-200 transition-all">
-                    {isAdding ? "..." : "Запустить"}
+                <div className="flex gap-4 pt-4">
+                  <button type="submit" disabled={isAdding} className="flex-1 bg-white text-black py-4 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-zinc-200 transition-all">
+                    {isAdding ? "Scanning..." : "Launch Monitor"}
                   </button>
                 </div>
               </form>
-           </div>
-        </div>
-      )}
+            </motion.div>
+          </div>
+        )}
 
-      {showDiffModal && diffData && (
-        <div className="fixed inset-0 bg-black/95 z-[200] flex flex-col p-6">
-           <div className="flex justify-between items-center mb-6">
-              <h3 className="text-sm font-bold uppercase tracking-widest">Анализ изменений</h3>
-              <button onClick={() => setShowDiffModal(false)} className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded text-[10px] uppercase font-bold transition-all">Закрыть</button>
-           </div>
-           <div className="flex-1 overflow-auto rounded-xl border border-white/10 bg-[#08080a]">
+        {showDiffModal && diffData && (
+          <div className="fixed inset-0 z-[200] flex flex-col bg-black p-6">
+            <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-6">
+              <div>
+                <h3 className="text-2xl font-bold uppercase tracking-tighter italic">Change Intelligence</h3>
+                <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">{diffData.msg}</p>
+              </div>
+              <button onClick={() => setShowDiffModal(false)} className="w-10 h-10 flex items-center justify-center rounded-full border border-white/10 hover:bg-white hover:text-black transition-all">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto rounded-3xl border border-white/10 bg-[#050505]">
               <ReactDiffViewer oldValue={diffData.old} newValue={diffData.new} splitView={true} useDarkTheme={true} />
-           </div>
-        </div>
-      )}
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-// --- Вспомогательные компоненты ---
+// --- Sub-components ---
 
 function NavItem({ active, onClick, icon, label, count }: any) {
   return (
-    <button onClick={onClick} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${active ? "bg-white/5 text-white shadow-sm" : "text-white/30 hover:text-white hover:bg-white/[0.02]"}`}>
-      <span className={active ? "text-emerald-500" : "text-inherit"}>{icon}</span>
+    <button onClick={onClick} className={`w-full flex items-center gap-4 px-4 py-3 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all ${active ? "bg-white text-black shadow-2xl" : "text-zinc-500 hover:text-white"}`}>
+      {icon}
       <span className="flex-1 text-left">{label}</span>
-      {count !== undefined && <span className="text-[10px] font-mono opacity-40">{count}</span>}
+      {count !== undefined && <span className="text-[9px] font-mono opacity-40">{count}</span>}
     </button>
+  );
+}
+
+function StatCard({ label, value, trend, icon }: any) {
+  return (
+    <div className="bg-black border border-white/10 rounded-3xl p-8 flex flex-col justify-between group hover:border-white/30 transition-all">
+      <div className="flex justify-between items-start mb-10">
+        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 italic">{label}</span>
+        <div className="text-zinc-800 group-hover:text-white transition-colors">{icon}</div>
+      </div>
+      <div>
+        <div className="text-5xl font-bold tracking-tighter italic mb-4">{value}</div>
+        <div className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">{trend}</div>
+      </div>
+    </div>
   );
 }
 
@@ -299,235 +261,178 @@ function NavItem({ active, onClick, icon, label, count }: any) {
 
 function DashboardView({ count, signals, stats, dist }: any) {
   return (
-    <div className="space-y-10 max-w-6xl animate-in fade-in duration-500">
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard label="Всего мониторов" value={count} trend="+1 в этом месяце" />
-        <StatCard label="Сигналы (24ч)" value={signals.filter((s:any) => new Date(s.created_at) > new Date(Date.now() - 86400000)).length} trend="Активно" />
-        <StatCard label="Здоровье системы" value="98%" trend="Норма" />
+        <StatCard label="Active Monitors" value={count} trend="+1 this cycle" icon={<Globe size={20}/>} />
+        <StatCard label="Signals (24h)" value={signals.filter((s:any) => new Date(s.created_at) > new Date(Date.now() - 86400000)).length} trend="High intensity" icon={<Activity size={20}/>} />
+        <StatCard label="System Health" value="98%" trend="Operational" icon={<ShieldCheck size={20}/>} />
       </div>
 
-      <div className="grid grid-cols-12 gap-6">
-        <div className="col-span-12 lg:col-span-8 bg-[#08080a] border border-white/[0.04] rounded-2xl p-6">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/30">Активность мониторинга</h3>
-          </div>
-          <div className="h-64 flex items-end gap-1 px-2">
-            {stats.map((s:any, i:number) => (
-              <div key={i} className="flex-1 bg-emerald-500/20 hover:bg-emerald-500/40 transition-all rounded-t-sm" style={{ height: `${(s.value / Math.max(...stats.map((x:any)=>x.value), 1)) * 100}%` }} title={`${s.value} сигналов`} />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-8 bg-black border border-white/10 rounded-3xl p-8">
+           <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-700 mb-12 italic">Signal Intensity History</h3>
+           <div className="h-48 flex items-end gap-1.5">
+              {stats.map((s:any, i:number) => (
+                <div key={i} className="flex-1 bg-zinc-900 hover:bg-white transition-all rounded-t-sm" style={{ height: `${(s.value / Math.max(...stats.map((x:any)=>x.value), 1)) * 100}%` }} />
+              ))}
+           </div>
+        </div>
+        <div className="lg:col-span-4 bg-black border border-white/10 rounded-3xl p-8">
+          <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-700 mb-8 italic">Category Weight</h3>
+          <div className="space-y-6">
+            {dist.slice(0, 5).map((d:any, i:number) => (
+              <div key={i} className="flex justify-between items-center group">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 group-hover:text-white transition-colors">
+                   {TAG_LABELS_RU[d.label] || d.label}
+                </span>
+                <span className="text-xs font-mono text-zinc-800 group-hover:text-white">{d.value}</span>
+              </div>
             ))}
           </div>
         </div>
-
-        <div className="col-span-12 lg:col-span-4 space-y-6">
-          <div className="bg-[#08080a] border border-white/[0.04] rounded-2xl p-6">
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-6">Категории</h3>
-            <div className="space-y-4">
-              {dist.slice(0, 5).map((d:any, i:number) => (
-                <div key={i} className="flex justify-between items-center text-xs">
-                  <span className="text-white/50">{TAG_LABELS_RU[d.label] || d.label}</span>
-                  <span className="font-mono">{d.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
 function CompetitorsList({ competitors, onSelect, onDelete }: any) {
   return (
-    <div className="max-w-6xl animate-in fade-in duration-500">
-      <div className="bg-[#08080a] border border-white/[0.04] rounded-xl overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-white/[0.04] bg-white/[0.01]">
-              <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-white/30">Название</th>
-              <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-white/30">Локация</th>
-              <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-white/30 text-right">Статус</th>
-              <th className="px-6 py-4 w-10"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/[0.02]">
-            {competitors.map((c: any) => (
-              <tr key={c.id} onClick={() => onSelect(c)} className="group hover:bg-white/[0.01] cursor-pointer transition-colors">
-                <td className="px-6 py-5">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium group-hover:text-emerald-400 transition-colors">{c.name}</span>
-                    <span className="text-[10px] text-white/20 font-mono mt-0.5">{c.website_url}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-5">
-                  <div className="flex items-center gap-2 text-[11px] text-white/40 uppercase tracking-tighter">
-                    {Icons.globe} {c.city || "—"}
-                  </div>
-                </td>
-                <td className="px-6 py-5 text-right">
-                  <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-emerald-500/5 text-emerald-500/60 text-[9px] font-bold uppercase tracking-widest">
-                    <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" /> Live
-                  </span>
-                </td>
-                <td className="px-6 py-5">
-                  <button onClick={(e) => { e.stopPropagation(); onDelete(c.id); }} className="p-2 text-white/10 hover:text-red-400 transition-colors">
-                    {Icons.trash}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function CompetitorDetailsView({ comp, signals, onBack, onViewDiff }: any) {
-  const [socialUrl, setSocialUrl] = useState("");
-  const [platform, setPlatform] = useState("telegram");
-  const [socials, setSocials] = useState<any[]>([]);
-  const [isLinking, setIsLinking] = useState(false);
-
-  const fetchSocials = async () => { 
-    try { 
-      const token = localStorage.getItem("access_token"); 
-      const data = await apiRequest(`/api/competitors/${comp.id}/socials`, { headers: { Authorization: `Bearer ${token}` } }); 
-      setSocials(data || []); 
-    } catch (e) {} 
-  };
-  
-  useEffect(() => { fetchSocials(); }, [comp.id]);
-
-  const handleLink = async () => {
-    if (!socialUrl) return;
-    setIsLinking(true);
-    try {
-      const token = localStorage.getItem("access_token");
-      await apiRequest(`/api/competitors/${comp.id}/socials`, { 
-        method: "POST", headers: { Authorization: `Bearer ${token}` }, 
-        body: JSON.stringify({ platform, url: socialUrl, interval: 60 }) 
-      });
-      setSocialUrl(""); fetchSocials();
-    } catch (e) {} finally { setIsLinking(false); }
-  };
-
-  return (
-    <div className="max-w-6xl animate-in slide-in-from-bottom-4 duration-500">
-      <button onClick={onBack} className="text-[10px] font-bold uppercase text-white/30 hover:text-white mb-8 flex items-center gap-2 transition-all">
-        ← Вернуться к списку
-      </button>
-
-      <div className="grid grid-cols-12 gap-8">
-        <div className="col-span-12 lg:col-span-4 space-y-6">
-          <div className="bg-[#08080a] border border-white/[0.04] rounded-2xl p-6">
-            <h2 className="text-xl font-bold mb-1">{comp.name}</h2>
-            <p className="text-xs text-white/30 font-mono mb-6">{comp.website_url}</p>
-            <div className="pt-4 border-t border-white/[0.04] space-y-4">
-              <div className="flex justify-between text-[11px] uppercase tracking-tighter">
-                <span className="text-white/30 italic">Локация</span>
-                <span className="text-white/60">{comp.city || "—"}</span>
-              </div>
-            </div>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="border-x border-white/10">
+      {competitors.map((c: any) => (
+        <div key={c.id} onClick={() => onSelect(c)} className="grid grid-cols-12 py-8 px-6 border-b border-white/10 hover:bg-zinc-950 transition-all cursor-pointer group">
+          <div className="col-span-5">
+            <h4 className="text-xl font-bold uppercase tracking-tighter italic group-hover:text-white">{c.name}</h4>
+            <p className="text-[9px] font-mono text-zinc-600 mt-1 uppercase tracking-widest">{c.website_url}</p>
           </div>
-
-          <div className="bg-[#08080a] border border-white/[0.04] rounded-2xl p-6">
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-6">Социальные сети</h3>
-            <div className="space-y-3 mb-6">
-              {socials.map((s: any) => (
-                <div key={s.id} className="p-3 bg-white/[0.02] border border-white/5 rounded-lg flex justify-between items-center text-xs">
-                  <span className="uppercase font-mono text-white/40">{s.platform}</span>
-                  <span className="text-emerald-500 text-[10px] uppercase font-bold">Active</span>
-                </div>
-              ))}
-            </div>
-            <div className="space-y-3 pt-4 border-t border-white/[0.04]">
-              <select value={platform} onChange={e => setPlatform(e.target.value)} className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-xs outline-none">
-                <option value="telegram">Telegram</option>
-                <option value="vk">VK.com</option>
-              </select>
-              <input value={socialUrl} onChange={e => setSocialUrl(e.target.value)} placeholder="Ссылка..." className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-xs outline-none font-mono" />
-              <button onClick={handleLink} disabled={isLinking} className="w-full py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[10px] font-bold uppercase transition-all">
-                {isLinking ? "..." : "Добавить"}
-              </button>
-            </div>
+          <div className="col-span-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500">
+             <Globe size={12} /> {c.city || "Global"}
+          </div>
+          <div className="col-span-2 flex items-center">
+             <span className="text-[8px] font-black uppercase tracking-[0.2em] border border-green-900/50 text-green-500 px-3 py-1 rounded-full">Active Scan</span>
+          </div>
+          <div className="col-span-2 flex justify-end items-center gap-4">
+             <button onClick={(e) => { e.stopPropagation(); onDelete(c.id); }} className="p-2 text-zinc-800 hover:text-red-500 transition-colors">
+               <Trash2 size={16} />
+             </button>
+             <ChevronRight size={16} className="text-zinc-800" />
           </div>
         </div>
-
-        <div className="col-span-12 lg:col-span-8 bg-[#08080a] border border-white/[0.04] rounded-2xl p-8 min-h-[500px]">
-          <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-8 text-center">Лента событий объекта</h3>
-          <div className="space-y-2">
-            {signals.map((s: any) => (
-              <AIInsightMinimal key={s.id} text={s.ai_analysis || s.msg} date={s.created_at} tag={s.tag} hasDiff={s.tag === 'PRODUCT'} onViewDiff={() => onViewDiff(s)} />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
+      ))}
+    </motion.div>
   );
 }
 
 function SignalsView({ signals, onViewDiff }: any) {
   return (
-    <div className="max-w-4xl mx-auto animate-in fade-in duration-500">
-       <div className="bg-[#08080a] border border-white/[0.04] rounded-2xl overflow-hidden">
-          <div className="px-8 py-4 border-b border-white/[0.04] bg-white/[0.01]">
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/30">Все события системы</h3>
+    <div className="max-w-4xl mx-auto space-y-px bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
+      {signals.map((s: any) => (
+        <div key={s.id} className="bg-black p-8 flex gap-8 hover:bg-zinc-950 transition-all items-start">
+           <div className="w-24 shrink-0">
+             <div className="text-[9px] font-black uppercase tracking-widest text-white italic">{s.company}</div>
+             <div className="text-[8px] font-mono text-zinc-600 mt-2 uppercase">
+               {new Date(s.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+             </div>
+           </div>
+           <div className="flex-1">
+             <p className="text-[13px] text-zinc-400 font-medium leading-relaxed uppercase tracking-tight italic">
+               {s.ai_analysis || s.msg}
+             </p>
+             <div className="flex gap-4 mt-6 items-center">
+               <span className="text-[8px] font-black uppercase tracking-[0.3em] text-zinc-600 border border-white/10 px-2 py-0.5 rounded">
+                 {TAG_LABELS_RU[s.tag] || s.tag}
+               </span>
+               {s.tag === 'PRODUCT' && (
+                 <button onClick={() => onViewDiff(s)} className="text-[9px] font-black uppercase tracking-widest text-white flex items-center gap-1 hover:underline">
+                   View Diff <ArrowUpRight size={10} />
+                 </button>
+               )}
+             </div>
+           </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CompetitorDetailsView({ comp, signals, onBack, onViewDiff }: any) {
+  return (
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+      <button onClick={onBack} className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 hover:text-white mb-12 flex items-center gap-2 transition-all">
+        ← Return to objects
+      </button>
+
+      <div className="grid grid-cols-12 gap-12">
+        <div className="col-span-12 lg:col-span-4 space-y-8">
+           <div className="p-8 border border-white/10 rounded-3xl">
+              <h2 className="text-4xl font-bold uppercase tracking-tighter italic mb-4">{comp.name}</h2>
+              <a href={`https://${comp.website_url}`} target="_blank" className="text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-2 hover:text-white">
+                {comp.website_url} <ExternalLink size={10} />
+              </a>
+           </div>
+           <div className="p-8 border border-white/10 rounded-3xl">
+              <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-700 mb-6 italic">Object Stats</h4>
+              <div className="space-y-4">
+                 <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest">
+                   <span className="text-zinc-600">Events Total</span>
+                   <span>{signals.length}</span>
+                 </div>
+                 <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest">
+                   <span className="text-zinc-600">Location</span>
+                   <span>{comp.city || "Global"}</span>
+                 </div>
+              </div>
+           </div>
+        </div>
+        <div className="col-span-12 lg:col-span-8 bg-zinc-950/50 border border-white/10 rounded-3xl overflow-hidden">
+          <div className="p-6 border-b border-white/10 bg-black">
+             <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-700 italic">Historical Signal Stream</h4>
           </div>
-          <div className="p-8">
+          <div className="divide-y divide-white/5">
             {signals.map((s: any) => (
-               <div key={s.id} className="flex gap-8 py-6 border-b border-white/[0.03] last:border-0 items-start">
-                  <div className="w-24 shrink-0">
-                    <p className="text-[10px] font-bold text-white/60 uppercase truncate">{s.company}</p>
-                    <p className="text-[9px] font-mono text-white/20 mt-1">{getRelativeTime(s.created_at)}</p>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-[13px] text-white/80 leading-relaxed font-light">{s.ai_analysis || s.msg}</p>
-                    <div className="flex gap-2 mt-3">
-                       <SignalBadge label={s.tag} />
-                       {s.tag === 'PRODUCT' && <button onClick={() => onViewDiff(s)} className="text-[9px] font-mono text-emerald-400 underline underline-offset-4">Посмотреть разницу</button>}
-                    </div>
-                  </div>
-               </div>
+              <div key={s.id} className="p-8 hover:bg-black transition-all">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-[8px] font-black uppercase tracking-widest border border-white/10 px-2 py-0.5 rounded text-zinc-500">
+                    {TAG_LABELS_RU[s.tag] || s.tag}
+                  </span>
+                  <span className="text-[9px] font-mono text-zinc-800 uppercase">
+                    {new Date(s.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <p className="text-sm text-zinc-400 font-medium italic uppercase tracking-tight">{s.ai_analysis || s.msg}</p>
+                {s.tag === 'PRODUCT' && (
+                  <button onClick={() => onViewDiff(s)} className="mt-4 text-[9px] font-black uppercase tracking-widest text-white hover:underline flex items-center gap-1">
+                    Analyze Change <ChevronRight size={12}/>
+                  </button>
+                )}
+              </div>
             ))}
           </div>
-       </div>
-    </div>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
 function SettingsView({ user }: any) {
   return (
-    <div className="max-w-xl animate-in fade-in duration-500">
-      <div className="bg-[#08080a] border border-white/[0.04] rounded-2xl p-8">
-        <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-8 text-center">Профиль</h3>
-        <div className="space-y-6">
-          <div>
-            <label className="text-[10px] text-white/20 uppercase block mb-2">Email</label>
-            <div className="w-full bg-white/[0.02] border border-white/5 rounded-lg px-4 py-3 text-sm font-mono text-white/40">
-              {user?.email}
-            </div>
-          </div>
-          <div>
-             <label className="text-[10px] text-white/20 uppercase block mb-2">Тарифный план</label>
-             <div className="w-full bg-white/[0.02] border border-white/5 rounded-lg px-4 py-3 text-sm font-mono text-emerald-500">
-               {user?.plan || "Growth"}
-             </div>
-          </div>
-          <button onClick={() => { localStorage.clear(); window.location.href = "/auth/login"; }} className="w-full mt-8 py-3 border border-red-500/20 text-red-500/60 hover:bg-red-500/5 rounded-lg text-[10px] font-bold uppercase transition-all">
-            Выйти из аккаунта
-          </button>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-xl mx-auto border border-white/10 rounded-3xl p-12">
+      <h3 className="text-4xl font-bold uppercase tracking-tighter italic mb-12 text-center">Security & Plan</h3>
+      <div className="space-y-10">
+        <div className="space-y-2">
+          <label className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-700">Auth Identity</label>
+          <div className="text-xl font-bold italic border-b border-white/10 py-3">{user?.email}</div>
         </div>
+        <div className="space-y-2">
+          <label className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-700">Subscription Tier</label>
+          <div className="text-xl font-bold italic border-b border-white/10 py-3 text-zinc-400">{user?.plan || "Founding Member"}</div>
+        </div>
+        <button 
+          onClick={() => { localStorage.clear(); window.location.href = "/auth/login"; }}
+          className="w-full mt-10 py-5 rounded-full border border-red-900/30 text-red-500 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-red-500 hover:text-white transition-all"
+        >
+          Terminate Session
+        </button>
       </div>
-    </div>
-  );
-}
-
-function StatCard({ label, value, trend }: any) {
-  return (
-    <div className="bg-[#08080a] border border-white/[0.04] rounded-2xl p-6">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-2">{label}</p>
-      <p className="text-3xl font-light mb-2">{value}</p>
-      <p className="text-[9px] font-mono text-white/20 uppercase">{trend}</p>
-    </div>
+    </motion.div>
   );
 }
