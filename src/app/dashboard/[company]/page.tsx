@@ -323,10 +323,48 @@ function SignalsView({ signals, onViewDiff }: any) {
 }
 
 function CompetitorDetailsView({ comp, signals, onBack, onViewDiff, t }: any) {
+  const [socialUrl, setSocialUrl] = useState("");
+  const [platform, setPlatform] = useState("telegram");
+  const [socials, setSocials] = useState<any[]>([]);
+  const [isLinking, setIsLinking] = useState(false);
+  const [showForm, setShowForm] = useState(false); // Состояние для показа полей ввода
+
+  const fetchSocials = async () => {
+    try {
+      const token = localStorage.getItem("access_token");
+      const data = await apiRequest(`/api/competitors/${comp.id}/socials`, { 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
+      setSocials(data || []);
+    } catch (e) {}
+  };
+
+  useEffect(() => { fetchSocials(); }, [comp.id]);
+
+  const handleLink = async () => {
+    if (!socialUrl) return;
+    setIsLinking(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      await apiRequest(`/api/competitors/${comp.id}/socials`, { 
+        method: "POST", 
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ platform, url: socialUrl, interval: 60 }) 
+      });
+      setSocialUrl("");
+      setShowForm(false);
+      fetchSocials();
+    } catch (e) {
+      alert("Ошибка при добавлении ссылки");
+    } finally {
+      setIsLinking(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <button onClick={onBack} className="text-[10px] font-bold uppercase text-zinc-600 hover:text-white transition-all underline decoration-zinc-800">
-        ← All Monitors
+        ← Все мониторы
       </button>
 
       <div className="grid grid-cols-12 gap-8">
@@ -339,28 +377,97 @@ function CompetitorDetailsView({ comp, signals, onBack, onViewDiff, t }: any) {
                <span className="text-zinc-300">{comp.city || "—"}</span>
             </div>
           </div>
-          {/* Flat Socials Block */}
-          <div className="p-6 border border-zinc-900 rounded-xl">
+
+          {/* Исправленный блок коннекторов */}
+          <div className="p-6 border border-zinc-900 rounded-xl bg-black">
              <p className="text-[9px] font-black uppercase tracking-widest text-zinc-700 mb-4">Connectors</p>
-             <button className="w-full py-2 border border-dashed border-zinc-800 rounded text-[10px] font-bold text-zinc-600 uppercase hover:border-zinc-600 transition-all">+ Add TG/VK</button>
+             
+             {/* Список уже добавленных соцсетей */}
+             <div className="space-y-2 mb-4">
+                {socials.map((s: any) => (
+                  <div key={s.id} className="flex justify-between items-center p-2 bg-zinc-900/50 rounded border border-zinc-800">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase">{s.platform}</span>
+                    <span className="text-[9px] text-emerald-500 font-bold uppercase tracking-widest">Active</span>
+                  </div>
+                ))}
+             </div>
+
+             {!showForm ? (
+               <button 
+                 onClick={() => setShowForm(true)}
+                 className="w-full py-2 border border-dashed border-zinc-800 rounded text-[10px] font-bold text-zinc-600 uppercase hover:border-zinc-600 hover:text-zinc-300 transition-all"
+               >
+                 + Add TG/VK
+               </button>
+             ) : (
+               <div className="space-y-3 p-3 bg-zinc-900/30 rounded-lg border border-zinc-800 animate-in fade-in">
+                  <select 
+                    value={platform} 
+                    onChange={e => setPlatform(e.target.value)}
+                    className="w-full bg-black border border-zinc-800 rounded px-2 py-1.5 text-[10px] font-bold text-white outline-none"
+                  >
+                    <option value="telegram">Telegram</option>
+                    <option value="vk">VK.com</option>
+                  </select>
+                  <input 
+                    value={socialUrl} 
+                    onChange={e => setSocialUrl(e.target.value)}
+                    placeholder="https://t.me/..." 
+                    className="w-full bg-black border border-zinc-800 rounded px-2 py-1.5 text-[10px] text-white outline-none focus:border-zinc-600"
+                  />
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => setShowForm(false)}
+                      className="flex-1 py-1.5 text-[9px] font-bold text-zinc-500 uppercase hover:text-white"
+                    >
+                      Отмена
+                    </button>
+                    <button 
+                      onClick={handleLink}
+                      disabled={isLinking}
+                      className="flex-1 py-1.5 bg-white text-black rounded text-[9px] font-bold uppercase"
+                    >
+                      {isLinking ? "..." : "Save"}
+                    </button>
+                  </div>
+               </div>
+             )}
           </div>
         </div>
 
         <div className="col-span-12 lg:col-span-8 space-y-1">
-           {signals.map((s: any) => (
-              <div key={s.id} className="p-6 border-b border-zinc-900/50 bg-[#000] flex gap-8 items-start">
-                 <div className="w-16 shrink-0 text-[10px] font-mono text-zinc-800">
+           {signals.length > 0 ? signals.map((s: any) => (
+              <div key={s.id} className="p-6 border-b border-zinc-900/50 bg-[#000] flex gap-8 items-start hover:bg-zinc-950/30 transition-colors">
+                 <div className="w-16 shrink-0 text-[10px] font-mono text-zinc-800 mt-1">
                     {new Date(s.created_at).toLocaleDateString([], {day:'2-digit', month:'2-digit'})}
                  </div>
                  <div className="flex-1 space-y-4">
-                    <p className="text-[13px] text-zinc-300 uppercase tracking-tight">{s.ai_analysis || s.msg}</p>
+                    {s.ai_analysis ? (
+                      <div className="space-y-2">
+                         <div className="flex items-center gap-1.5 text-emerald-500">
+                           <Sparkles size={12} />
+                           <span className="text-[8px] font-black uppercase tracking-widest">AI Analysis</span>
+                         </div>
+                         <p className="text-[13px] text-zinc-200 leading-relaxed font-medium uppercase tracking-tight italic">
+                           {s.ai_analysis}
+                         </p>
+                      </div>
+                    ) : (
+                      <p className="text-[13px] text-zinc-400 uppercase tracking-tight">{s.msg}</p>
+                    )}
                     <div className="flex gap-3">
                        <span className="text-[8px] font-bold border border-zinc-800 px-2 py-0.5 rounded text-zinc-600 uppercase">{s.tag}</span>
-                       {s.tag === 'PRODUCT' && <button onClick={() => onViewDiff(s)} className="text-[9px] font-bold text-zinc-500 uppercase hover:text-white underline">Diff</button>}
+                       {s.tag === 'PRODUCT' && (
+                         <button onClick={() => onViewDiff(s)} className="text-[9px] font-bold text-zinc-500 uppercase hover:text-white underline">Diff</button>
+                       )}
                     </div>
                  </div>
               </div>
-           ))}
+           )) : (
+             <div className="p-20 text-center text-zinc-800 text-[10px] font-bold uppercase tracking-[0.3em]">
+                No signals captured yet
+             </div>
+           )}
         </div>
       </div>
     </div>
