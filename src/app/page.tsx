@@ -402,7 +402,7 @@ export default function SledixApp() {
           <div className="mt-8 pt-6 border-t border-white/5 flex flex-col gap-2">
             <div className="flex justify-between text-[8px] font-mono text-zinc-700">
               <span>LATENCY</span>
-              <span className="text-zinc-500">{(Math.random() * 100).toFixed(2)}ms</span>
+              <span className="text-zinc-500">1-2ms</span>
             </div>
             <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
                <motion.div 
