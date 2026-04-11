@@ -19,6 +19,13 @@ const translations = {
     chart_title: "Интенсивность сигналов (24ч)",
     signals_title: "Живой поток",
     pricing_title: "Тарифы",
+    methodology_title: "Методология извлечения",
+methodology_sub: "От сырого кода до стратегического решения. Наш конвейер обрабатывает данные в три этапа.",
+steps: [
+  { n: "01", t: "Сбор", d: "Парсинг сайта, мониторинг API-ответов и многое другое" },
+  { n: "02", t: "Анализ", d: "Нейросеть отсеивает шум, анализирует и классифицирует тип изменения (цена, найм, стек)." },
+  { n: "03", t: "Сигнал", d: "Формирование готового инсайта и предиктивная модель." }
+],
     footer_header_1: "Выйграй",
     footer_header_2: "битву конкурентов",
     about_us_button: "Узнать о нас",
@@ -43,6 +50,13 @@ const translations = {
     nav: ["Product", "Signals", "Pricing", "Methodology"],
     hero_badge: "Next-gen Intelligence",
     hero_title: "Own the Market.",
+    methodology_title: "Extraction Pipeline",
+methodology_sub: "From raw code to strategic intelligence. Our engine processes data in three distinct phases.",
+steps: [
+  { n: "01", t: "Ingestion", d: "Parsing DOM trees, monitoring API responses, and etc." },
+  { n: "02", t: "Refining", d: "AI noise reduction and classification of change types (price, HR, tech stack)." },
+  { n: "03", t: "Delivery", d: "Generating actionable insights delivered via encrypted intelligence feeds." }
+],
     hero_sub: "Autonomous AI monitoring of your competitors. Pricing, hiring, and strategy in a single structured feed.",
     cta_primary: "Early Access",
     cta_secondary: "Technology",
@@ -338,41 +352,168 @@ export default function SledixApp() {
         ))}
       </section>
 
+      {/* --- Methodology Section --- */}
+<section id="methodology" className="py-20 md:py-32 px-4 md:px-6 max-w-6xl mx-auto border-x border-white/5 relative overflow-hidden">
+  {/* Декоративный фон с сеткой */}
+  <div className="absolute inset-0 opacity-[0.02] pointer-events-none" 
+       style={{ backgroundImage: `linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
+
+  <div className="relative z-10">
+    <div className="max-w-xl mb-16 md:mb-24">
+      <h2 className="text-3xl md:text-5xl font-bold uppercase tracking-tighter italic mb-6 leading-none">
+        {t.methodology_title}
+      </h2>
+      <p className="text-[10px] md:text-[11px] text-zinc-500 uppercase tracking-[0.2em] leading-relaxed">
+        {t.methodology_sub}
+      </p>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 relative">
+      {/* Линии соединения для десктопа */}
+      <div className="hidden md:block absolute top-1/2 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-y-1/2" />
+
+      {t.steps.map((step, i) => (
+        <motion.div 
+          key={i}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.2 }}
+          className="relative group"
+        >
+          {/* Номер и круг */}
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center bg-black group-hover:border-white transition-colors duration-500">
+              <span className="text-[10px] font-mono text-zinc-500 group-hover:text-white transition-colors">{step.n}</span>
+            </div>
+            <div className="h-px flex-1 bg-white/5 md:hidden" />
+          </div>
+
+          {/* Контент */}
+          <div className="space-y-4">
+            <h3 className="text-xl font-bold uppercase italic tracking-tighter text-white/90">
+              {step.t}
+            </h3>
+            <p className="text-[10px] md:text-[11px] text-zinc-500 uppercase tracking-widest leading-relaxed min-h-[60px]">
+              {step.d}
+            </p>
+          </div>
+
+          {/* "Технические" параметры снизу */}
+          <div className="mt-8 pt-6 border-t border-white/5 flex flex-col gap-2">
+            <div className="flex justify-between text-[8px] font-mono text-zinc-700">
+              <span>LATENCY</span>
+              <span className="text-zinc-500">{(Math.random() * 100).toFixed(2)}ms</span>
+            </div>
+            <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+               <motion.div 
+                 initial={{ width: 0 }}
+                 whileInView={{ width: `${30 + i * 30}%` }}
+                 className="h-full bg-zinc-800 group-hover:bg-white transition-colors"
+               />
+            </div>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  </div>
+
+  {/* Нижняя плашка в стиле мониторинга */}
+  <div className="mt-20 p-4 border border-white/5 bg-white/[0.01] flex flex-wrap gap-8 items-center justify-center md:justify-between">
+     <div className="flex items-center gap-3">
+        <div className="w-2 h-2 bg-green-500 rounded-full" />
+        <span className="text-[9px] font-mono text-zinc-500 tracking-tighter">ENGINE STATUS: OPTIMIZED</span>
+     </div>
+  </div>
+</section>
+
       {/* Pricing */}
-      <section id="pricing" className="py-20 md:py-40 px-4 md:px-6 max-w-6xl mx-auto border-x border-white/5">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 md:mb-20 gap-4 md:gap-6">
-          <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter italic leading-none">{t.pricing_title}</h2>
-          <span className="text-[8px] md:text-[10px] font-bold text-zinc-600 uppercase tracking-[0.3em] md:tracking-[0.4em]">
-            {t.founding_member}
-          </span>
+     {/* Pricing Section */}
+<section id="pricing" className="py-20 md:py-32 px-4 md:px-6 max-w-6xl mx-auto border-x border-white/5">
+  <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
+    <div>
+      <div className="flex items-center gap-2 mb-4">
+      </div>
+      <h2 className="text-4xl md:text-3xl font-bold uppercase tracking-tighter italic leading-none">
+        {t.pricing_title}
+      </h2>
+    </div>
+    <div className="flex flex-col items-end">
+      <span className="text-[10px] font-bold text-white uppercase tracking-[0.3em] px-3 py-1 border border-white/10 bg-white/5">
+        {t.founding_member}
+      </span>
+    </div>
+  </div>
+
+  <div className="grid grid-cols-1 md:grid-cols-3 border-t border-white/10">
+    {t.plans.map((tier, i) => (
+      <motion.div 
+        key={i}
+        whileHover={{ backgroundColor: "rgba(255,255,255,0.02)" }}
+        className={`relative p-8 md:p-12 flex flex-col border-b md:border-b-0 md:border-r border-white/10 last:border-r-0 transition-all duration-300 ${
+          tier.active ? 'bg-white/[0.03]' : ''
+        }`}
+      >
+        {/* Индикатор активного тарифа в стиле "системного уведомления" */}
+        {tier.active && (
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-white shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
+        )}
+        
+        <div className="flex justify-between items-start mb-12">
+          <div>
+            <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest block mb-2">
+            </span>
+            <h3 className="text-2xl font-bold uppercase italic tracking-tighter">{tier.n}</h3>
+          </div>
+          <div className="text-right">
+            <span className="text-[10px] font-mono text-zinc-500 block">COST/MO</span>
+            <span className="text-3xl font-bold tracking-tighter italic">${tier.p}</span>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-          {t.plans.map((tier, i) => (
-            <motion.div 
-              key={i}
-              whileHover={{ y: -5 }}
-              className={`p-8 md:p-10 rounded-2xl md:rounded-3xl border transition-all duration-100 ${tier.active ? 'border-white bg-white text-black md:scale-[1.05] z-10' : 'border-white/10 bg-black hover:border-white/30'}`}
-            >
-              <div className="flex justify-between items-start mb-12 md:mb-20">
-                <span className="text-[10px] md:text-[11px] font-black uppercase tracking-widest italic opacity-50">{tier.n}</span>
-                <span className="text-3xl md:text-4xl font-bold tracking-tighter italic">${tier.p}</span>
-              </div>
-              <ul className="space-y-4 md:space-y-5 mb-12 md:mb-20">
-                {tier.feat.map((f, idx) => (
-                  <li key={idx} className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest flex items-center gap-3">
-                    <ShieldCheck size={14} className={tier.active ? "text-black" : "text-zinc-800"} /> {f}
-                  </li>
-                ))}
-              </ul>
-              <button className={`w-full py-4 md:py-5 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] transition-all ${tier.active ? 'bg-black text-white hover:bg-zinc-900' : 'bg-white text-black hover:bg-zinc-200'}`}>
-                {t.cta_primary}
-              </button>
-            </motion.div>
+        <div className="space-y-6 flex-grow mb-16">
+          <div className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest mb-4 border-b border-white/5 pb-2">
+            Included_Functions
+          </div>
+          {tier.feat.map((f, idx) => (
+            <div key={idx} className="flex items-start gap-3 group">
+              <div className={`mt-1 h-1 w-1 rounded-full ${tier.active ? 'bg-blue-500' : 'bg-zinc-700'}`} />
+              <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] text-zinc-400 group-hover:text-white transition-colors leading-tight">
+                {f}
+              </span>
+            </div>
           ))}
         </div>
-      </section>
 
+        <button className={`group relative w-full py-5 overflow-hidden transition-all ${
+          tier.active 
+          ? 'bg-white text-black' 
+          : 'border border-white/20 text-white hover:border-white'
+        }`}>
+          <span className="relative z-10 text-[10px] font-black uppercase tracking-[0.3em]">
+            {t.cta_primary}
+          </span>
+          {tier.active && (
+            <motion.div 
+              initial={{ x: '-100%' }}
+              animate={{ x: '100%' }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent"
+            />
+          )}
+        </button>
+        
+        {/* Декоративные элементы в углах (стиль чертежа) */}
+        <div className="absolute top-2 right-2 text-[8px] font-mono text-white/5">
+          {tier.active ? "SELECTED_UNIT" : "STANDBY"}
+        </div>
+      </motion.div>
+    ))}
+  </div>
+
+  {/* Нижняя информационная панель секции */}
+  <div className="mt-px grid grid-cols-1 md:grid-cols-3 border-b border-white/10 text-[8px] font-mono text-zinc-700 uppercase tracking-[0.2em] py-4 px-2">
+  </div>
+</section>
       {/* Live Intelligence */}
       <section className="py-16 md:py-20 px-4 md:px-6 max-w-6xl mx-auto border-x border-white/5">
         <div className="max-w-xl mb-8 md:mb-12">
