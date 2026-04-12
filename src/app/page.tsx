@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { 
   ArrowUpRight, Activity, ChevronRight, 
-  Lock, Search, Sliders, ShieldCheck
+  Lock, Search, Sliders
 } from "lucide-react";
 
 // --- Translations ---
@@ -84,8 +84,6 @@ steps: [
     ]
   }
 };
-
-// --- Components ---
 
 const SledixLogo = ({ color = "white" }) => (
   <svg width="24" height="24" viewBox="0 0 676 584" fill={color}>
@@ -229,75 +227,84 @@ export default function SledixApp() {
   return (
     <div className="bg-black text-white min-h-screen font-sans selection:bg-white selection:text-black antialiased overflow-x-hidden">
       
-      {/* Header */}
-      <nav className="fixed top-0 w-full z-[100] border-b border-white/10 bg-black/80 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-4 md:gap-6">
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
-              <SledixLogo />
-              <span className="text-xs md:text-sm font-bold uppercase tracking-tighter">Sledix</span>
-            </div>
-            <div className="hidden lg:flex gap-6 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-              {navLinks.map(link => (
-                <a key={link.id} href={`#${link.id}`} className="hover:text-white transition-colors uppercase">
-                  {link.name}
-                </a>
-              ))}
-            </div>
+      {/* --- OVAL FLOATING HEADER (CENTERED LINKS) --- */}
+      <div className="fixed top-6 left-0 w-full z-[100] px-4 md:px-10 flex justify-center">
+        <nav className="w-250 h-14 bg-black/60 backdrop-blur-xl border border-white/10 rounded-full px-6 flex items-center justify-between shadow-2xl relative">
+          
+          {/* Left: Logo */}
+          <div className="flex items-center gap-2 cursor-pointer relative z-10" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
+            <SledixLogo />
+            <span className="text-xs md:text-sm font-bold uppercase tracking-tighter">Sledix</span>
           </div>
-          <div className="flex items-center gap-2 md:gap-4">
+
+          {/* Center: Gray Navigation Links */}
+          <div className="hidden lg:flex gap-8 absolute left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+            {navLinks.map(link => (
+              <a key={link.id} href={`#${link.id}`} className="hover:text-white transition-colors uppercase">
+                {link.name}
+              </a>
+            ))}
+          </div>
+
+          {/* Right: Lang & CTA */}
+          <div className="flex items-center gap-4 relative z-10">
             <button 
               onClick={() => setLang(lang === "RU" ? "EN" : "RU")}
-              className="text-[9px] md:text-[10px] font-mono text-zinc-500 hover:text-white border border-white/10 px-2 py-1 rounded transition-colors"
+              className="text-[9px] md:text-[10px] font-mono text-zinc-500 hover:text-white border border-white/10 px-2 py-1 rounded-full transition-colors"
             >
               {lang}
             </button>
-            <button className="bg-white text-black px-3 md:px-4 py-1.5 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-200 transition-all">
+            <button className="bg-white text-black px-4 md:px-6 py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-200 transition-all">
               {t.cta_primary}
             </button>
           </div>
-        </div>
-      </nav>
+        </nav>
+      </div>
 
       {/* Hero Section */}
-      <section id="hero" className="pt-24 md:pt-40 pb-16 md:pb-20 px-4 md:px-6 max-w-6xl mx-auto border-x border-white/5">
-        <div className="max-w-3xl">
+      <section id="hero" className="pt-32 md:pt-48 pb-16 md:pb-24 px-4 md:px-10 w-full">
+        <div className="w-full">
           <motion.div 
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
-            className="inline-flex items-center gap-2 px-2 py-1 rounded border border-white/10 text-[8px] md:text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-6 md:mb-8"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 text-[8px] md:text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-8"
           >
             <span className="w-1 h-1 bg-green-500 rounded-full animate-pulse" />
             {t.hero_badge}
           </motion.div>
-          <motion.h1 
-            initial={{ opacity: 0, y: 30 }} 
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-4xl md:text-8xl font-bold tracking-tighter uppercase leading-[0.9] mb-8 md:mb-10"
-          >
-            {t.hero_title}
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0, y: 30 }} 
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="text-sm md:text-xl text-zinc-400 font-medium max-w-lg leading-snug mb-10 md:mb-12"
-          >
-            {t.hero_sub}
-          </motion.p>
-
-          <div className="flex flex-col md:flex-row gap-4">
-            <button className="w-full md:w-auto bg-white text-black px-8 py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-widest hover:scale-105 transition-all flex items-center justify-center gap-2">
-              {t.cta_primary} <ArrowUpRight size={14} />
-            </button>
-            <button
-              onClick={() => window.location.href = '/about'}
-              className="w-full md:w-auto border border-white/30 text-white px-8 py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-widest hover:scale-105 hover:border-white transition-all flex items-center justify-center gap-2"
-            >
-              {t.about_us_button} <ChevronRight size={14} />
-            </button>
+          
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10">
+            <div className="max-w-4xl">
+              <motion.h1 
+                initial={{ opacity: 0, y: 30 }} 
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="text-4xl md:text-8xl font-bold tracking-tighter uppercase leading-[0.9] mb-10"
+              >
+                {t.hero_title}
+              </motion.h1>
+              <motion.p 
+                initial={{ opacity: 0, y: 30 }} 
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+                className="text-sm md:text-2xl text-zinc-400 font-medium max-w-2xl leading-snug"
+              >
+                {t.hero_sub}
+              </motion.p>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4 mb-2 shrink-0">
+              <button className="bg-white text-black px-8 py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-widest hover:scale-105 transition-all flex items-center justify-center gap-2">
+                {t.cta_primary} <ArrowUpRight size={14} />
+              </button>
+              <button
+                onClick={() => window.location.href = '/about'}
+                className="border border-white/30 text-white px-8 py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-widest hover:scale-105 hover:border-white transition-all flex items-center justify-center gap-2"
+              >
+                {t.about_us_button} <ChevronRight size={14} />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -307,22 +314,19 @@ export default function SledixApp() {
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mt-20 md:mt-32 border border-white/10 rounded-xl md:rounded-2xl bg-[#080808] overflow-hidden shadow-2xl"
+          className="mt-20 md:mt-32 w-full border border-white/10 rounded-2xl md:rounded-3xl bg-[#080808] overflow-hidden shadow-2xl"
         >
           <div className="p-4 md:p-6 border-b border-white/10 flex justify-between items-center bg-white/[0.02]">
             <div className="flex items-center gap-3">
               <Activity size={14} className="text-zinc-500" />
               <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-zinc-500">{t.chart_title}</span>
             </div>
-            <div className="flex gap-1.5">
-               {[1,2,3].map(i => <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/5" />)}
-            </div>
           </div>
-          <div className="p-4 md:p-8">
+          <div className="p-6 md:p-12">
             <Chart />
           </div>
-          <div className="border-t border-white/10 overflow-x-hidden">
-            <div className="bg-white/5 px-4 md:px-6 py-2 md:py-3 flex justify-between items-center">
+          <div className="border-t border-white/10">
+            <div className="bg-white/5 px-6 py-3 flex justify-between items-center">
                <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-widest text-zinc-500">{t.signals_title}</span>
             </div>
             <SignalRow company="Notion" action="Price Strategy" type="FINANCE" time="12:04" />
@@ -333,7 +337,7 @@ export default function SledixApp() {
       </section>
 
       {/* Features Grid */}
-      <section id="tech" className="px-4 md:px-6 max-w-6xl mx-auto border-x border-white/5 grid grid-cols-1 md:grid-cols-3 gap-px ">
+      <section id="tech" className="w-full border-y border-white/5 grid grid-cols-1 md:grid-cols-3">
         {t.features.map((f, i) => (
           <motion.div 
             key={i} 
@@ -341,37 +345,28 @@ export default function SledixApp() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.1 }}
-            className="bg-black p-8 md:p-10 py-12 md:py-20 flex flex-col gap-4 md:gap-6 group hover:bg-zinc-950 transition-colors border-b md:border-b-0 border-white/5"
+            className="bg-black p-10 md:p-20 flex flex-col gap-6 group hover:bg-zinc-950 transition-colors border-b md:border-b-0 md:border-r border-white/5 last:border-r-0"
           >
-            {i === 0 ? <Search size={20} className="text-zinc-700 group-hover:text-white transition-colors" /> : 
-             i === 1 ? <Lock size={20} className="text-zinc-700 group-hover:text-white transition-colors" /> : 
-             <Sliders size={20} className="text-zinc-700 group-hover:text-white transition-colors" />}
+            {i === 0 ? <Search size={20} /> : i === 1 ? <Lock size={20} /> : <Sliders size={20} />}
             <h3 className="text-[10px] md:text-xs font-black uppercase tracking-widest italic">{f.t}</h3>
             <p className="text-[10px] md:text-[11px] text-zinc-500 leading-relaxed uppercase tracking-widest">{f.d}</p>
           </motion.div>
         ))}
       </section>
 
-      {/* --- Methodology Section --- */}
-<section id="methodology" className="py-20 md:py-32 px-4 md:px-6 max-w-6xl mx-auto border-x border-white/5 relative overflow-hidden">
-  {/* Декоративный фон с сеткой */}
-  <div className="absolute inset-0 opacity-[0.02] pointer-events-none" 
-       style={{ backgroundImage: `linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
-
-  <div className="relative z-10">
-    <div className="max-w-xl mb-16 md:mb-24">
-      <h2 className="text-3xl md:text-5xl font-bold uppercase tracking-tighter italic mb-6 leading-none">
+      {/* Methodology Section */}
+<section id="methodology" className="py-20 md:py-32 px-4 md:px-10 w-full relative overflow-hidden border-b border-white/5">
+  <div className="relative z-10 w-full">
+    <div className="max-w-3xl mb-16 md:mb-24">
+      <h2 className="text-3xl md:text-6xl font-bold uppercase tracking-tighter italic mb-6 leading-none">
         {t.methodology_title}
       </h2>
-      <p className="text-[10px] md:text-[11px] text-zinc-500 uppercase tracking-[0.2em] leading-relaxed">
+      <p className="text-[10px] md:text-[12px] text-zinc-500 uppercase tracking-[0.2em] leading-relaxed">
         {t.methodology_sub}
       </p>
     </div>
 
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 relative">
-      {/* Линии соединения для десктопа */}
-      <div className="hidden md:block absolute top-1/2 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-y-1/2" />
-
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16">
       {t.steps.map((step, i) => (
         <motion.div 
           key={i}
@@ -380,145 +375,80 @@ export default function SledixApp() {
           transition={{ delay: i * 0.2 }}
           className="relative group"
         >
-          {/* Номер и круг */}
           <div className="flex items-center gap-4 mb-8">
             <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center bg-black group-hover:border-white transition-colors duration-500">
               <span className="text-[10px] font-mono text-zinc-500 group-hover:text-white transition-colors">{step.n}</span>
             </div>
-            <div className="h-px flex-1 bg-white/5 md:hidden" />
+            <div className="h-px flex-1 bg-white/5" />
           </div>
 
-          {/* Контент */}
           <div className="space-y-4">
             <h3 className="text-xl font-bold uppercase italic tracking-tighter text-white/90">
               {step.t}
             </h3>
-            <p className="text-[10px] md:text-[11px] text-zinc-500 uppercase tracking-widest leading-relaxed min-h-[60px]">
+            <p className="text-[10px] md:text-[11px] text-zinc-500 uppercase tracking-widest leading-relaxed">
               {step.d}
             </p>
-          </div>
-
-          {/* "Технические" параметры снизу */}
-          <div className="mt-8 pt-6 border-t border-white/5 flex flex-col gap-2">
-            <div className="flex justify-between text-[8px] font-mono text-zinc-700">
-              <span>LATENCY</span>
-              <span className="text-zinc-500">1-2ms</span>
-            </div>
-            <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-               <motion.div 
-                 initial={{ width: 0 }}
-                 whileInView={{ width: `${30 + i * 30}%` }}
-                 className="h-full bg-zinc-800 group-hover:bg-white transition-colors"
-               />
-            </div>
           </div>
         </motion.div>
       ))}
     </div>
   </div>
-
-  {/* Нижняя плашка в стиле мониторинга */}
-  <div className="mt-20 p-4 border border-white/5 bg-white/[0.01] flex flex-wrap gap-8 items-center justify-center md:justify-between">
-     <div className="flex items-center gap-3">
-        <div className="w-2 h-2 bg-green-500 rounded-full" />
-        <span className="text-[9px] font-mono text-zinc-500 tracking-tighter">ENGINE STATUS: OPTIMIZED</span>
-     </div>
-  </div>
 </section>
 
-      {/* Pricing */}
-     {/* Pricing Section */}
-<section id="pricing" className="py-20 md:py-32 px-4 md:px-6 max-w-6xl mx-auto border-x border-white/5">
+      {/* Pricing Section */}
+<section id="pricing" className="py-20 md:py-32 px-4 md:px-10 w-full">
   <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
-    <div>
-      <div className="flex items-center gap-2 mb-4">
-      </div>
-      <h2 className="text-4xl md:text-3xl font-bold uppercase tracking-tighter italic leading-none">
+    <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter italic leading-none">
         {t.pricing_title}
-      </h2>
-    </div>
-    <div className="flex flex-col items-end">
-      <span className="text-[10px] font-bold text-white uppercase tracking-[0.3em] px-3 py-1 border border-white/10 bg-white/5">
+    </h2>
+    <span className="text-[10px] font-bold text-white uppercase tracking-[0.3em] px-4 py-2 border border-white/10 bg-white/5 rounded-full">
         {t.founding_member}
-      </span>
-    </div>
+    </span>
   </div>
 
-  <div className="grid grid-cols-1 md:grid-cols-3 border-t border-white/10">
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
     {t.plans.map((tier, i) => (
       <motion.div 
         key={i}
-        whileHover={{ backgroundColor: "rgba(255,255,255,0.02)" }}
-        className={`relative p-8 md:p-12 flex flex-col border-b md:border-b-0 md:border-r border-white/10 last:border-r-0 transition-all duration-300 ${
-          tier.active ? 'bg-white/[0.03]' : ''
+        whileHover={{ scale: 1.02 }}
+        className={`p-10 md:p-12 rounded-3xl border transition-all duration-300 flex flex-col ${
+          tier.active ? 'border-white bg-white/[0.03]' : 'border-white/10'
         }`}
       >
-        {/* Индикатор активного тарифа в стиле "системного уведомления" */}
-        {tier.active && (
-          <div className="absolute top-0 left-0 w-full h-[2px] bg-white shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
-        )}
-        
         <div className="flex justify-between items-start mb-12">
-          <div>
-            <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest block mb-2">
-            </span>
             <h3 className="text-2xl font-bold uppercase italic tracking-tighter">{tier.n}</h3>
-          </div>
-          <div className="text-right">
-            <span className="text-[10px] font-mono text-zinc-500 block">COST/MO</span>
-            <span className="text-3xl font-bold tracking-tighter italic">${tier.p}</span>
-          </div>
+            <div className="text-right">
+                <span className="text-3xl font-bold tracking-tighter italic">${tier.p}</span>
+            </div>
         </div>
 
         <div className="space-y-6 flex-grow mb-16">
-          <div className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest mb-4 border-b border-white/5 pb-2">
-            Included_Functions
-          </div>
           {tier.feat.map((f, idx) => (
             <div key={idx} className="flex items-start gap-3 group">
-              <div className={`mt-1 h-1 w-1 rounded-full ${tier.active ? 'bg-blue-500' : 'bg-zinc-700'}`} />
-              <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] text-zinc-400 group-hover:text-white transition-colors leading-tight">
+              <div className="mt-2 h-1 w-1 rounded-full bg-white/40" />
+              <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] text-zinc-400 group-hover:text-white transition-colors">
                 {f}
               </span>
             </div>
           ))}
         </div>
 
-        <button className={`group relative w-full py-5 overflow-hidden transition-all ${
-          tier.active 
-          ? 'bg-white text-black' 
-          : 'border border-white/20 text-white hover:border-white'
+        <button className={`w-full py-5 rounded-full text-[10px] font-black uppercase tracking-[0.3em] transition-all ${
+          tier.active ? 'bg-white text-black' : 'border border-white/20 text-white hover:border-white'
         }`}>
-          <span className="relative z-10 text-[10px] font-black uppercase tracking-[0.3em]">
             {t.cta_primary}
-          </span>
-          {tier.active && (
-            <motion.div 
-              initial={{ x: '-100%' }}
-              animate={{ x: '100%' }}
-              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent"
-            />
-          )}
         </button>
-        
-        {/* Декоративные элементы в углах (стиль чертежа) */}
-        <div className="absolute top-2 right-2 text-[8px] font-mono text-white/5">
-          {tier.active ? "SELECTED_UNIT" : "STANDBY"}
-        </div>
       </motion.div>
     ))}
   </div>
-
-  {/* Нижняя информационная панель секции */}
-  <div className="mt-px grid grid-cols-1 md:grid-cols-3 border-b border-white/10 text-[8px] font-mono text-zinc-700 uppercase tracking-[0.2em] py-4 px-2">
-  </div>
 </section>
+
       {/* Live Intelligence */}
-      <section className="py-16 md:py-20 px-4 md:px-6 max-w-6xl mx-auto border-x border-white/5">
-        <div className="max-w-xl mb-8 md:mb-12">
-          <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tighter italic mb-3 md:mb-4">{t.scanner_title}</h2>
-          <p className="text-[10px] md:text-[11px] text-zinc-500 uppercase tracking-widest leading-relaxed">
+      <section className="py-16 md:py-20 px-4 md:px-10 w-full">
+        <div className="max-w-3xl mb-12">
+          <h2 className="text-2xl md:text-4xl font-bold uppercase tracking-tighter italic mb-4">{t.scanner_title}</h2>
+          <p className="text-[10px] md:text-[12px] text-zinc-500 uppercase tracking-widest leading-relaxed">
             {t.scanner_sub}
           </p>
         </div>
@@ -526,50 +456,37 @@ export default function SledixApp() {
       </section>
 
       {/* Footer */}
-      <footer id="about" className="py-12 md:py-10 px-4 md:px-6 max-w-6xl mx-auto border-t border-white/5 flex flex-col items-center">
-        <h2 className="text-4xl md:text-9xl font-black uppercase italic tracking-tighter text-center mb-12 md:mb-16 leading-[1]">
-          {t.footer_header_1} <br /> <span className="text-zinc-800">{t.footer_header_2}.</span>
+      <footer id="about" className="py-24 px-4 md:px-10 w-full border-t border-white/5 flex flex-col items-center">
+        <h2 className="text-5xl md:text-[12vw] font-black uppercase italic tracking-tighter text-center mb-16 leading-[0.8]">
+          {t.footer_header_1} <br /> <span className="text-zinc-900">{t.footer_header_2}.</span>
         </h2>
 
-        <form action="https://formspree.io/f/mpqoongy" method="POST" className="w-full max-w-sm md:max-w-md flex flex-col gap-6 md:gap-8">
+        <form className="w-full max-w-2xl flex flex-col gap-8">
           <input 
             type="email" 
-            name="email"
-            required
             placeholder={t.waitlist_placeholder} 
-            className="bg-transparent border-b border-white/10 py-4 md:py-6 text-center text-sm md:text-base font-bold uppercase focus:border-white outline-none transition-all placeholder:text-zinc-900"
+            className="bg-transparent border-b border-white/10 py-6 text-center text-xl md:text-3xl font-bold uppercase focus:border-white outline-none transition-all placeholder:text-zinc-900"
           />
-          <button type="submit" className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] md:tracking-[0.6em] text-zinc-600 hover:text-white transition-colors">
-             {t.waitlist_btn}
+          <button type="submit" className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.5em] text-zinc-600 hover:text-white transition-colors">
+             {t.waitlist_btn} —→
           </button>
         </form>
 
-        <div className="mt-24 md:mt-48 w-full flex flex-col md:flex-row justify-between items-center gap-6 md:gap-8 text-[8px] md:text-[9px] font-bold text-zinc-800 uppercase tracking-[0.3em] md:tracking-[0.5em]">
+        <div className="mt-32 w-full flex flex-col md:flex-row justify-between items-center gap-8 text-[9px] font-bold text-zinc-800 uppercase tracking-[0.3em]">
            <span>{t.rights}</span>
-           <div className="flex gap-8 md:gap-16">
-              <a href="/legal/terms" className="hover:text-zinc-400">Security</a>
-              <a href="/legal/privacy" className="hover:text-zinc-400">Privacy</a>
-              <a href="#" className="hover:text-zinc-400">API</a>
+           <div className="flex gap-12">
+              <a href="#" className="hover:text-zinc-400 transition-colors">Security</a>
+              <a href="#" className="hover:text-zinc-400 transition-colors">Privacy</a>
+              <a href="#" className="hover:text-zinc-400 transition-colors">API</a>
            </div>
         </div>
       </footer>
 
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        
-        html {
-          scroll-behavior: smooth;
-        }
-
-        body { 
-          font-family: 'Inter', sans-serif; 
-          background: black;
-          overflow-x: hidden;
-        }
-
-        ::-webkit-scrollbar { 
-          display: none;
-        }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background: black; overflow-x: hidden; }
+        ::-webkit-scrollbar { display: none; }
       `}</style>
     </div>
   );
