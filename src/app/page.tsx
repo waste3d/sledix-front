@@ -475,8 +475,8 @@ export default function SledixApp() {
         <div className="mt-32 w-full flex flex-col md:flex-row justify-between items-center gap-8 text-[9px] font-bold text-zinc-800 uppercase tracking-[0.3em]">
            <span>{t.rights}</span>
            <div className="flex gap-12">
-              <a href="#" className="hover:text-zinc-400 transition-colors">Security</a>
-              <a href="#" className="hover:text-zinc-400 transition-colors">Privacy</a>
+              <a href="/legal/terms" className="hover:text-zinc-400 transition-colors">Security</a>
+              <a href="/legal/privacy" className="hover:text-zinc-400 transition-colors">Privacy</a>
               <a href="#" className="hover:text-zinc-400 transition-colors">API</a>
            </div>
         </div>
